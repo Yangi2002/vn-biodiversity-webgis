@@ -1,0 +1,363 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model animal_db_vn {
+  source_loai                     String?
+  species_id                      String                            @id(map: "pk_animal_db_vn")
+  detail_url                      String?
+  page                            String?
+  hinh                            String?
+  ten_viet_nam                    String?
+  ten_latin                       String?
+  ho                              String?
+  bo                              String?
+  lop_nhom                        String?
+  title_block                     String?
+  dac_diem_nhan_dang              String?
+  sinh_hoc_sinh_thai              String?
+  phan_bo                         String?
+  phan_hang                       String?
+  gia_tri                         String?
+  tinh_trang                      String?
+  bien_phap_bao_ve                String?
+  tai_lieu_dan                    String?
+  mo_ta                           String?
+  mo_ta_loai                      String?
+  ban_do_phan_bo_cua_loai         String?
+  list_ten_viet_nam               String?
+  list_ten_latin                  String?
+  species_conservation_terms      species_conservation_terms[]
+  species_gbif_occurrence_matches species_gbif_occurrence_matches[]
+  species_images                  species_images[]
+  species_keyword_links           species_keyword_links[]
+  species_taxonomy                species_taxonomy[]
+
+  @@index([species_id], map: "idx_animal_db_vn_species_id")
+  @@index([ten_latin], map: "idx_animal_db_vn_ten_latin")
+  @@index([ten_viet_nam], map: "idx_animal_db_vn_ten_viet_nam")
+}
+
+model conservation_terms {
+  term_id                    BigInt                       @id @default(autoincrement())
+  term_text                  String
+  normalized_term            String
+  term_type                  String
+  category_code              String?
+  criteria_code              String                       @default("")
+  canonical_url              String?
+  description                String?
+  severity_order             Int?
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  species_conservation_terms species_conservation_terms[]
+
+  @@unique([normalized_term, term_type, criteria_code])
+  @@index([normalized_term], map: "idx_conservation_terms_normalized")
+  @@index([term_type], map: "idx_conservation_terms_type")
+}
+
+model gbif_occurrences {
+  gbif_occurrence_key             BigInt                            @id
+  gbif_taxon_key                  BigInt?
+  image_url                       String?
+  latitude                        Float?
+  longitude                       Float?
+  observed_date                   String?
+  location                        String?
+  observer                        String?
+  quality_grade                   String?
+  basis_of_record                 String?
+  has_geospatial_issue            Boolean?
+  issues                          Json?
+  occurrence_url                  String?
+  source_payload                  Json?
+  created_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  updated_at                      DateTime                          @default(now()) @db.Timestamptz(6)
+  species_gbif_occurrence_matches species_gbif_occurrence_matches[]
+
+  @@index([observed_date], map: "idx_gbif_occurrences_date")
+  @@index([latitude, longitude], map: "idx_gbif_occurrences_geo")
+  @@index([gbif_taxon_key], map: "idx_gbif_occurrences_taxon")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model gbif_taxonomy_cache {
+  source_table             String
+  species_id               String
+  original_scientific_name String
+  query_name               String
+  gbif_usage_key           BigInt?
+  gbif_accepted_usage_key  BigInt?
+  match_type               String?
+  confidence               Int?
+  status                   String?
+  gbif_rank                String?
+  accepted_scientific_name String?
+  canonical_name           String?
+  kingdom                  String?
+  phylum                   String?
+  class_name               String?
+  order_name               String?
+  family                   String?
+  genus                    String?
+  species                  String?
+  gbif_raw                 Json?
+  fetched_at               DateTime @db.Timestamptz(6)
+
+  @@id([source_table, species_id])
+  @@index([query_name], map: "idx_gbif_taxonomy_cache_query")
+  @@index([species], map: "idx_gbif_taxonomy_cache_species")
+}
+
+model insect_db_vn {
+  source_loai                     String?
+  species_id                      String                            @id(map: "pk_insect_db_vn")
+  detail_url                      String?
+  page                            String?
+  hinh                            String?
+  ten_viet_nam                    String?
+  ten_latin                       String?
+  ho                              String?
+  bo                              String?
+  lop_nhom                        String?
+  title_block                     String?
+  dac_diem_nhan_dang              String?
+  sinh_hoc_sinh_thai              String?
+  phan_bo                         String?
+  phan_hang                       String?
+  gia_tri                         String?
+  tinh_trang                      String?
+  bien_phap_bao_ve                String?
+  tai_lieu_dan                    String?
+  mo_ta                           String?
+  mo_ta_loai                      String?
+  ban_do_phan_bo_cua_loai         String?
+  list_ten_viet_nam               String?
+  list_ten_latin                  String?
+  species_conservation_terms      species_conservation_terms[]
+  species_gbif_occurrence_matches species_gbif_occurrence_matches[]
+  species_images                  species_images[]
+  species_keyword_links           species_keyword_links[]
+  species_taxonomy                species_taxonomy[]
+
+  @@index([species_id], map: "idx_insect_db_vn_species_id")
+  @@index([ten_latin], map: "idx_insect_db_vn_ten_latin")
+  @@index([ten_viet_nam], map: "idx_insect_db_vn_ten_viet_nam")
+}
+
+model plant_db_vn {
+  source_loai                     String?
+  species_id                      String                            @id(map: "pk_plant_db_vn")
+  detail_url                      String?
+  page                            String?
+  hinh                            String?
+  ten_viet_nam                    String?
+  ten_latin                       String?
+  ho                              String?
+  bo                              String?
+  lop_nhom                        String?
+  title_block                     String?
+  dac_diem_nhan_dang              String?
+  sinh_hoc_sinh_thai              String?
+  phan_bo                         String?
+  phan_hang                       String?
+  gia_tri                         String?
+  tinh_trang                      String?
+  bien_phap_bao_ve                String?
+  tai_lieu_dan                    String?
+  cong_dung                       String?
+  mo_ta                           String?
+  mo_ta_loai                      String?
+  ban_do_phan_bo_cua_loai         String?
+  list_ten_viet_nam               String?
+  list_ten_latin                  String?
+  species_conservation_terms      species_conservation_terms[]
+  species_gbif_occurrence_matches species_gbif_occurrence_matches[]
+  species_images                  species_images[]
+  species_keyword_links           species_keyword_links[]
+  species_taxonomy                species_taxonomy[]
+
+  @@index([species_id], map: "idx_plant_db_vn_species_id")
+  @@index([ten_latin], map: "idx_plant_db_vn_ten_latin")
+  @@index([ten_viet_nam], map: "idx_plant_db_vn_ten_viet_nam")
+}
+
+model site_keyword_images {
+  keyword_image_id BigInt        @id @default(autoincrement())
+  keyword_id       BigInt
+  image_order      Int           @db.SmallInt
+  source_image_url String
+  local_path       String
+  mime_type        String
+  image_data       Bytes
+  site_keywords    site_keywords @relation(fields: [keyword_id], references: [keyword_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([keyword_id, image_order])
+  @@index([keyword_id], map: "idx_site_keyword_images_keyword")
+}
+
+model site_keywords {
+  keyword_id            BigInt                  @id @default(autoincrement())
+  keyword_text          String
+  normalized_keyword    String
+  keyword_url           String                  @unique
+  page_title            String?
+  description_text      String?
+  local_image_paths     Json                    @default("[]")
+  source_type           String
+  fetch_status          String                  @default("pending")
+  error_message         String?
+  fetched_at            DateTime?               @db.Timestamptz(6)
+  site_keyword_images   site_keyword_images[]
+  species_keyword_links species_keyword_links[]
+
+  @@index([normalized_keyword], map: "idx_site_keywords_normalized")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model species_conservation_terms {
+  source_table       String
+  species_id         String
+  animal_species_id  String?
+  plant_species_id   String?
+  insect_species_id  String?
+  term_id            BigInt
+  source_field       String
+  matched_text       String
+  context            String?
+  detail_url         String?
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  animal_db_vn       animal_db_vn?      @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_animal")
+  insect_db_vn       insect_db_vn?      @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_insect")
+  plant_db_vn        plant_db_vn?       @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_plant")
+  conservation_terms conservation_terms @relation(fields: [term_id], references: [term_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_table, species_id, term_id, source_field, matched_text])
+  @@index([source_table, species_id], map: "idx_species_conservation_terms_species")
+  @@index([term_id], map: "idx_species_conservation_terms_term")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model species_gbif_occurrence_matches {
+  source_table        String
+  species_id          String
+  animal_species_id   String?
+  plant_species_id    String?
+  insect_species_id   String?
+  gbif_occurrence_key BigInt
+  match_method        String
+  created_at          DateTime         @default(now()) @db.Timestamptz(6)
+  animal_db_vn        animal_db_vn?    @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  gbif_occurrences    gbif_occurrences @relation(fields: [gbif_occurrence_key], references: [gbif_occurrence_key], onDelete: Cascade, onUpdate: NoAction)
+  insect_db_vn        insect_db_vn?    @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  plant_db_vn         plant_db_vn?     @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([source_table, species_id, gbif_occurrence_key])
+  @@index([gbif_occurrence_key], map: "idx_species_gbif_occurrence_key")
+  @@index([source_table, species_id], map: "idx_species_gbif_occurrence_species")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model species_images {
+  image_id          BigInt        @id @default(autoincrement())
+  source_table      String
+  species_id        String
+  image_order       Int           @db.SmallInt
+  local_path        String
+  mime_type         String
+  image_data        Bytes
+  animal_species_id String?
+  plant_species_id  String?
+  insect_species_id String?
+  animal_db_vn      animal_db_vn? @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  insect_db_vn      insect_db_vn? @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  plant_db_vn       plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([source_table, species_id, image_order], map: "uq_species_images_source_order")
+  @@index([source_table, species_id], map: "idx_species_images_species")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model species_keyword_links {
+  source_table           String
+  species_id             String
+  keyword_id             BigInt
+  keyword_text_in_detail String
+  section_name           String?
+  detail_url             String
+  created_at             DateTime      @default(now()) @db.Timestamptz(6)
+  animal_species_id      String?
+  plant_species_id       String?
+  insect_species_id      String?
+  animal_db_vn           animal_db_vn? @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  insect_db_vn           insect_db_vn? @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  site_keywords          site_keywords @relation(fields: [keyword_id], references: [keyword_id], onDelete: Cascade, onUpdate: NoAction)
+  plant_db_vn            plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([source_table, species_id, keyword_id])
+  @@index([keyword_id], map: "idx_species_keyword_links_keyword")
+  @@index([source_table, species_id], map: "idx_species_keyword_links_species")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model species_taxonomy {
+  source_table      String
+  species_id        String
+  taxon_id          BigInt
+  mapping_method    String
+  animal_species_id String?
+  plant_species_id  String?
+  insect_species_id String?
+  animal_db_vn      animal_db_vn? @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  insect_db_vn      insect_db_vn? @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  plant_db_vn       plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  taxa              taxa          @relation(fields: [taxon_id], references: [taxon_id], onUpdate: NoAction)
+
+  @@id([source_table, species_id])
+  @@index([taxon_id], map: "idx_species_taxonomy_taxon")
+}
+
+model taxa {
+  taxon_id                                              BigInt             @id @default(autoincrement())
+  parent_taxon_id                                       BigInt?
+  rank                                                  String
+  canonical_name                                        String
+  normalized_name                                       String
+  species_taxonomy                                      species_taxonomy[]
+  taxa                                                  taxa?              @relation("taxaTotaxa", fields: [parent_taxon_id], references: [taxon_id], onDelete: Restrict, onUpdate: NoAction)
+  other_taxa                                            taxa[]             @relation("taxaTotaxa")
+  taxon_closure_taxon_closure_ancestor_taxon_idTotaxa   taxon_closure[]    @relation("taxon_closure_ancestor_taxon_idTotaxa")
+  taxon_closure_taxon_closure_descendant_taxon_idTotaxa taxon_closure[]    @relation("taxon_closure_descendant_taxon_idTotaxa")
+  taxon_names                                           taxon_names[]
+
+  @@unique([rank, normalized_name])
+  @@index([parent_taxon_id], map: "idx_taxa_parent")
+}
+
+model taxon_closure {
+  ancestor_taxon_id                            BigInt
+  descendant_taxon_id                          BigInt
+  depth                                        Int    @db.SmallInt
+  taxa_taxon_closure_ancestor_taxon_idTotaxa   taxa   @relation("taxon_closure_ancestor_taxon_idTotaxa", fields: [ancestor_taxon_id], references: [taxon_id], onDelete: Cascade, onUpdate: NoAction)
+  taxa_taxon_closure_descendant_taxon_idTotaxa taxa   @relation("taxon_closure_descendant_taxon_idTotaxa", fields: [descendant_taxon_id], references: [taxon_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([ancestor_taxon_id, descendant_taxon_id])
+}
+
+model taxon_names {
+  taxon_name_id   BigInt  @id @default(autoincrement())
+  taxon_id        BigInt
+  name            String
+  normalized_name String
+  language_code   String  @default("und")
+  name_type       String
+  is_preferred    Boolean @default(false)
+  taxa            taxa    @relation(fields: [taxon_id], references: [taxon_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([taxon_id, normalized_name, name_type])
+  @@index([normalized_name], map: "idx_taxon_names_normalized")
+}
