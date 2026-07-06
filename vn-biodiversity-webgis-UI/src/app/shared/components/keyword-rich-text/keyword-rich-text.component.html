@@ -1,0 +1,17 @@
+<span class="keyword-text">
+  @for (segment of segments(); track $index) {
+    @if (segment.kind === 'keyword') {
+      <button
+        type="button"
+        class="keyword-hit"
+        [attr.aria-label]="'Xem giải thích: ' + segment.keyword.keywordTextInDetail"
+        (click)="selectKeyword(segment.keyword)"
+      >
+        {{ segment.text }}
+        <span class="keyword-info-mark" aria-hidden="true">i</span>
+      </button>
+    } @else {
+      {{ segment.text }}
+    }
+  }
+</span>

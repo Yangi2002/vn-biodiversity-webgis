@@ -27,7 +27,7 @@ export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
     title: 'Tra cứu loài',
     label: 'Từ điển',
     description: 'Tìm theo tên Việt Nam, tên khoa học, họ, bộ, lớp hoặc từ khóa.',
-    route: '/search',
+    route: '/species-list',
   },
   {
     title: 'Bản đồ phân bố',
@@ -39,19 +39,19 @@ export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
     title: 'Phân loại sinh học',
     label: 'Taxonomy',
     description: 'Lọc theo cây phân loại: giới, ngành, lớp, bộ, họ, chi, loài.',
-    route: '/species',
+    route: '/species-list',
   },
   {
     title: 'Bảo tồn và nguồn dữ liệu',
     label: 'Danh sách đỏ',
     description: 'Xem trạng thái bảo tồn, danh sách đỏ và nguồn tham chiếu.',
-    route: '/species',
+    route: '/species-list',
   },
   {
     title: 'Danh mục loài',
     label: 'Species list',
     description: 'Duyệt các nhóm động vật, thực vật và côn trùng trong hệ thống.',
-    route: '/species',
+    route: '/species-list',
   },
 ];
 

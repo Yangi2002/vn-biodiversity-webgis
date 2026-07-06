@@ -1,5 +1,380 @@
-.page-shell {
+.species-detail-page {
   min-height: 100dvh;
-  padding: 48px 24px;
-  font-family: Arial, sans-serif;
+  background: #f6f8f5;
+  color: #17251f;
+}
+
+.topbar,
+.detail-hero,
+.detail-layout,
+.state-panel {
+  width: min(1440px, calc(100% - 56px));
+  margin: 0 auto;
+}
+
+.topbar {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar a {
+  color: #17251f;
+  text-decoration: none;
+}
+
+.brand {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.topbar div {
+  display: flex;
+  gap: 18px;
+}
+
+.topbar div a {
+  color: #52685d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.detail-hero {
+  display: grid;
+  grid-template-columns: minmax(360px, 520px) minmax(0, 1fr);
+  gap: 42px;
+  align-items: start;
+  padding: 34px 0 26px;
+}
+
+.hero-copy {
+  padding: 10px 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1f6f46;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #13743d;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1 {
+  max-width: 720px;
+  margin: 0;
+  font-size: 54px;
+  line-height: 1.06;
+}
+
+.scientific-name {
+  margin: 16px 0 0;
+  color: #7f3a2c;
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 750;
+}
+
+.taxonomy-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.taxonomy-strip span {
+  padding: 14px;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17251f;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.taxonomy-strip strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #52685d;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.title-block {
+  margin-top: 24px;
+  padding: 18px;
+  border-left: 4px solid #1f6f46;
+  background: #ffffff;
+  color: #52685d;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.title-block span {
+  display: block;
+}
+
+.taxonomy-tree {
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7f3 100%);
+  box-shadow: 0 18px 40px rgba(23, 37, 31, 0.08);
+}
+
+.taxonomy-tree-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.taxonomy-tree-heading .eyebrow {
+  margin: 0;
+}
+
+.taxonomy-tree-heading strong {
+  color: #52685d;
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.taxonomy-tree ol {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taxonomy-tree ol::before {
+  content: none;
+}
+
+.taxonomy-tree li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.tree-connector {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  margin-top: 11px;
+  border: 2px solid #b9d1c1;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 5px #ffffff;
+}
+
+.taxonomy-tree li > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e1e9e4;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.taxonomy-tree small {
+  display: block;
+  margin-bottom: 4px;
+  color: #6c7d73;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.taxonomy-tree li strong {
+  display: block;
+  color: #17251f;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.taxonomy-tree em {
+  display: block;
+  margin-top: 3px;
+  color: #7f3a2c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.taxonomy-tree li.is-species .tree-connector {
+  border-color: #1f6f46;
+  background: #1f6f46;
+}
+
+.taxonomy-tree li.is-species > div {
+  border-color: #b8d6c3;
+  background: #eef7f1;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 24px;
+  align-items: start;
+  padding: 18px 0 72px;
+}
+
+.content-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.info-section,
+.record-panel,
+.state-panel {
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.info-section {
+  min-height: 100%;
+  padding: 22px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.info-section p {
+  margin: 0;
+  color: #334b41;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.side-column {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.record-panel {
+  padding: 20px;
+}
+
+.record-panel h2 {
+  font-size: 20px;
+}
+
+.record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.record-row {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf2ee;
+}
+
+.record-row dt {
+  color: #52685d;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.record-row dd {
+  margin: 5px 0 0;
+  color: #17251f;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.record-row dd.is-empty {
+  color: #8a9890;
+  font-weight: 600;
+}
+
+.state-panel {
+  margin-top: 48px;
+  padding: 28px;
+  color: #52685d;
+  font-weight: 800;
+}
+
+.state-panel.is-error {
+  border-color: #e1b4a8;
+  color: #9b2d1f;
+}
+
+@media (max-width: 980px) {
+  .detail-hero,
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-column {
+    grid-template-columns: 1fr;
+  }
+
+  .side-column {
+    position: static;
+  }
+
+  h1 {
+    font-size: 42px;
+  }
+}
+
+@media (max-width: 620px) {
+  .topbar,
+  .detail-hero,
+  .detail-layout,
+  .state-panel {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .topbar div {
+    display: none;
+  }
+
+  .detail-hero {
+    padding-top: 24px;
+  }
+
+  h1 {
+    font-size: 34px;
+  }
+
+  .taxonomy-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .taxonomy-tree ol {
+    grid-template-columns: 1fr;
+  }
+
 }

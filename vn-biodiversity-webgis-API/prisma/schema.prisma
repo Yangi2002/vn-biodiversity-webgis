@@ -270,6 +270,8 @@ model species_images {
   local_path        String
   mime_type         String
   image_data        Bytes
+  width             Int?
+  height            Int?
   animal_species_id String?
   plant_species_id  String?
   insect_species_id String?
@@ -278,6 +280,7 @@ model species_images {
   plant_db_vn       plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([source_table, species_id, image_order], map: "uq_species_images_source_order")
+  @@index([source_table, species_id, width(sort: Desc), height(sort: Desc), image_order], map: "idx_species_images_quality")
   @@index([source_table, species_id], map: "idx_species_images_species")
 }
 

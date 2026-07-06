@@ -1,0 +1,251 @@
+.carousel-shell {
+  margin: 0;
+}
+
+.main-image {
+  position: relative;
+  min-height: clamp(360px, 42vw, 560px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #e9f1ea;
+}
+
+.main-image-button {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.main-image-button img {
+  width: 100%;
+  height: 100%;
+  max-height: clamp(360px, 42vw, 560px);
+  display: block;
+  object-fit: contain;
+}
+
+.main-image-button span {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(23, 37, 31, 0.76);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 850;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.main-image-button:hover span,
+.main-image-button:focus-visible span {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.empty-image {
+  color: #52685d;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.source-badge {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(23, 37, 31, 0.78);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.carousel-controls {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.carousel-controls > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #17251f;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.carousel-controls span {
+  color: #52685d;
+}
+
+.thumbnail-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.thumbnail-row button {
+  height: 76px;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: #edf3ef;
+  cursor: pointer;
+}
+
+.thumbnail-row button.is-active {
+  border-color: #1f6f46;
+}
+
+.thumbnail-row img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.image-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(13, 24, 19, 0.72);
+}
+
+.image-preview {
+  position: relative;
+  width: min(1280px, 100%);
+  height: min(860px, calc(100dvh - 56px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  margin: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #101813;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
+}
+
+.image-preview header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.image-preview header strong,
+.image-preview header span {
+  display: block;
+}
+
+.image-preview header span {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.preview-close {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-close:hover,
+.preview-close:focus-visible {
+  background: #ffffff;
+  color: #17251f;
+}
+
+.image-preview > img {
+  max-width: 100%;
+  max-height: 100%;
+  align-self: center;
+  justify-self: center;
+  display: block;
+  object-fit: contain;
+}
+
+.preview-nav {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 50%;
+  background: rgba(23, 37, 31, 0.72);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.preview-nav:hover,
+.preview-nav:focus-visible {
+  background: #1f6f46;
+}
+
+.is-previous {
+  left: 18px;
+}
+
+.is-next {
+  right: 18px;
+}
+
+@media (max-width: 980px) {
+  .main-image,
+  .main-image-button {
+    min-height: clamp(340px, 62vw, 520px);
+  }
+}
+
+@media (max-width: 620px) {
+  .main-image,
+  .main-image-button {
+    min-height: 320px;
+  }
+
+  .thumbnail-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .image-preview-backdrop {
+    padding: 12px;
+  }
+}

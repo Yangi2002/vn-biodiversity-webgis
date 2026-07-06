@@ -2,8 +2,8 @@
   <nav class="topbar" aria-label="Điều hướng chính">
     <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
     <div>
-      <a routerLink="/search">Tra cứu</a>
-      <a routerLink="/species">Danh mục</a>
+      <a routerLink="/species-list">Tra cứu</a>
+      <a routerLink="/species-list">Danh mục</a>
       <a routerLink="/map">Bản đồ</a>
     </div>
   </nav>
@@ -18,7 +18,7 @@
         Tra cứu loài, xem phân bố, lọc theo phân loại sinh học và theo dõi thông tin bảo tồn từ các nguồn tham chiếu đáng tin cậy.
       </p>
 
-      <form class="search-panel" action="/search" method="get" (submit)="submitSearch($event)">
+      <form class="search-panel" action="/species-list" method="get" (submit)="submitSearch($event)">
         <label for="home-search">Tìm kiếm loài</label>
         <div class="search-row">
           <input

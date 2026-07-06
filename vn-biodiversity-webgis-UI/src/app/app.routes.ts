@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { HomePage } from './pages/home/home.page';
 import { MapPage } from './pages/map/map.page';
-import { SearchPage } from './pages/search/search.page';
 import { SpeciesDetailPage } from './pages/species-detail/species-detail.page';
 import { SpeciesListPage } from './pages/species-list/species-list.page';
 
@@ -13,13 +12,18 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    component: SearchPage,
-    title: 'Tra cuu loai',
+    redirectTo: 'species-list',
+    pathMatch: 'full',
   },
   {
     path: 'species',
+    redirectTo: 'species-list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'species-list',
     component: SpeciesListPage,
-    title: 'Danh muc loai',
+    title: 'Danh mục loài',
   },
   {
     path: 'species/:sourceTable/:speciesId',

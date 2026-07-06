@@ -1,0 +1,57 @@
+<figure class="carousel-shell">
+  <div class="main-image">
+    @if (activeImage(); as image) {
+      <button type="button" class="main-image-button" (click)="openPreview()">
+        <img [src]="image.imageUrl" [alt]="speciesName() + ' - ảnh ' + image.imageOrder" />
+        <span>Phóng to ảnh</span>
+      </button>
+    } @else {
+      <div class="empty-image">Chưa có ảnh</div>
+    }
+
+    <span class="source-badge">{{ sourceLabel() }}</span>
+  </div>
+
+  @if (images().length) {
+    <figcaption class="carousel-controls">
+      <div>
+        <strong>Thư viện ảnh</strong>
+        <span>{{ activeIndex() + 1 }} / {{ images().length }}</span>
+      </div>
+
+      <div class="thumbnail-row" aria-label="Chọn ảnh loài">
+        @for (image of images(); track image.imageOrder; let index = $index) {
+          <button
+            type="button"
+            [class.is-active]="index === activeIndex()"
+            [attr.aria-label]="'Hiển thị ảnh ' + image.imageOrder + '. ' + imageResolution(image)"
+            (click)="goTo(index)"
+          >
+            <img [src]="image.imageUrl" [alt]="speciesName() + ' - thumbnail ' + image.imageOrder" />
+          </button>
+        }
+      </div>
+    </figcaption>
+  }
+
+  @if (previewImage(); as image) {
+    <div class="image-preview-backdrop" (click)="closePreview()">
+      <section class="image-preview" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+        <header>
+          <div>
+            <strong>{{ speciesName() }}</strong>
+            <span>{{ imageResolution(image) }}</span>
+          </div>
+          <button type="button" class="preview-close" aria-label="Đóng ảnh phóng to" (click)="closePreview()">×</button>
+        </header>
+
+        @if (hasMultipleImages()) {
+          <button type="button" class="preview-nav is-previous" aria-label="Ảnh trước" (click)="previous()">&lt;</button>
+          <button type="button" class="preview-nav is-next" aria-label="Ảnh sau" (click)="next()">&gt;</button>
+        }
+
+        <img [src]="image.imageUrl" [alt]="speciesName() + ' - ảnh phóng to'" />
+      </section>
+    </div>
+  }
+</figure>

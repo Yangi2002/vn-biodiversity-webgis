@@ -8,6 +8,13 @@ import type {
   SpeciesSearchFilters,
   SpeciesSearchResult,
 } from './types/species-search-result.type';
+import type {
+  SpeciesDetailField,
+  SpeciesDetailImage,
+  SpeciesDetailResult,
+  SpeciesKeywordReference,
+  SpeciesTaxonomyNode,
+} from './types/species-detail-result.type';
 
 interface SpeciesSearchRow {
   source_table: SpeciesSourceTable;
@@ -20,9 +27,7 @@ interface SpeciesSearchRow {
   class_name: string | null;
   genus_name: string | null;
   title_block: string | null;
-  detail_url: string | null;
   image_url: string | null;
-  image_source: string | null;
   image_mime_type: string | null;
 }
 
@@ -35,11 +40,80 @@ interface ImageRow {
   mime_type: string | null;
 }
 
+interface SpeciesImageRow {
+  image_order: number;
+  mime_type: string | null;
+  width: number | null;
+  height: number | null;
+  size_bytes: bigint | number;
+}
+
+interface TaxonomyPathRow {
+  taxon_id: bigint | number;
+  rank: string;
+  canonical_name: string;
+  vietnamese_name: string | null;
+}
+
+interface KeywordReferenceRow {
+  keyword_id: bigint | number;
+  keyword_text: string;
+  keyword_text_in_detail: string;
+  section_name: string | null;
+  detail_url: string;
+  keyword_url: string;
+  page_title: string | null;
+  description_text: string | null;
+  source_type: string;
+  fetch_status: string;
+}
+
+interface KeywordImageRow {
+  keyword_id: bigint | number;
+  image_order: number;
+  mime_type: string | null;
+}
+
 interface FacetRow {
   value: string | null;
   label: string | null;
   total: bigint | number;
 }
+
+type SpeciesDetailRow = Record<string, string | null>;
+
+const SOURCE_TABLE_LABELS: Record<SpeciesSourceTable, string> = {
+  animal_db_vn: 'Động vật',
+  plant_db_vn: 'Thực vật',
+  insect_db_vn: 'Côn trùng',
+};
+
+const DETAIL_FIELD_LABELS: Record<string, string> = {
+  source_loai: 'Nguồn loài',
+  species_id: 'Mã loài',
+  page: 'Trang nguồn',
+  hinh: 'Ảnh nguồn',
+  ten_viet_nam: 'Tên Việt Nam',
+  ten_latin: 'Tên khoa học',
+  ho: 'Họ',
+  bo: 'Bộ',
+  lop_nhom: 'Lớp / nhóm',
+  title_block: 'Khối tiêu đề',
+  dac_diem_nhan_dang: 'Đặc điểm nhận dạng',
+  sinh_hoc_sinh_thai: 'Sinh học - sinh thái',
+  phan_bo: 'Phân bố',
+  phan_hang: 'Phân hạng',
+  gia_tri: 'Giá trị',
+  tinh_trang: 'Tình trạng',
+  bien_phap_bao_ve: 'Biện pháp bảo vệ',
+  tai_lieu_dan: 'Tài liệu dẫn',
+  cong_dung: 'Công dụng',
+  mo_ta: 'Mô tả',
+  mo_ta_loai: 'Mô tả loài',
+  ban_do_phan_bo_cua_loai: 'Bản đồ phân bố của loài',
+  list_ten_viet_nam: 'Danh sách tên Việt Nam',
+  list_ten_latin: 'Danh sách tên khoa học',
+};
 
 const SPECIES_UNION_SQL = `
   SELECT
@@ -52,9 +126,7 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block,
-    detail_url,
-    hinh AS image_source
+    title_block
   FROM animal_db_vn
   UNION ALL
   SELECT
@@ -67,9 +139,7 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block,
-    detail_url,
-    hinh AS image_source
+    title_block
   FROM plant_db_vn
   UNION ALL
   SELECT
@@ -82,9 +152,7 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block,
-    detail_url,
-    hinh AS image_source
+    title_block
   FROM insect_db_vn
 `;
 
@@ -126,15 +194,17 @@ export class SpeciesRepository {
             WHEN species_image.image_id IS NULL THEN NULL
             ELSE '/species/' || species_union.source_table || '/' || species_union.species_id || '/image'
           END AS image_url,
-          coalesce(species_union.image_source, species_image.local_path) AS image_source,
           species_image.mime_type AS image_mime_type
         FROM species_union
         LEFT JOIN LATERAL (
-          SELECT image_id, local_path, mime_type
+          SELECT image_id, local_path, mime_type, width, height
           FROM species_images
           WHERE source_table = species_union.source_table
             AND species_id = species_union.species_id
-          ORDER BY image_order ASC
+          ORDER BY
+            (coalesce(width, 0) * coalesce(height, 0)) DESC,
+            octet_length(image_data) DESC,
+            image_order ASC
           LIMIT 1
         ) species_image ON true
         WHERE ${SEARCH_FILTER_SQL}
@@ -162,9 +232,7 @@ export class SpeciesRepository {
       className: row.class_name,
       genus: row.genus_name,
       titleBlock: row.title_block,
-      detailUrl: row.detail_url,
       imageUrl: row.image_url,
-      imageSource: row.image_source,
       imageMimeType: row.image_mime_type,
     }));
   }
@@ -198,6 +266,69 @@ export class SpeciesRepository {
     return { sourceTables, classNames, orders, families, genera };
   }
 
+  async findDetail(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+  ): Promise<SpeciesDetailResult | null> {
+    const rows = await this.prisma.$queryRawUnsafe<SpeciesDetailRow[]>(
+      `
+        SELECT
+          species.*,
+          CASE
+            WHEN species_image.image_id IS NULL THEN NULL
+            ELSE '/species/' || $1 || '/' || species.species_id || '/image'
+          END AS image_url,
+          species_image.mime_type AS image_mime_type
+        FROM ${sourceTable} species
+        LEFT JOIN LATERAL (
+          SELECT image_id, local_path, mime_type, width, height
+          FROM species_images
+          WHERE source_table = $1
+            AND species_id = species.species_id
+          ORDER BY
+            (coalesce(width, 0) * coalesce(height, 0)) DESC,
+            octet_length(image_data) DESC,
+            image_order ASC
+          LIMIT 1
+        ) species_image ON true
+        WHERE species.species_id = $2
+        LIMIT 1
+      `,
+      sourceTable,
+      speciesId,
+    );
+
+    const row = rows[0];
+
+    if (!row) {
+      return null;
+    }
+
+    const [images, taxonomyPath, keywords] = await Promise.all([
+      this.findImageList(sourceTable, speciesId),
+      this.findTaxonomyPath(sourceTable, speciesId),
+      this.findKeywordReferences(sourceTable, speciesId),
+    ]);
+
+    return {
+      sourceTable,
+      sourceLabel: SOURCE_TABLE_LABELS[sourceTable],
+      speciesId: row.species_id ?? speciesId,
+      vietnameseName: row.ten_viet_nam,
+      scientificName: row.ten_latin,
+      family: row.ho,
+      order: row.bo,
+      className: row.lop_nhom,
+      titleBlock: row.title_block,
+      imageUrl: row.image_url,
+      imageMimeType: row.image_mime_type,
+      images,
+      taxonomyPath,
+      keywords,
+      fields: this.mapDetailFields(row),
+    };
+  }
+
   async findPrimaryImage(
     sourceTable: SpeciesSourceTable,
     speciesId: string,
@@ -208,11 +339,70 @@ export class SpeciesRepository {
         FROM species_images
         WHERE source_table = $1
           AND species_id = $2
-        ORDER BY image_order ASC
+        ORDER BY
+          (coalesce(width, 0) * coalesce(height, 0)) DESC,
+          octet_length(image_data) DESC,
+          image_order ASC
         LIMIT 1
       `,
       sourceTable,
       speciesId,
+    );
+
+    const image = rows[0];
+
+    if (!image) {
+      return null;
+    }
+
+    return {
+      imageData: image.image_data,
+      mimeType: image.mime_type ?? 'image/jpeg',
+    };
+  }
+
+  async findImageByOrder(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+    imageOrder: number,
+  ): Promise<SpeciesImageResult | null> {
+    const rows = await this.prisma.$queryRawUnsafe<ImageRow[]>(
+      `
+        SELECT image_data, mime_type
+        FROM species_images
+        WHERE source_table = $1
+          AND species_id = $2
+          AND image_order = $3
+        LIMIT 1
+      `,
+      sourceTable,
+      speciesId,
+      imageOrder,
+    );
+
+    const image = rows[0];
+
+    if (!image) {
+      return null;
+    }
+
+    return {
+      imageData: image.image_data,
+      mimeType: image.mime_type ?? 'image/jpeg',
+    };
+  }
+
+  async findKeywordImageByOrder(keywordId: string, imageOrder: number): Promise<SpeciesImageResult | null> {
+    const rows = await this.prisma.$queryRawUnsafe<ImageRow[]>(
+      `
+        SELECT image_data, mime_type
+        FROM site_keyword_images
+        WHERE keyword_id = $1::bigint
+          AND image_order = $2
+        LIMIT 1
+      `,
+      keywordId,
+      imageOrder,
     );
 
     const image = rows[0];
@@ -294,5 +484,201 @@ export class SpeciesRepository {
       whereSql: clauses.length ? `\n          ${clauses.join('\n          ')}` : '',
       values,
     };
+  }
+
+  private mapDetailFields(row: SpeciesDetailRow): SpeciesDetailField[] {
+    return Object.entries(row)
+      .filter(([key]) => !['detail_url', 'hinh', 'image_url', 'image_mime_type'].includes(key))
+      .map(([key, value]) => ({
+        key,
+        label: DETAIL_FIELD_LABELS[key] ?? key,
+        value: this.normalizeDetailValue(key, value),
+      }));
+  }
+
+  private async findImageList(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+  ): Promise<SpeciesDetailImage[]> {
+    const rows = await this.prisma.$queryRawUnsafe<SpeciesImageRow[]>(
+      `
+        SELECT
+          image_order,
+          mime_type,
+          width,
+          height,
+          octet_length(image_data) AS size_bytes
+        FROM species_images
+        WHERE source_table = $1
+          AND species_id = $2
+        ORDER BY
+          (coalesce(width, 0) * coalesce(height, 0)) DESC,
+          octet_length(image_data) DESC,
+          image_order ASC
+      `,
+      sourceTable,
+      speciesId,
+    );
+
+    return rows.map((row) => ({
+      imageOrder: Number(row.image_order),
+      imageUrl: `/species/${sourceTable}/${speciesId}/images/${Number(row.image_order)}`,
+      mimeType: row.mime_type ?? 'image/jpeg',
+      width: row.width,
+      height: row.height,
+      sizeBytes: Number(row.size_bytes),
+    }));
+  }
+
+  private async findTaxonomyPath(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+  ): Promise<SpeciesTaxonomyNode[]> {
+    const rows = await this.prisma.$queryRawUnsafe<TaxonomyPathRow[]>(
+      `
+        SELECT
+          parent.taxon_id,
+          parent.rank,
+          parent.canonical_name,
+          vi.name AS vietnamese_name
+        FROM species_taxonomy st
+        JOIN taxon_closure tc
+          ON tc.descendant_taxon_id = st.taxon_id
+        JOIN taxa parent
+          ON parent.taxon_id = tc.ancestor_taxon_id
+        LEFT JOIN LATERAL (
+          SELECT name
+          FROM taxon_names
+          WHERE taxon_id = parent.taxon_id
+            AND language_code = 'vi'
+            AND name_type = 'common_name'
+          ORDER BY is_preferred DESC, taxon_name_id ASC
+          LIMIT 1
+        ) vi ON true
+        WHERE st.source_table = $1
+          AND st.species_id = $2
+        ORDER BY tc.depth DESC
+      `,
+      sourceTable,
+      speciesId,
+    );
+
+    return rows.map((row) => ({
+      taxonId: String(row.taxon_id),
+      rank: row.rank,
+      canonicalName: row.canonical_name,
+      vietnameseName: row.vietnamese_name,
+    }));
+  }
+
+  private async findKeywordReferences(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+  ): Promise<SpeciesKeywordReference[]> {
+    const rows = await this.prisma.$queryRawUnsafe<KeywordReferenceRow[]>(
+      `
+        SELECT
+          sk.keyword_id,
+          sk.keyword_text,
+          skl.keyword_text_in_detail,
+          skl.section_name,
+          skl.detail_url,
+          sk.keyword_url,
+          sk.page_title,
+          sk.description_text,
+          sk.source_type,
+          sk.fetch_status
+        FROM species_keyword_links skl
+        JOIN site_keywords sk
+          ON sk.keyword_id = skl.keyword_id
+        WHERE skl.source_table = $1
+          AND skl.species_id = $2
+        ORDER BY
+          skl.section_name ASC NULLS LAST,
+          lower(skl.keyword_text_in_detail) ASC,
+          sk.keyword_id ASC
+      `,
+      sourceTable,
+      speciesId,
+    );
+
+    if (!rows.length) {
+      return [];
+    }
+
+    const keywordIds = rows.map((row) => String(row.keyword_id));
+    const imageRows = await this.prisma.$queryRawUnsafe<KeywordImageRow[]>(
+      `
+        SELECT keyword_id, image_order, mime_type
+        FROM site_keyword_images
+        WHERE keyword_id = ANY($1::bigint[])
+        ORDER BY keyword_id ASC, image_order ASC
+      `,
+      keywordIds,
+    );
+    const imagesByKeyword = new Map<string, KeywordImageRow[]>();
+
+    for (const image of imageRows) {
+      const key = String(image.keyword_id);
+      imagesByKeyword.set(key, [...(imagesByKeyword.get(key) ?? []), image]);
+    }
+
+    return rows.map((row) => {
+      const keywordId = String(row.keyword_id);
+
+      return {
+        keywordId,
+        keywordText: row.keyword_text,
+        keywordTextInDetail: row.keyword_text_in_detail,
+        sectionName: row.section_name,
+        detailUrl: row.detail_url,
+        keywordUrl: row.keyword_url,
+        pageTitle: row.page_title,
+        descriptionText: this.normalizeKeywordDescription(row.description_text),
+        sourceType: row.source_type,
+        fetchStatus: row.fetch_status,
+        images: (imagesByKeyword.get(keywordId) ?? []).map((image) => ({
+          imageOrder: Number(image.image_order),
+          imageUrl: `/species/keywords/${keywordId}/images/${Number(image.image_order)}`,
+          mimeType: image.mime_type ?? 'image/jpeg',
+        })),
+      };
+    });
+  }
+
+  private normalizeKeywordDescription(value: string | null | undefined): string | null {
+    if (!value) {
+      return null;
+    }
+
+    return value
+      .replace(/\r\n/g, '\n')
+      .replace(/[ \t]*\n+[ \t]*/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([,.;:!?])/g, '$1')
+      .trim();
+  }
+
+  private normalizeDetailValue(key: string, value: string | null | undefined): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const text = String(value).trim();
+
+    if (!text) {
+      return null;
+    }
+
+    if (key === 'title_block') {
+      return text;
+    }
+
+    return text
+      .replace(/\r\n/g, '\n')
+      .replace(/[ \t]*\n+[ \t]*/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([,.;:!?])/g, '$1')
+      .trim();
   }
 }

@@ -1,0 +1,47 @@
+.keyword-text {
+  white-space: normal;
+}
+
+.keyword-hit {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.keyword-hit:hover,
+.keyword-hit:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: #1f6f46;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.keyword-info-mark {
+  width: 17px;
+  height: 17px;
+  display: inline-grid;
+  place-items: center;
+  margin: 0 2px 0 3px;
+  padding: 0;
+  transform: translateY(-1px);
+  border: 1px solid #b8d6c3;
+  border-radius: 50%;
+  background: #eef7f1;
+  color: #1f6f46;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.keyword-hit:hover .keyword-info-mark,
+.keyword-hit:focus-visible .keyword-info-mark {
+  border-color: #1f6f46;
+  background: #1f6f46;
+  color: #ffffff;
+}

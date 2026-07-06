@@ -1,4 +1,127 @@
-<main class="page-shell">
-  <p>Species detail</p>
-  <h1>Chi tiet loai</h1>
+<main class="species-detail-page">
+  <nav class="topbar" aria-label="Dieu huong chi tiet loai">
+    <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
+    <div>
+      <a routerLink="/species-list">Danh muc loai</a>
+      <a routerLink="/map">Ban do</a>
+    </div>
+  </nav>
+
+  @if (isLoading()) {
+    <section class="state-panel">Dang tai chi tiet loai...</section>
+  } @else if (errorMessage()) {
+    <section class="state-panel is-error">{{ errorMessage() }}</section>
+  } @else if (detail(); as species) {
+    <section class="detail-hero">
+      <app-species-image-carousel
+        [images]="carouselImages(species)"
+        [speciesName]="displayName(species)"
+        [sourceLabel]="species.sourceLabel"
+      />
+
+      <div class="hero-copy">
+        <button type="button" class="back-link" (click)="goBackToList()">&lt; Quay lai danh muc</button>
+        <p class="eyebrow">Chi tiet loai</p>
+        <h1>{{ displayName(species) }}</h1>
+        @if (species.scientificName) {
+          <p class="scientific-name">{{ species.scientificName }}</p>
+        }
+
+        <div class="taxonomy-strip">
+          @if (species.className) {
+            <span><strong>Lop / nhom</strong>{{ species.className }}</span>
+          }
+          @if (species.order) {
+            <span><strong>Bo</strong>{{ species.order }}</span>
+          }
+          @if (species.family) {
+            <span><strong>Ho</strong>{{ species.family }}</span>
+          }
+          <span><strong>Ma loai</strong>{{ species.speciesId }}</span>
+        </div>
+
+        @if (titleBlockLines(species).length) {
+          <div class="title-block">
+            @for (line of titleBlockLines(species); track $index) {
+              <span>{{ line }}</span>
+            }
+          </div>
+        }
+
+        @if (taxonomyPath(species).length) {
+          <section class="taxonomy-tree" aria-label="Cay phan loai sinh hoc">
+            <div class="taxonomy-tree-heading">
+              <p class="eyebrow">Cây phân loại</p>
+              <strong>{{ taxonomyPath(species).length }} cấp taxonomy</strong>
+            </div>
+
+            <ol>
+              @for (node of taxonomyPath(species); track node.taxonId; let isLast = $last) {
+                <li [class.is-species]="isLast">
+                  <span class="tree-connector" aria-hidden="true"></span>
+                  <div>
+                    <small>{{ taxonomyRankLabel(node.rank) }}</small>
+                    <strong>{{ taxonomyDisplayName(node) }}</strong>
+                    @if (node.vietnameseName && node.vietnameseName !== node.canonicalName) {
+                      <em>{{ node.canonicalName }}</em>
+                    }
+                  </div>
+                </li>
+              }
+            </ol>
+          </section>
+        }
+
+      </div>
+    </section>
+
+    <section class="detail-layout">
+      <div class="content-column">
+        @for (field of contentFields(species); track field.key) {
+          <article class="info-section">
+            <h2>{{ field.label }}</h2>
+            <p>
+              <app-keyword-rich-text
+                [text]="field.value ?? ''"
+                [keywords]="keywordReferences(species)"
+                (keywordSelected)="selectKeyword($event)"
+              />
+            </p>
+          </article>
+        }
+      </div>
+
+      <aside class="side-column">
+        <app-keyword-reference-panel
+          [keywords]="keywordReferences(species)"
+          [selectedKeywordId]="selectedKeywordId()"
+          [isExpanded]="isKeywordPanelOpen()"
+          (keywordSelected)="selectKeyword($event)"
+          (expandedChange)="setKeywordPanelOpen($event)"
+        />
+
+        <section class="record-panel">
+          <h2>Du lieu record goc</h2>
+          <div class="record-list">
+            @for (field of extraFields(species); track field.key) {
+              <div class="record-row">
+                <dt>{{ field.label }}</dt>
+                <dd [class.is-empty]="!hasValue(field)">
+                  {{ hasValue(field) ? field.value : 'Chua co du lieu' }}
+                </dd>
+              </div>
+            }
+          </div>
+        </section>
+      </aside>
+    </section>
+  }
+
+  <app-credentials-footer
+    [links]="footerLinks"
+    [logoSrc]="vnscLogoSrc"
+    logoAlt="Logo Trung tam Vu tru Viet Nam"
+    organizationName="Trung tam Vu tru Viet Nam (VNSC)"
+    organizationNameEn="Vietnam National Space Center"
+  />
 </main>

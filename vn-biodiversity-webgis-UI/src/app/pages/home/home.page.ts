@@ -35,7 +35,7 @@ export class HomePage {
 
     const query = this.searchControl.value.trim();
 
-    void this.router.navigate(['/search'], {
+    void this.router.navigate(['/species-list'], {
       queryParams: query ? { q: query } : undefined,
     });
   }

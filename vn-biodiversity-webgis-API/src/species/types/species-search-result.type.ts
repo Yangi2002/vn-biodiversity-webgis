@@ -11,9 +11,7 @@ export interface SpeciesSearchResult {
   className: string | null;
   genus: string | null;
   titleBlock: string | null;
-  detailUrl: string | null;
   imageUrl: string | null;
-  imageSource: string | null;
   imageMimeType: string | null;
 }
 

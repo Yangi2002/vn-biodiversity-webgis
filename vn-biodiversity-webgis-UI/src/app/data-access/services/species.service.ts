@@ -4,7 +4,7 @@ import { map } from 'rxjs';
 
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
-import type { SpeciesSearchItem, SpeciesSearchResponse } from '../models/species.model';
+import type { SpeciesDetailResponse, SpeciesSearchItem, SpeciesSearchResponse } from '../models/species.model';
 
 export interface SpeciesSearchParams {
   q?: string;
@@ -49,6 +49,12 @@ export class SpeciesService {
       .pipe(map((response) => ({ ...response, items: response.items.map((item) => this.withAbsoluteImageUrl(item)) })));
   }
 
+  getDetail(sourceTable: string, speciesId: string) {
+    return this.api
+      .get<SpeciesDetailResponse>(API_ENDPOINTS.speciesDetail(sourceTable, speciesId))
+      .pipe(map((response) => this.withAbsoluteDetailImageUrl(response)));
+  }
+
   private withAbsoluteImageUrl(item: SpeciesSearchItem): SpeciesSearchItem {
     if (!item.imageUrl) {
       return item;
@@ -57,6 +63,24 @@ export class SpeciesService {
     return {
       ...item,
       imageUrl: this.api.buildUrl(item.imageUrl),
+    };
+  }
+
+  private withAbsoluteDetailImageUrl(detail: SpeciesDetailResponse): SpeciesDetailResponse {
+    return {
+      ...detail,
+      imageUrl: detail.imageUrl ? this.api.buildUrl(detail.imageUrl) : null,
+      images: detail.images.map((image) => ({
+        ...image,
+        imageUrl: this.api.buildUrl(image.imageUrl),
+      })),
+      keywords: (detail.keywords ?? []).map((keyword) => ({
+        ...keyword,
+        images: keyword.images.map((image) => ({
+          ...image,
+          imageUrl: this.api.buildUrl(image.imageUrl),
+        })),
+      })),
     };
   }
 }

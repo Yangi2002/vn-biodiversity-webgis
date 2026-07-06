@@ -12,6 +12,23 @@ export class SpeciesController {
     return this.speciesService.search(query);
   }
 
+  @Get('keywords/:keywordId/images/:imageOrder')
+  @Header('Cache-Control', 'public, max-age=86400')
+  async getKeywordImageByOrder(
+    @Param('keywordId') keywordId: string,
+    @Param('imageOrder') imageOrder: string,
+    @Res() response: Response,
+  ) {
+    const image = await this.speciesService.getKeywordImageByOrder(keywordId, imageOrder);
+
+    response.type(image.mimeType).send(Buffer.from(image.imageData));
+  }
+
+  @Get(':sourceTable/:speciesId')
+  getDetail(@Param('sourceTable') sourceTable: string, @Param('speciesId') speciesId: string) {
+    return this.speciesService.getDetail(sourceTable, speciesId);
+  }
+
   @Get(':sourceTable/:speciesId/image')
   @Header('Cache-Control', 'public, max-age=86400')
   async getPrimaryImage(
@@ -20,6 +37,19 @@ export class SpeciesController {
     @Res() response: Response,
   ) {
     const image = await this.speciesService.getPrimaryImage(sourceTable, speciesId);
+
+    response.type(image.mimeType).send(Buffer.from(image.imageData));
+  }
+
+  @Get(':sourceTable/:speciesId/images/:imageOrder')
+  @Header('Cache-Control', 'public, max-age=86400')
+  async getImageByOrder(
+    @Param('sourceTable') sourceTable: string,
+    @Param('speciesId') speciesId: string,
+    @Param('imageOrder') imageOrder: string,
+    @Res() response: Response,
+  ) {
+    const image = await this.speciesService.getImageByOrder(sourceTable, speciesId, imageOrder);
 
     response.type(image.mimeType).send(Buffer.from(image.imageData));
   }

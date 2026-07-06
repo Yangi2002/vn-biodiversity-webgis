@@ -7,6 +7,7 @@ import type {
   SpeciesSearchFilters,
   SpeciesSearchResponse,
 } from './types/species-search-result.type';
+import type { SpeciesDetailResult } from './types/species-detail-result.type';
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 60;
@@ -55,6 +56,60 @@ export class SpeciesService {
     }
 
     return image;
+  }
+
+  async getImageByOrder(
+    sourceTable: string,
+    speciesId: string,
+    imageOrderValue: string,
+  ): Promise<SpeciesImageResult> {
+    if (!isSpeciesSourceTable(sourceTable)) {
+      throw new BadRequestException('Invalid species source table.');
+    }
+
+    const imageOrder = this.parsePositiveNumber(imageOrderValue, 0);
+
+    if (imageOrder < 1) {
+      throw new BadRequestException('Invalid species image order.');
+    }
+
+    const image = await this.speciesRepository.findImageByOrder(sourceTable, speciesId, imageOrder);
+
+    if (!image) {
+      throw new NotFoundException('Species image was not found.');
+    }
+
+    return image;
+  }
+
+  async getKeywordImageByOrder(keywordId: string, imageOrderValue: string): Promise<SpeciesImageResult> {
+    const imageOrder = this.parsePositiveNumber(imageOrderValue, 0);
+
+    if (!keywordId || imageOrder < 1) {
+      throw new BadRequestException('Invalid keyword image request.');
+    }
+
+    const image = await this.speciesRepository.findKeywordImageByOrder(keywordId, imageOrder);
+
+    if (!image) {
+      throw new NotFoundException('Keyword image was not found.');
+    }
+
+    return image;
+  }
+
+  async getDetail(sourceTable: string, speciesId: string): Promise<SpeciesDetailResult> {
+    if (!isSpeciesSourceTable(sourceTable)) {
+      throw new BadRequestException('Invalid species source table.');
+    }
+
+    const detail = await this.speciesRepository.findDetail(sourceTable, speciesId);
+
+    if (!detail) {
+      throw new NotFoundException('Species detail was not found.');
+    }
+
+    return detail;
   }
 
   private parsePositiveNumber(value: string | undefined, fallback: number): number {

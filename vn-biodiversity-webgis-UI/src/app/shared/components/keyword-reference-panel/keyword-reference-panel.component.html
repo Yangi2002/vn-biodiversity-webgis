@@ -1,0 +1,101 @@
+@if (keywords().length) {
+  <section class="keyword-panel" id="keyword-reference-panel" aria-label="Từ khóa tham chiếu">
+    <button type="button" class="keyword-panel-heading" (click)="toggleExpanded()">
+      <span>Từ khóa tham chiếu</span>
+      <strong>{{ keywords().length }} mục giải thích</strong>
+    </button>
+
+    <div class="keyword-toolbar">
+      <select
+        [value]="activeKeyword()?.keywordId"
+        aria-label="Chọn từ khóa"
+        (change)="selectKeyword($any($event.target).value)"
+      >
+        @for (keyword of keywords(); track keyword.keywordId) {
+          <option [value]="keyword.keywordId">{{ keyword.keywordTextInDetail }}</option>
+        }
+      </select>
+
+      <button
+        type="button"
+        class="keyword-view-button"
+        [class.is-open]="isExpanded()"
+        [attr.aria-expanded]="isExpanded()"
+        aria-controls="keyword-reference-dialog"
+        (click)="toggleExpanded()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span>Xem</span>
+      </button>
+    </div>
+  </section>
+
+  @if (isExpanded() && activeKeyword(); as keyword) {
+    <div class="keyword-dialog-backdrop" (click)="closeDialog()">
+      <section
+        class="keyword-dialog"
+        id="keyword-reference-dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Giải thích từ khóa ' + keyword.keywordTextInDetail"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="keyword-dialog-titlebar">
+          <div>
+            <span>Giải thích thuật ngữ</span>
+            <strong>{{ keyword.keywordTextInDetail }}</strong>
+          </div>
+
+          <button type="button" aria-label="Đóng cửa sổ từ khóa" (click)="closeDialog()">×</button>
+        </header>
+
+        <div class="keyword-dialog-body">
+          <aside class="keyword-dialog-media">
+            @if (keyword.images.length) {
+              @for (image of keyword.images.slice(0, 4); track image.imageOrder) {
+                <button
+                  type="button"
+                  class="keyword-image-button"
+                  [attr.aria-label]="'Phóng to ảnh ' + image.imageOrder + ' của ' + keyword.keywordTextInDetail"
+                  (click)="openImagePreview(image)"
+                >
+                  <img [src]="image.imageUrl" [alt]="keyword.keywordTextInDetail + ' - ảnh ' + image.imageOrder" />
+                  <span>Phóng to</span>
+                </button>
+              }
+            } @else {
+              <div class="keyword-image-empty">Không có ảnh</div>
+            }
+          </aside>
+
+          <article class="keyword-dialog-content">
+            <h3>{{ keyword.pageTitle || keyword.keywordText }}</h3>
+            <strong class="keyword-chip">{{ keyword.keywordTextInDetail }}</strong>
+
+            @if (keyword.descriptionText) {
+              <div class="keyword-description" [innerHTML]="keyword.descriptionText"></div>
+            } @else {
+              <p class="keyword-empty">Chưa có mô tả chi tiết cho từ khóa này.</p>
+            }
+
+            <a [href]="externalUrl(keyword)" target="_blank" rel="noopener">
+              Mở nguồn tham chiếu
+            </a>
+          </article>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (previewImage(); as image) {
+    <div class="keyword-image-preview-backdrop" (click)="closeImagePreview()">
+      <figure class="keyword-image-preview" (click)="$event.stopPropagation()">
+        <button type="button" aria-label="Đóng ảnh phóng to" (click)="closeImagePreview()">×</button>
+        <img [src]="image.imageUrl" alt="Ảnh từ khóa phóng to" />
+      </figure>
+    </div>
+  }
+}
