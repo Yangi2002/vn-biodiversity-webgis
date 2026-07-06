@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import type { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_ENDPOINTS } from './api-endpoints';
 
@@ -29,6 +30,14 @@ export class HttpApiService {
 
   getHealth() {
     return this.http.get<ApiHealthResponse>(this.url(API_ENDPOINTS.health));
+  }
+
+  get<T>(path: string, params?: HttpParams) {
+    return this.http.get<T>(this.url(path), { params });
+  }
+
+  buildUrl(path: string) {
+    return this.url(path);
   }
 
   private url(path: string) {

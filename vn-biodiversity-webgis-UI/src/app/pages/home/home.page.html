@@ -1,9 +1,85 @@
 <main class="home-page">
-  <section class="intro">
-    <p class="eyebrow">VN Biodiversity WebGIS</p>
-    <h1>Tu dien da dang sinh hoc Viet Nam</h1>
-    <p>
-      Tra cuu loai theo ten Viet Nam, ten khoa hoc, nhom phan loai va du lieu phan bo.
-    </p>
+  <nav class="topbar" aria-label="Điều hướng chính">
+    <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
+    <div>
+      <a routerLink="/search">Tra cứu</a>
+      <a routerLink="/species">Danh mục</a>
+      <a routerLink="/map">Bản đồ</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <app-hero-slider class="hero-visual" [slides]="heroSlides" [intervalMs]="6000" />
+
+    <div class="hero-copy">
+      <p class="eyebrow">VN Biodiversity WebGIS</p>
+      <h1>Từ điển đa dạng sinh học Việt Nam</h1>
+      <p class="lead">
+        Tra cứu loài, xem phân bố, lọc theo phân loại sinh học và theo dõi thông tin bảo tồn từ các nguồn tham chiếu đáng tin cậy.
+      </p>
+
+      <form class="search-panel" action="/search" method="get" (submit)="submitSearch($event)">
+        <label for="home-search">Tìm kiếm loài</label>
+        <div class="search-row">
+          <input
+            id="home-search"
+            name="q"
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Nhập tên Việt Nam, tên khoa học, họ, bộ, lớp..."
+          />
+          <button type="submit">Tra cứu</button>
+        </div>
+      </form>
+
+      <div class="source-row" aria-label="Nguồn tham chiếu">
+        <span>Nguồn tham chiếu</span>
+        @for (source of trustedSources; track source.name) {
+          <a [href]="source.url" target="_blank" rel="noopener">{{ source.name }}</a>
+        }
+      </div>
+    </div>
   </section>
+
+  <section class="feature-section" aria-labelledby="home-actions-title">
+    <div class="section-heading">
+      <p class="eyebrow">Chức năng chính</p>
+      <h2 id="home-actions-title">Bắt đầu tra cứu theo cách bạn cần</h2>
+    </div>
+
+    <div class="feature-grid">
+      @for (item of featureLinks; track item.title) {
+        <a class="feature-card" [routerLink]="item.route">
+          <span>{{ item.label }}</span>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </a>
+      }
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <div class="section-heading">
+      <p class="eyebrow">Bộ sưu tập</p>
+      <h2 id="source-title">Khám phá theo nhóm sinh vật</h2>
+    </div>
+
+    <div class="source-grid">
+      @for (group of sourceGroups; track group.name) {
+        <article class="source-card">
+          <img [src]="group.image" [alt]="group.name" />
+          <h3>{{ group.name }}</h3>
+          <p>{{ group.description }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <app-credentials-footer
+    [links]="footerLinks"
+    [logoSrc]="vnscLogoSrc"
+    logoAlt="Logo Trung tâm Vũ trụ Việt Nam"
+    organizationName="Trung tâm Vũ trụ Việt Nam (VNSC)"
+    organizationNameEn="Vietnam National Space Center"
+  />
 </main>

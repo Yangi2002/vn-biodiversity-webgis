@@ -1,0 +1,35 @@
+<div class="slide-stack">
+  @for (slide of slides(); track slide.src; let index = $index) {
+    <img
+      [class.is-active]="index === activeIndex()"
+      [src]="slide.src"
+      [alt]="slide.title + (slide.caption ? ' - ' + slide.caption : '')"
+      [attr.loading]="index === 0 ? 'eager' : 'lazy'"
+    />
+  }
+</div>
+
+<div class="image-shade" aria-hidden="true"></div>
+
+@if (slides().length > 1) {
+  <button class="slide-control slide-control-prev" type="button" aria-label="Ảnh trước" (click)="previous()">
+    <span aria-hidden="true">‹</span>
+  </button>
+
+  <button class="slide-control slide-control-next" type="button" aria-label="Ảnh tiếp theo" (click)="next()">
+    <span aria-hidden="true">›</span>
+  </button>
+
+  <div class="slide-dots" aria-label="Thứ tự ảnh">
+    @for (slide of slides(); track slide.src; let index = $index) {
+      <button
+        type="button"
+        [class.is-active]="index === activeIndex()"
+        [attr.aria-label]="'Xem ảnh ' + (index + 1) + ': ' + slide.title"
+        [attr.aria-current]="index === activeIndex() ? 'true' : null"
+        [attr.title]="'Ảnh ' + (index + 1) + ': ' + slide.title"
+        (click)="goTo(index)"
+      ></button>
+    }
+  </div>
+}

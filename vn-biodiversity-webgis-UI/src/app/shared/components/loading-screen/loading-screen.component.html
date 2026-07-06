@@ -1,0 +1,10 @@
+@if (isVisible()) {
+  <div class="loading-screen" role="status" aria-live="polite" aria-label="Đang tải trang">
+    <div class="loading-mark">
+      <img [src]="logoSrc()" [alt]="logoAlt()" />
+    </div>
+    <p>{{ title() }}</p>
+    <span>{{ message() }}</span>
+    <div class="loading-bar" aria-hidden="true"></div>
+  </div>
+}

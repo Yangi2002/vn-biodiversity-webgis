@@ -1,0 +1,72 @@
+:host {
+  display: contents;
+}
+
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+  background: #f6f8f5;
+  color: #17251f;
+}
+
+.loading-mark {
+  width: min(240px, 72vw);
+  padding: 18px;
+  border: 1px solid #dbe5df;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 22px 70px rgba(23, 37, 31, 0.14);
+}
+
+.loading-mark img {
+  width: 100%;
+  display: block;
+}
+
+.loading-screen p {
+  margin: 4px 0 0;
+  color: #13743d;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.loading-screen span {
+  color: #52685d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.loading-bar {
+  width: min(220px, 64vw);
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #d9e3dc;
+}
+
+.loading-bar::before {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f6f46;
+  animation: loadingPulse 900ms ease-in-out infinite;
+  content: "";
+}
+
+@keyframes loadingPulse {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
