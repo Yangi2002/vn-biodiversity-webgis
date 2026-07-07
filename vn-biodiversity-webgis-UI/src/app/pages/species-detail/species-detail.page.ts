@@ -108,6 +108,7 @@ export class SpeciesDetailPage {
         width: null,
         height: null,
         sizeBytes: 0,
+        showpicMetadata: null,
       },
     ];
   }

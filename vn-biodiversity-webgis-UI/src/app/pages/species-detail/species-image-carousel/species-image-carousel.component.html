@@ -2,7 +2,7 @@
   <div class="main-image">
     @if (activeImage(); as image) {
       <button type="button" class="main-image-button" (click)="openPreview()">
-        <img [src]="image.imageUrl" [alt]="speciesName() + ' - ảnh ' + image.imageOrder" />
+        <img [src]="displayImageUrl(image)" [alt]="speciesName() + ' - ảnh ' + image.imageOrder" />
         <span>Phóng to ảnh</span>
       </button>
     } @else {
@@ -10,6 +10,11 @@
     }
 
     <span class="source-badge">{{ sourceLabel() }}</span>
+
+    @if (hasMultipleImages()) {
+      <button type="button" class="main-nav is-previous" aria-label="Ảnh trước" (click)="previousActive()">&lt;</button>
+      <button type="button" class="main-nav is-next" aria-label="Ảnh sau" (click)="nextActive()">&gt;</button>
+    }
   </div>
 
   @if (images().length) {
@@ -25,7 +30,7 @@
             type="button"
             [class.is-active]="index === activeIndex()"
             [attr.aria-label]="'Hiển thị ảnh ' + image.imageOrder + '. ' + imageResolution(image)"
-            (click)="goTo(index)"
+            (click)="goTo(index); openPreview(index)"
           >
             <img [src]="image.imageUrl" [alt]="speciesName() + ' - thumbnail ' + image.imageOrder" />
           </button>
@@ -50,7 +55,40 @@
           <button type="button" class="preview-nav is-next" aria-label="Ảnh sau" (click)="next()">&gt;</button>
         }
 
-        <img [src]="image.imageUrl" [alt]="speciesName() + ' - ảnh phóng to'" />
+        <div class="preview-body">
+          <div class="preview-image-stage">
+            <img [src]="displayImageUrl(image)" [alt]="speciesName() + ' - ảnh phóng to'" />
+          </div>
+
+          <aside class="preview-metadata">
+            <h3>Thông tin ảnh</h3>
+
+            <dl>
+              <div>
+                <dt>Tên Việt Nam</dt>
+                <dd>{{ image.showpicMetadata?.vietnameseName || speciesName() }}</dd>
+              </div>
+              <div>
+                <dt>Tên Latin</dt>
+                <dd>{{ image.showpicMetadata?.latinName || 'Chưa có dữ liệu' }}</dd>
+              </div>
+              <div>
+                <dt>Tác giả</dt>
+                <dd>{{ image.showpicMetadata?.author || 'Chưa có dữ liệu' }}</dd>
+              </div>
+              <div>
+                <dt>MIME type</dt>
+                <dd>{{ image.showpicMetadata?.imageMimeType || image.mimeType || 'Chưa có dữ liệu' }}</dd>
+              </div>
+            </dl>
+
+            @if (image.showpicMetadata?.showpicUrl) {
+              <a [href]="image.showpicMetadata?.showpicUrl" target="_blank" rel="noopener">
+                Mở trang showpic gốc
+              </a>
+            }
+          </aside>
+        </div>
       </section>
     </div>
   }

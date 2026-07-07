@@ -130,7 +130,7 @@ h1 {
 
 .taxonomy-tree {
   margin-top: 22px;
-  padding: 16px;
+  padding: 16px 18px;
   border: 1px solid #d9e3dc;
   border-radius: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #f2f7f3 100%);
@@ -159,22 +159,27 @@ h1 {
 .taxonomy-tree ol {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 14px;
+  gap: 8px;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 10px;
   list-style: none;
 }
 
 .taxonomy-tree ol::before {
-  content: none;
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 19px;
+  width: 2px;
+  background: #cfe0d4;
 }
 
 .taxonomy-tree li {
   position: relative;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   align-items: start;
 }
 
@@ -182,7 +187,7 @@ h1 {
   position: relative;
   width: 20px;
   height: 20px;
-  margin-top: 11px;
+  margin-top: 9px;
   border: 2px solid #b9d1c1;
   border-radius: 50%;
   background: #ffffff;
@@ -191,7 +196,7 @@ h1 {
 
 .taxonomy-tree li > div {
   min-width: 0;
-  padding: 10px 12px;
+  padding: 9px 12px;
   border: 1px solid #e1e9e4;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.82);
@@ -199,7 +204,7 @@ h1 {
 
 .taxonomy-tree small {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   color: #6c7d73;
   font-size: 11px;
   font-weight: 850;
@@ -209,7 +214,7 @@ h1 {
 .taxonomy-tree li strong {
   display: block;
   color: #17251f;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.25;
 }
 
@@ -370,10 +375,6 @@ h2 {
   }
 
   .taxonomy-strip {
-    grid-template-columns: 1fr;
-  }
-
-  .taxonomy-tree ol {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
 
 export interface SpeciesCarouselImage {
   imageOrder: number;
@@ -7,6 +7,28 @@ export interface SpeciesCarouselImage {
   width?: number | null;
   height?: number | null;
   sizeBytes?: number;
+  showpicMetadata?: SpeciesShowpicMetadata | null;
+}
+
+export interface SpeciesShowpicMetadata {
+  showpicId: string;
+  vietnameseName: string | null;
+  latinName: string | null;
+  author: string | null;
+  sourceImageUrl: string | null;
+  thumbnailUrl: string | null;
+  imagePath: string | null;
+  imageLocalPath: string | null;
+  imageMimeType: string | null;
+  imageFileSize: number | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  fetchStatus: string | null;
+  errorMessage: string | null;
+  showpicUrl: string | null;
+  fetchedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 @Component({
@@ -19,6 +41,7 @@ export class SpeciesImageCarouselComponent {
   readonly images = input<readonly SpeciesCarouselImage[]>([]);
   readonly speciesName = input.required<string>();
   readonly sourceLabel = input.required<string>();
+  readonly intervalMs = input(5500);
 
   protected readonly activeIndex = signal(0);
   protected readonly previewIndex = signal<number | null>(null);
@@ -29,6 +52,23 @@ export class SpeciesImageCarouselComponent {
     return index === null ? null : this.images()[index] ?? null;
   });
   protected readonly hasMultipleImages = computed(() => this.images().length > 1);
+  private readonly destroyRef = inject(DestroyRef);
+  private timerId: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    effect(() => {
+      const shouldAutoPlay = this.hasMultipleImages() && this.previewIndex() === null;
+      const intervalMs = this.intervalMs();
+
+      this.stopAutoPlay();
+
+      if (shouldAutoPlay) {
+        this.timerId = setInterval(() => this.setActive(this.activeIndex() + 1), intervalMs);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.stopAutoPlay());
+  }
 
   protected previous(): void {
     this.setPreview(this.currentPreviewIndex() - 1);
@@ -36,6 +76,14 @@ export class SpeciesImageCarouselComponent {
 
   protected next(): void {
     this.setPreview(this.currentPreviewIndex() + 1);
+  }
+
+  protected previousActive(): void {
+    this.setActive(this.activeIndex() - 1);
+  }
+
+  protected nextActive(): void {
+    this.setActive(this.activeIndex() + 1);
   }
 
   protected goTo(index: number): void {
@@ -53,11 +101,32 @@ export class SpeciesImageCarouselComponent {
   }
 
   protected imageResolution(image: SpeciesCarouselImage): string {
-    if (!image.width || !image.height) {
+    const width = image.showpicMetadata?.imageWidth ?? image.width;
+    const height = image.showpicMetadata?.imageHeight ?? image.height;
+
+    if (!width || !height) {
       return 'Chưa có kích thước ảnh';
     }
 
-    return `${image.width} x ${image.height}px`;
+    return `${width} x ${height}px`;
+  }
+
+  protected fileSize(image: SpeciesCarouselImage): string {
+    const size = image.showpicMetadata?.imageFileSize ?? image.sizeBytes;
+
+    if (!size) {
+      return 'Chưa có dung lượng';
+    }
+
+    if (size >= 1024 * 1024) {
+      return `${(size / 1024 / 1024).toFixed(2)} MB`;
+    }
+
+    return `${Math.round(size / 1024)} KB`;
+  }
+
+  protected displayImageUrl(image: SpeciesCarouselImage): string {
+    return image.showpicMetadata?.sourceImageUrl || image.showpicMetadata?.thumbnailUrl || image.imageUrl;
   }
 
   private setActive(index: number): void {
@@ -84,5 +153,12 @@ export class SpeciesImageCarouselComponent {
 
   private currentPreviewIndex(): number {
     return this.previewIndex() ?? this.activeIndex();
+  }
+
+  private stopAutoPlay(): void {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
   }
 }

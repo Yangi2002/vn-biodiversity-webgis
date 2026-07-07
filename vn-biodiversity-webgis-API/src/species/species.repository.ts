@@ -46,6 +46,24 @@ interface SpeciesImageRow {
   width: number | null;
   height: number | null;
   size_bytes: bigint | number;
+  showpic_id: bigint | number | null;
+  showpic_vietname: string | null;
+  showpic_latinname: string | null;
+  showpic_author: string | null;
+  showpic_source_image_url: string | null;
+  showpic_thumbnail_url: string | null;
+  showpic_imagepath: string | null;
+  showpic_image_local_path: string | null;
+  showpic_image_mime_type: string | null;
+  showpic_image_file_size: bigint | number | null;
+  showpic_image_width: number | null;
+  showpic_image_height: number | null;
+  showpic_fetch_status: string | null;
+  showpic_error_message: string | null;
+  showpic_url: string | null;
+  showpic_fetched_at: Date | string | null;
+  showpic_created_at: Date | string | null;
+  showpic_updated_at: Date | string | null;
 }
 
 interface TaxonomyPathRow {
@@ -503,18 +521,40 @@ export class SpeciesRepository {
     const rows = await this.prisma.$queryRawUnsafe<SpeciesImageRow[]>(
       `
         SELECT
-          image_order,
-          mime_type,
-          width,
-          height,
-          octet_length(image_data) AS size_bytes
-        FROM species_images
-        WHERE source_table = $1
-          AND species_id = $2
+          species_image.image_order,
+          species_image.mime_type,
+          species_image.width,
+          species_image.height,
+          octet_length(species_image.image_data) AS size_bytes,
+          showpic.showpic_id,
+          showpic.vietname AS showpic_vietname,
+          showpic.latinname AS showpic_latinname,
+          showpic.author AS showpic_author,
+          showpic.source_image_url AS showpic_source_image_url,
+          showpic.thumbnail_url AS showpic_thumbnail_url,
+          showpic.imagepath AS showpic_imagepath,
+          showpic.image_local_path AS showpic_image_local_path,
+          showpic.image_mime_type AS showpic_image_mime_type,
+          showpic.image_file_size AS showpic_image_file_size,
+          showpic.image_width AS showpic_image_width,
+          showpic.image_height AS showpic_image_height,
+          showpic.fetch_status AS showpic_fetch_status,
+          showpic.error_message AS showpic_error_message,
+          showpic.showpic_url,
+          showpic.fetched_at AS showpic_fetched_at,
+          showpic.created_at AS showpic_created_at,
+          showpic.updated_at AS showpic_updated_at
+        FROM species_images species_image
+        LEFT JOIN species_showpic_metadata showpic
+          ON showpic.source_table = species_image.source_table
+         AND showpic.species_id = species_image.species_id
+         AND showpic.image_order = species_image.image_order
+        WHERE species_image.source_table = $1
+          AND species_image.species_id = $2
         ORDER BY
-          (coalesce(width, 0) * coalesce(height, 0)) DESC,
-          octet_length(image_data) DESC,
-          image_order ASC
+          (coalesce(species_image.width, 0) * coalesce(species_image.height, 0)) DESC,
+          octet_length(species_image.image_data) DESC,
+          species_image.image_order ASC
       `,
       sourceTable,
       speciesId,
@@ -527,7 +567,37 @@ export class SpeciesRepository {
       width: row.width,
       height: row.height,
       sizeBytes: Number(row.size_bytes),
+      showpicMetadata: row.showpic_id
+        ? {
+            showpicId: String(row.showpic_id),
+            vietnameseName: row.showpic_vietname,
+            latinName: row.showpic_latinname,
+            author: row.showpic_author,
+            sourceImageUrl: row.showpic_source_image_url,
+            thumbnailUrl: row.showpic_thumbnail_url,
+            imagePath: row.showpic_imagepath,
+            imageLocalPath: row.showpic_image_local_path,
+            imageMimeType: row.showpic_image_mime_type,
+            imageFileSize: row.showpic_image_file_size === null ? null : Number(row.showpic_image_file_size),
+            imageWidth: row.showpic_image_width,
+            imageHeight: row.showpic_image_height,
+            fetchStatus: row.showpic_fetch_status,
+            errorMessage: row.showpic_error_message,
+            showpicUrl: row.showpic_url,
+            fetchedAt: this.serializeDate(row.showpic_fetched_at),
+            createdAt: this.serializeDate(row.showpic_created_at),
+            updatedAt: this.serializeDate(row.showpic_updated_at),
+          }
+        : null,
     }));
+  }
+
+  private serializeDate(value: Date | string | null): string | null {
+    if (!value) {
+      return null;
+    }
+
+    return value instanceof Date ? value.toISOString() : value;
   }
 
   private async findTaxonomyPath(

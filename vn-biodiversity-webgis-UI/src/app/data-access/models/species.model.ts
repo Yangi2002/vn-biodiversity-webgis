@@ -61,6 +61,28 @@ export interface SpeciesDetailImage {
   width: number | null;
   height: number | null;
   sizeBytes: number;
+  showpicMetadata: SpeciesShowpicMetadata | null;
+}
+
+export interface SpeciesShowpicMetadata {
+  showpicId: string;
+  vietnameseName: string | null;
+  latinName: string | null;
+  author: string | null;
+  sourceImageUrl: string | null;
+  thumbnailUrl: string | null;
+  imagePath: string | null;
+  imageLocalPath: string | null;
+  imageMimeType: string | null;
+  imageFileSize: number | null;
+  imageWidth: number | null;
+  imageHeight: number | null;
+  fetchStatus: string | null;
+  errorMessage: string | null;
+  showpicUrl: string | null;
+  fetchedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface SpeciesTaxonomyNode {
