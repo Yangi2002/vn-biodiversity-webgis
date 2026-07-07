@@ -1,0 +1,185 @@
+<main class="taxonomy-page">
+  <nav class="topbar" aria-label="Điều hướng phân loại sinh học">
+    <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
+    <div>
+      <a routerLink="/species-list">Danh mục loài</a>
+      <a routerLink="/map">Bản đồ</a>
+    </div>
+  </nav>
+
+  <section class="taxonomy-hero">
+    <p class="eyebrow">Taxonomy search</p>
+    <h1>Phân loại sinh học</h1>
+    <p>
+      Duyệt dữ liệu theo cây phân loại, tìm taxon theo tên khoa học hoặc tên Việt Nam, sau đó mở danh sách loài liên quan.
+    </p>
+
+    <form class="search-panel" (submit)="submitSearch($event)">
+      <input
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Tìm taxon: Animalia, Amphibia, Ba ba, Magnoliaceae..."
+        aria-label="Tìm kiếm taxon"
+      />
+      <button type="submit">Tìm kiếm</button>
+    </form>
+  </section>
+
+  <section class="taxonomy-layout">
+    <aside class="filter-panel">
+      <div class="filter-heading">
+        <p class="eyebrow">Bộ lọc</p>
+        <button type="button" (click)="clearFilters()">Xóa lọc</button>
+      </div>
+
+      <div class="rank-list">
+        <button type="button" [class.is-active]="!rankControl.value" (click)="applyRank('')">
+          <span>Tất cả cấp</span>
+          <strong>{{ response()?.total ?? 0 }}</strong>
+        </button>
+
+        @if (response(); as data) {
+          @for (rank of data.facets.ranks; track rank.value) {
+            <button type="button" [class.is-active]="rankControl.value === rank.value" (click)="applyRank(rank.value)">
+              <span>{{ rank.label }}</span>
+              <strong>{{ rank.count }}</strong>
+            </button>
+          }
+        }
+      </div>
+    </aside>
+
+    <section class="result-panel" aria-live="polite">
+      <div class="result-heading">
+        <div>
+          <p class="eyebrow">Kết quả phân loại</p>
+          @if (response(); as data) {
+            <h2>{{ data.total }} taxon</h2>
+          } @else {
+            <h2>Đang chuẩn bị dữ liệu</h2>
+          }
+        </div>
+      </div>
+
+      @if (isLoading()) {
+        <div class="state-panel">Đang tải dữ liệu phân loại...</div>
+      } @else if (errorMessage()) {
+        <div class="state-panel is-error">{{ errorMessage() }}</div>
+      } @else if (response(); as data) {
+        @if (data.items.length) {
+          <div class="taxon-list">
+            @for (item of data.items; track item.taxonId) {
+              <article class="taxon-card">
+                <button
+                  type="button"
+                  class="taxon-thumbnail"
+                  [class.is-empty]="!item.representativeImage"
+                  [disabled]="!item.representativeImage"
+                  (click)="item.representativeImage && openImage(item.representativeImage)"
+                  [attr.aria-label]="'Xem ảnh đại diện của ' + displayName(item)"
+                >
+                  @if (item.representativeImage; as image) {
+                    <img [src]="image.imageUrl" [alt]="displayName(item)" />
+                    <span>Phóng to ảnh</span>
+                  } @else {
+                    <strong>No image</strong>
+                  }
+                </button>
+
+                <div class="taxon-main">
+                  <span class="rank-badge">{{ item.rankLabel }}</span>
+                  <h3>{{ displayName(item) }}</h3>
+                  @if (item.vietnameseName && item.vietnameseName !== item.canonicalName) {
+                    <p class="scientific-name">{{ item.canonicalName }}</p>
+                  }
+                  <p class="taxon-path">{{ pathText(item) }}</p>
+
+                  <a class="related-link" routerLink="/species-list" [queryParams]="relatedSpeciesQuery(item)">
+                    Xem loài liên quan
+                  </a>
+                </div>
+
+                <div class="taxon-meta">
+                  <span>Accepted</span>
+                  <strong>{{ item.speciesCount }} loài</strong>
+                  <small>{{ item.childCount }} nhánh con</small>
+                </div>
+              </article>
+            }
+          </div>
+
+          <nav class="pagination" aria-label="Phân trang taxonomy">
+            <button type="button" [disabled]="data.page === 1" (click)="goToPage(1)">«</button>
+            <button type="button" [disabled]="data.page === 1" (click)="goToPage(data.page - 1)">&lt;</button>
+
+            @for (page of pageNumbers(data); track page) {
+              <button type="button" [class.is-active]="page === data.page" (click)="goToPage(page)">
+                {{ page }}
+              </button>
+            }
+
+            <button type="button" [disabled]="data.page === data.totalPages" (click)="goToPage(data.page + 1)">&gt;</button>
+            <button type="button" [disabled]="data.page === data.totalPages" (click)="goToPage(data.totalPages)">»</button>
+          </nav>
+        } @else {
+          <div class="state-panel">Không tìm thấy taxon phù hợp.</div>
+        }
+      }
+    </section>
+  </section>
+
+  @if (selectedImage(); as image) {
+    <div class="image-dialog-backdrop" (click)="closeImage()">
+      <section class="image-dialog" role="dialog" aria-modal="true" aria-label="Chi tiết ảnh đại diện taxon" (click)="$event.stopPropagation()">
+        <button type="button" class="dialog-close" aria-label="Đóng ảnh" (click)="closeImage()">×</button>
+
+        <figure>
+          <img [src]="displayImageUrl(image)" [alt]="image.vietnameseName || image.scientificName || 'Ảnh đại diện taxon'" />
+        </figure>
+
+        <aside>
+          <p class="eyebrow">Ảnh đại diện</p>
+          <h2>{{ image.vietnameseName || image.scientificName || 'Loài đại diện' }}</h2>
+          @if (image.scientificName) {
+            <p class="scientific-name">{{ image.scientificName }}</p>
+          }
+
+          <dl>
+            <div>
+              <dt>Tác giả</dt>
+              <dd>{{ image.metadata?.author || 'Chưa có dữ liệu' }}</dd>
+            </div>
+            <div>
+              <dt>Kích thước</dt>
+              <dd>{{ imageResolution(image) }}</dd>
+            </div>
+            <div>
+              <dt>Dung lượng</dt>
+              <dd>{{ fileSize(image) }}</dd>
+            </div>
+            <div>
+              <dt>MIME type</dt>
+              <dd>{{ image.metadata?.imageMimeType || image.mimeType }}</dd>
+            </div>
+            <div>
+              <dt>Mã loài</dt>
+              <dd>{{ image.sourceTable }} / {{ image.speciesId }}</dd>
+            </div>
+          </dl>
+
+          @if (image.metadata?.showpicUrl) {
+            <a [href]="image.metadata?.showpicUrl" target="_blank" rel="noopener">Mở trang nguồn ảnh</a>
+          }
+        </aside>
+      </section>
+    </div>
+  }
+
+  <app-credentials-footer
+    [links]="footerLinks"
+    [logoSrc]="vnscLogoSrc"
+    logoAlt="Logo Trung tâm Vũ trụ Việt Nam"
+    organizationName="Trung tâm Vũ trụ Việt Nam (VNSC)"
+    organizationNameEn="Vietnam National Space Center"
+  />
+</main>

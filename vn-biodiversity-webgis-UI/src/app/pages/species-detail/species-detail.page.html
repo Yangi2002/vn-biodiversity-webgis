@@ -2,13 +2,13 @@
   <nav class="topbar" aria-label="Dieu huong chi tiet loai">
     <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
     <div>
-      <a routerLink="/species-list">Danh muc loai</a>
-      <a routerLink="/map">Ban do</a>
+      <a routerLink="/species-list">Danh mục loài</a>
+      <a routerLink="/map">Bản đồ</a>
     </div>
   </nav>
 
   @if (isLoading()) {
-    <section class="state-panel">Dang tai chi tiet loai...</section>
+    <section class="state-panel">Đang tải chi tiết loài...</section>
   } @else if (errorMessage()) {
     <section class="state-panel is-error">{{ errorMessage() }}</section>
   } @else if (detail(); as species) {
@@ -21,7 +21,7 @@
 
       <div class="hero-copy">
         <button type="button" class="back-link" (click)="goBackToList()">&lt; Quay lai danh muc</button>
-        <p class="eyebrow">Chi tiet loai</p>
+        <p class="eyebrow">Chi tiết loài</p>
         <h1>{{ displayName(species) }}</h1>
         @if (species.scientificName) {
           <p class="scientific-name">{{ species.scientificName }}</p>
@@ -29,15 +29,15 @@
 
         <div class="taxonomy-strip">
           @if (species.className) {
-            <span><strong>Lop / nhom</strong>{{ species.className }}</span>
+            <span><strong>Lớp / Nhóm</strong>{{ species.className }}</span>
           }
           @if (species.order) {
-            <span><strong>Bo</strong>{{ species.order }}</span>
+            <span><strong>Bộ</strong>{{ species.order }}</span>
           }
           @if (species.family) {
-            <span><strong>Ho</strong>{{ species.family }}</span>
+            <span><strong>Họ</strong>{{ species.family }}</span>
           }
-          <span><strong>Ma loai</strong>{{ species.speciesId }}</span>
+          <span><strong>Mã loài</strong>{{ species.speciesId }}</span>
         </div>
 
         @if (titleBlockLines(species).length) {
@@ -101,13 +101,13 @@
         />
 
         <section class="record-panel">
-          <h2>Du lieu record goc</h2>
+          <h2>Dữ liệu record gốc</h2>
           <div class="record-list">
             @for (field of extraFields(species); track field.key) {
               <div class="record-row">
                 <dt>{{ field.label }}</dt>
                 <dd [class.is-empty]="!hasValue(field)">
-                  {{ hasValue(field) ? field.value : 'Chua co du lieu' }}
+                  {{ hasValue(field) ? field.value : 'Chưa có dữ liệu' }}
                 </dd>
               </div>
             }

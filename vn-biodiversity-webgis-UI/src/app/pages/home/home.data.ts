@@ -1,11 +1,14 @@
-import type { HeroSlide } from '../../shared/components/hero-slider/hero-slider.types';
 import type { CredentialLink } from '../../shared/components/credentials-footer/credentials-footer.component';
+import type { HeroSlide } from '../../shared/components/hero-slider/hero-slider.types';
 
 export interface HomeFeatureLink {
   title: string;
   label: string;
   description: string;
   route: string;
+  icon: string;
+  status: string;
+  queryParams?: Record<string, string>;
 }
 
 export interface HomeSourceGroup {
@@ -19,39 +22,49 @@ export interface TrustedSource {
   url: string;
 }
 
-export const VNSC_LOGO_SRC =
-  '/images/home/VNSC.jfif';
+export const VNSC_LOGO_SRC = '/images/home/VNSC.jfif';
 
 export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
   {
     title: 'Tra cứu loài',
     label: 'Từ điển',
-    description: 'Tìm theo tên Việt Nam, tên khoa học, họ, bộ, lớp hoặc từ khóa.',
+    description: 'Tìm theo tên Việt Nam, tên khoa học, họ, bộ, lớp hoặc từ khóa liên quan.',
     route: '/species-list',
-  },
-  {
-    title: 'Bản đồ phân bố',
-    label: 'WebGIS',
-    description: 'Xem điểm ghi nhận và dữ liệu phân bố loài trên bản đồ.',
-    route: '/map',
-  },
-  {
-    title: 'Phân loại sinh học',
-    label: 'Taxonomy',
-    description: 'Lọc theo cây phân loại: giới, ngành, lớp, bộ, họ, chi, loài.',
-    route: '/species-list',
-  },
-  {
-    title: 'Bảo tồn và nguồn dữ liệu',
-    label: 'Danh sách đỏ',
-    description: 'Xem trạng thái bảo tồn, danh sách đỏ và nguồn tham chiếu.',
-    route: '/species-list',
+    icon: '🔍',
+    status: 'Mở danh sách',
   },
   {
     title: 'Danh mục loài',
     label: 'Species list',
-    description: 'Duyệt các nhóm động vật, thực vật và côn trùng trong hệ thống.',
+    description: 'Duyệt động vật, thực vật và côn trùng trong hệ thống với phân trang và bộ lọc.',
     route: '/species-list',
+    icon: '📚',
+    status: 'Xem tất cả',
+  },
+  {
+    title: 'Phân loại sinh học',
+    label: 'Taxonomy',
+    description: 'Khám phá loài theo nhóm sinh vật, lớp, bộ, họ, chi và cây phân loại trong hồ sơ loài.',
+    route: '/taxonomy',
+    icon: '🧬',
+    status: 'Duyệt phân loại',
+  },
+  {
+    title: 'Bản đồ phân bố',
+    label: 'WebGIS',
+    description: 'Xem điểm ghi nhận và dữ liệu phân bố loài trên bản đồ WebGIS.',
+    route: '/map',
+    icon: '🗺️',
+    status: 'Mở bản đồ',
+  },
+  {
+    title: 'Nguồn dữ liệu',
+    label: 'Reference',
+    description: 'Theo dõi nguồn tham chiếu, keyword giải thích và ghi chú dữ liệu trong hồ sơ từng loài.',
+    route: '/species-list',
+    icon: '🏷️',
+    status: 'Xem hồ sơ',
+    queryParams: { focus: 'source' },
   },
 ];
 

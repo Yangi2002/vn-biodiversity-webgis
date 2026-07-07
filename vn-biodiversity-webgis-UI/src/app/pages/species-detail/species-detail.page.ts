@@ -50,6 +50,9 @@ export class SpeciesDetailPage {
   private readonly speciesListState = signal<unknown | null>(null);
   private readonly contentFieldKeys = [
     'dac_diem_nhan_dang',
+    'dac_diem_bo_sung',
+    'kich_thuoc',
+    'mau_mo_ta',
     'sinh_hoc_sinh_thai',
     'phan_bo',
     'phan_hang',

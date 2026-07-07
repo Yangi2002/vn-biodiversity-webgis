@@ -3,6 +3,7 @@ import { HomePage } from './pages/home/home.page';
 import { MapPage } from './pages/map/map.page';
 import { SpeciesDetailPage } from './pages/species-detail/species-detail.page';
 import { SpeciesListPage } from './pages/species-list/species-list.page';
+import { TaxonomyPage } from './pages/taxonomy/taxonomy.page';
 
 export const routes: Routes = [
   {
@@ -29,6 +30,11 @@ export const routes: Routes = [
     path: 'species/:sourceTable/:speciesId',
     component: SpeciesDetailPage,
     title: 'Chi tiet loai',
+  },
+  {
+    path: 'taxonomy',
+    component: TaxonomyPage,
+    title: 'Phan loai sinh hoc',
   },
   {
     path: 'map',

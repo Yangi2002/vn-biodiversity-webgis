@@ -3,7 +3,7 @@
     <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
     <div>
       <a routerLink="/species-list">Tra cứu</a>
-      <a routerLink="/species-list">Danh mục</a>
+      <a routerLink="/taxonomy">Phân loại</a>
       <a routerLink="/map">Bản đồ</a>
     </div>
   </nav>
@@ -15,7 +15,7 @@
       <p class="eyebrow">VN Biodiversity WebGIS</p>
       <h1>Từ điển đa dạng sinh học Việt Nam</h1>
       <p class="lead">
-        Tra cứu loài, xem phân bố, lọc theo phân loại sinh học và theo dõi thông tin bảo tồn từ các nguồn tham chiếu đáng tin cậy.
+        Tra cứu loài, xem hồ sơ chi tiết, duyệt phân loại sinh học và kết nối dữ liệu loài với bản đồ WebGIS.
       </p>
 
       <form class="search-panel" action="/species-list" method="get" (submit)="submitSearch($event)">
@@ -44,13 +44,17 @@
   <section class="feature-section" aria-labelledby="home-actions-title">
     <div class="section-heading">
       <p class="eyebrow">Chức năng chính</p>
-      <h2 id="home-actions-title">Bắt đầu tra cứu theo cách bạn cần</h2>
+      <h2 id="home-actions-title">Khám phá dữ liệu theo cách bạn cần</h2>
     </div>
 
     <div class="feature-grid">
       @for (item of featureLinks; track item.title) {
-        <a class="feature-card" [routerLink]="item.route">
-          <span>{{ item.label }}</span>
+        <a class="feature-card" [routerLink]="item.route" [queryParams]="item.queryParams">
+          <div class="feature-card-top">
+            <span class="feature-icon" aria-hidden="true">{{ item.icon }}</span>
+            <small>{{ item.status }}</small>
+          </div>
+          <span class="feature-label">{{ item.label }}</span>
           <h3>{{ item.title }}</h3>
           <p>{{ item.description }}</p>
         </a>
