@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SpeciesSourceTable } from './types/species-source.type';
 import type {
@@ -177,6 +177,39 @@ const SPECIES_UNION_SQL = `
   FROM insect_db_vn
 `;
 
+const SPECIES_ENRICHED_CTE_SQL = `
+  species_union AS (${SPECIES_UNION_SQL}),
+  species_enriched AS (
+    SELECT
+      species_union.*,
+      coalesce(taxonomy_source.effective_source_table, species_union.source_table) AS effective_source_table,
+      coalesce(taxonomy_source.effective_source_label, species_union.source_label) AS effective_source_label
+    FROM species_union
+    LEFT JOIN LATERAL (
+      SELECT
+        CASE
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'plant_db_vn'
+          WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'insect_db_vn'
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'animalia') THEN 'animal_db_vn'
+          ELSE NULL
+        END AS effective_source_table,
+        CASE
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'Thực vật'
+          WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'Côn trùng'
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'animalia') THEN 'Động vật'
+          ELSE NULL
+        END AS effective_source_label
+      FROM species_taxonomy st
+      JOIN taxon_closure tc
+        ON tc.descendant_taxon_id = st.taxon_id
+      JOIN taxa parent
+        ON parent.taxon_id = tc.ancestor_taxon_id
+      WHERE st.source_table = species_union.source_table
+        AND st.species_id = species_union.species_id
+    ) taxonomy_source ON true
+  )
+`;
+
 const SEARCH_FILTER_SQL = `
   (
     $1 = ''
@@ -208,20 +241,29 @@ export class SpeciesRepository {
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<SpeciesSearchRow[]>(
       `
-        WITH species_union AS (${SPECIES_UNION_SQL})
+        WITH ${SPECIES_ENRICHED_CTE_SQL}
         SELECT
-          species_union.*,
+          species_enriched.source_table,
+          species_enriched.effective_source_label AS source_label,
+          species_enriched.species_id,
+          species_enriched.vietnamese_name,
+          species_enriched.scientific_name,
+          species_enriched.family,
+          species_enriched.order_name,
+          species_enriched.class_name,
+          species_enriched.genus_name,
+          species_enriched.title_block,
           CASE
             WHEN species_image.image_id IS NULL THEN NULL
-            ELSE '/species/' || species_union.source_table || '/' || species_union.species_id || '/image'
+            ELSE '/species/' || species_enriched.source_table || '/' || species_enriched.species_id || '/image'
           END AS image_url,
           species_image.mime_type AS image_mime_type
-        FROM species_union
+        FROM species_enriched
         LEFT JOIN LATERAL (
           SELECT image_id, local_path, mime_type, width, height
           FROM species_images
-          WHERE source_table = species_union.source_table
-            AND species_id = species_union.species_id
+          WHERE source_table = species_enriched.source_table
+            AND species_id = species_enriched.species_id
           ORDER BY
             (coalesce(width, 0) * coalesce(height, 0)) DESC,
             octet_length(image_data) DESC,
@@ -262,9 +304,9 @@ export class SpeciesRepository {
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<CountRow[]>(
       `
-        WITH species_union AS (${SPECIES_UNION_SQL})
+        WITH ${SPECIES_ENRICHED_CTE_SQL}
         SELECT count(*) AS total
-        FROM species_union
+        FROM species_enriched
         WHERE ${SEARCH_FILTER_SQL}
           ${filterSql.whereSql}
       `,
@@ -277,7 +319,7 @@ export class SpeciesRepository {
 
   async facets(query: string, filters: SpeciesSearchFilters): Promise<SpeciesSearchFacets> {
     const [sourceTables, classNames, orders, families, genera] = await Promise.all([
-      this.facet(query, filters, 'source_table', 'source_label'),
+      this.facet(query, filters, 'effective_source_table', 'effective_source_label'),
       this.facet(query, filters, 'class_name'),
       this.facet(query, filters, 'order_name'),
       this.facet(query, filters, 'family'),
@@ -333,7 +375,7 @@ export class SpeciesRepository {
 
     return {
       sourceTable,
-      sourceLabel: SOURCE_TABLE_LABELS[sourceTable],
+      sourceLabel: this.resolveSourceLabel(sourceTable, taxonomyPath),
       speciesId: row.species_id ?? speciesId,
       vietnameseName: row.ten_viet_nam,
       scientificName: row.ten_latin,
@@ -441,18 +483,18 @@ export class SpeciesRepository {
   private async facet(
     query: string,
     filters: SpeciesSearchFilters,
-    column: 'source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name',
-    labelColumn: 'source_label' | 'source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name' = column,
+    column: 'effective_source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name',
+    labelColumn: 'effective_source_label' | 'effective_source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name' = column,
   ): Promise<SpeciesFacetItem[]> {
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<FacetRow[]>(
       `
-        WITH species_union AS (${SPECIES_UNION_SQL})
+        WITH ${SPECIES_ENRICHED_CTE_SQL}
         SELECT
           ${column} AS value,
           min(${labelColumn}) AS label,
           count(*) AS total
-        FROM species_union
+        FROM species_enriched
         WHERE ${SEARCH_FILTER_SQL}
           ${filterSql.whereSql}
           AND ${column} IS NOT NULL
@@ -478,7 +520,7 @@ export class SpeciesRepository {
 
     if (filters.sourceTable) {
       values.push(filters.sourceTable);
-      clauses.push(`AND source_table = $${startIndex + values.length - 1}`);
+      clauses.push(`AND effective_source_table = $${startIndex + values.length - 1}`);
     }
 
     if (filters.className) {
@@ -509,8 +551,8 @@ export class SpeciesRepository {
           FROM species_taxonomy st
           JOIN taxon_closure tc
             ON tc.descendant_taxon_id = st.taxon_id
-          WHERE st.source_table = species_union.source_table
-            AND st.species_id = species_union.species_id
+          WHERE st.source_table = species_enriched.source_table
+            AND st.species_id = species_enriched.species_id
             AND tc.ancestor_taxon_id = $${startIndex + values.length - 1}::bigint
         )
       `);
@@ -616,6 +658,26 @@ export class SpeciesRepository {
     }
 
     return value instanceof Date ? value.toISOString() : value;
+  }
+
+  private resolveSourceLabel(sourceTable: SpeciesSourceTable, taxonomyPath: SpeciesTaxonomyNode[]): string {
+    const ranks = new Map(taxonomyPath.map((node) => [node.rank, node.canonicalName.toLowerCase()]));
+    const kingdom = ranks.get('kingdom') ?? '';
+    const className = ranks.get('class') ?? '';
+
+    if (kingdom === 'plantae') {
+      return 'Thực vật';
+    }
+
+    if (className === 'insecta') {
+      return 'Côn trùng';
+    }
+
+    if (kingdom === 'animalia') {
+      return 'Động vật';
+    }
+
+    return SOURCE_TABLE_LABELS[sourceTable];
   }
 
   private async findTaxonomyPath(
