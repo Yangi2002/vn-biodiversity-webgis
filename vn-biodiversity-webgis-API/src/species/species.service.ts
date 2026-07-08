@@ -135,6 +135,13 @@ export class SpeciesService {
       order: (queryDto.order ?? '').trim(),
       family: (queryDto.family ?? '').trim(),
       genus: (queryDto.genus ?? '').trim(),
+      taxonId: this.parseTaxonId(queryDto.taxonId),
     };
+  }
+
+  private parseTaxonId(value: string | undefined): string {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) && parsed > 0 ? String(Math.floor(parsed)) : '';
   }
 }

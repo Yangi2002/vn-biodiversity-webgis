@@ -1,11 +1,7 @@
-<main class="species-detail-page">
-  <nav class="topbar" aria-label="Dieu huong chi tiet loai">
-    <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
-    <div>
-      <a routerLink="/species-list">Danh mục loài</a>
-      <a routerLink="/map">Bản đồ</a>
-    </div>
-  </nav>
+﻿<main class="species-detail-page">
+  <app-site-header
+    sectionLabel="Hồ sơ loài"
+  />
 
   @if (isLoading()) {
     <section class="state-panel">Đang tải chi tiết loài...</section>
@@ -20,7 +16,7 @@
       />
 
       <div class="hero-copy">
-        <button type="button" class="back-link" (click)="goBackToList()">&lt; Quay lai danh muc</button>
+        <button type="button" class="back-link" (click)="goBackToList()">&lt; Quay lại danh mục</button>
         <p class="eyebrow">Chi tiết loài</p>
         <h1>{{ displayName(species) }}</h1>
         @if (species.scientificName) {
@@ -49,7 +45,7 @@
         }
 
         @if (taxonomyPath(species).length) {
-          <section class="taxonomy-tree" aria-label="Cay phan loai sinh hoc">
+          <section class="taxonomy-tree" aria-label="Cây phân loại sinh học">
             <div class="taxonomy-tree-heading">
               <p class="eyebrow">Cây phân loại</p>
               <strong>{{ taxonomyPath(species).length }} cấp taxonomy</strong>
@@ -120,8 +116,8 @@
   <app-credentials-footer
     [links]="footerLinks"
     [logoSrc]="vnscLogoSrc"
-    logoAlt="Logo Trung tam Vu tru Viet Nam"
-    organizationName="Trung tam Vu tru Viet Nam (VNSC)"
+    logoAlt="Logo Trung tâm Vũ trụ Việt Nam"
+    organizationName="Trung tâm Vũ trụ Việt Nam (VNSC)"
     organizationNameEn="Vietnam National Space Center"
   />
 </main>

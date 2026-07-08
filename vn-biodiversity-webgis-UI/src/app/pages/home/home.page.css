@@ -22,8 +22,31 @@
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   font-size: 17px;
   font-weight: 800;
+}
+
+.home-brand-mark {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #b8d6c3;
+  border-radius: 50%;
+  background: #edf7f0;
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.75),
+    0 10px 26px rgba(31, 111, 70, 0.12);
+}
+
+.home-brand-mark img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 
 .topbar div {

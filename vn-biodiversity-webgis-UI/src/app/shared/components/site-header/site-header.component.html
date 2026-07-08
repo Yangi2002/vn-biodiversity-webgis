@@ -1,0 +1,20 @@
+<header class="site-header">
+  <div class="site-header-content">
+    <a class="brand" routerLink="/" aria-label="Về trang chủ">
+      <span class="brand-mark" aria-hidden="true">
+        <img src="/Header-logo-header.png" width="34" height="34" alt="" />
+      </span>
+      <span>
+        <strong>VN Biodiversity WebGIS</strong>
+        <small>{{ sectionLabel }}</small>
+      </span>
+    </a>
+
+    <nav aria-label="Điều hướng hệ thống">
+      <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Trang chủ</a>
+      <a routerLink="/species-list" routerLinkActive="is-active">Danh mục loài</a>
+      <a routerLink="/taxonomy" routerLinkActive="is-active">Phân loại</a>
+      <a routerLink="/map" routerLinkActive="is-active">Bản đồ</a>
+    </nav>
+  </div>
+</header>

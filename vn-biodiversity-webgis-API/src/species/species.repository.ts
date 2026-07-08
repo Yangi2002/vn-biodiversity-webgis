@@ -501,6 +501,21 @@ export class SpeciesRepository {
       clauses.push(`AND genus_name = $${startIndex + values.length - 1}`);
     }
 
+    if (filters.taxonId) {
+      values.push(filters.taxonId);
+      clauses.push(`
+        AND EXISTS (
+          SELECT 1
+          FROM species_taxonomy st
+          JOIN taxon_closure tc
+            ON tc.descendant_taxon_id = st.taxon_id
+          WHERE st.source_table = species_union.source_table
+            AND st.species_id = species_union.species_id
+            AND tc.ancestor_taxon_id = $${startIndex + values.length - 1}::bigint
+        )
+      `);
+    }
+
     return {
       whereSql: clauses.length ? `\n          ${clauses.join('\n          ')}` : '',
       values,

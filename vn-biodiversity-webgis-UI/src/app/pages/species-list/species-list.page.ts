@@ -2,9 +2,9 @@ import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
+import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import { SpeciesService } from '../../data-access/services/species.service';
 import type { SpeciesSearchItem, SpeciesSearchResponse } from '../../data-access/models/species.model';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
@@ -17,15 +17,21 @@ interface SearchState {
   order: string;
   family: string;
   genus: string;
+  taxonId: string;
 }
 
 interface SpeciesListNavigationState {
   speciesListState?: SearchState;
 }
 
+interface SpeciesSearchTag {
+  label: string;
+  query: string;
+}
+
 @Component({
   selector: 'app-species-list-page',
-  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent],
+  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent, SiteHeaderComponent],
   templateUrl: './species-list.page.html',
   styleUrl: './species-list.page.css',
 })
@@ -41,6 +47,13 @@ export class SpeciesListPage {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly footerLinks = FOOTER_CREDENTIAL_LINKS;
   protected readonly vnscLogoSrc = VNSC_LOGO_SRC;
+  protected readonly searchTags: SpeciesSearchTag[] = [
+    { label: 'Rùa', query: 'rùa' },
+    { label: 'Lan', query: 'lan' },
+    { label: 'Bướm', query: 'bướm' },
+    { label: 'Ếch', query: 'ếch' },
+    { label: 'Magnolia', query: 'Magnolia' },
+  ];
 
   private readonly speciesService = inject(SpeciesService);
   private readonly route = inject(ActivatedRoute);
@@ -48,6 +61,7 @@ export class SpeciesListPage {
   private readonly destroyRef = inject(DestroyRef);
   private searchRequestId = 0;
   private restoredState = this.readRestoredState();
+  private activeTaxonId = '';
 
   constructor() {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -59,8 +73,10 @@ export class SpeciesListPage {
         order: params.get('order') ?? '',
         family: params.get('family') ?? '',
         genus: params.get('genus') ?? '',
+        taxonId: params.get('taxonId') ?? '',
       };
       this.restoredState = null;
+      this.activeTaxonId = state.taxonId;
 
       this.searchControl.setValue(state.q, { emitEvent: false });
       this.sourceTableControl.setValue(state.sourceTable, { emitEvent: false });
@@ -70,15 +86,6 @@ export class SpeciesListPage {
       this.genusControl.setValue(state.genus, { emitEvent: false });
       this.search(state);
     });
-
-    this.searchControl.valueChanges
-      .pipe(
-        map((value) => value.trim()),
-        debounceTime(450),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.search(this.createStateFromControls(1)));
   }
 
   protected submitSearch(event?: Event): void {
@@ -91,11 +98,48 @@ export class SpeciesListPage {
     this.search(this.createStateFromControls(1));
   }
 
+  protected applySearchTag(tag: SpeciesSearchTag): void {
+    this.activeTaxonId = '';
+    this.searchControl.setValue(tag.query, { emitEvent: false });
+    this.search(this.createStateFromControls(1));
+  }
+
   protected applyFilters(): void {
     this.search(this.createStateFromControls(1));
   }
 
+  protected applySourceTableFilter(): void {
+    this.activeTaxonId = '';
+    this.classNameControl.setValue('', { emitEvent: false });
+    this.orderControl.setValue('', { emitEvent: false });
+    this.familyControl.setValue('', { emitEvent: false });
+    this.genusControl.setValue('', { emitEvent: false });
+    this.applyFilters();
+  }
+
+  protected applyClassFilter(): void {
+    this.activeTaxonId = '';
+    this.orderControl.setValue('', { emitEvent: false });
+    this.familyControl.setValue('', { emitEvent: false });
+    this.genusControl.setValue('', { emitEvent: false });
+    this.applyFilters();
+  }
+
+  protected applyOrderFilter(): void {
+    this.activeTaxonId = '';
+    this.familyControl.setValue('', { emitEvent: false });
+    this.genusControl.setValue('', { emitEvent: false });
+    this.applyFilters();
+  }
+
+  protected applyFamilyFilter(): void {
+    this.activeTaxonId = '';
+    this.genusControl.setValue('', { emitEvent: false });
+    this.applyFilters();
+  }
+
   protected clearFilters(): void {
+    this.activeTaxonId = '';
     this.sourceTableControl.setValue('');
     this.classNameControl.setValue('');
     this.orderControl.setValue('');
@@ -188,6 +232,7 @@ export class SpeciesListPage {
         order: state.order,
         family: state.family,
         genus: state.genus,
+        taxonId: state.taxonId,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -220,6 +265,7 @@ export class SpeciesListPage {
       order: this.orderControl.value,
       family: this.familyControl.value,
       genus: this.genusControl.value,
+      taxonId: this.activeTaxonId,
     };
   }
 

@@ -1,7 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, PLATFORM_ID, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import type {
   SpeciesDetailField,
@@ -14,6 +14,7 @@ import { SpeciesService } from '../../data-access/services/species.service';
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
 import { KeywordReferencePanelComponent } from '../../shared/components/keyword-reference-panel/keyword-reference-panel.component';
 import { KeywordRichTextComponent } from '../../shared/components/keyword-rich-text/keyword-rich-text.component';
+import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import { SpeciesImageCarouselComponent } from './species-image-carousel/species-image-carousel.component';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 
@@ -24,11 +25,11 @@ interface SpeciesDetailNavigationState {
 @Component({
   selector: 'app-species-detail-page',
   imports: [
-    RouterLink,
     CredentialsFooterComponent,
     SpeciesImageCarouselComponent,
     KeywordReferencePanelComponent,
     KeywordRichTextComponent,
+    SiteHeaderComponent,
   ],
   templateUrl: './species-detail.page.html',
   styleUrl: './species-detail.page.css',
@@ -157,14 +158,14 @@ export class SpeciesDetailPage {
 
   protected taxonomyRankLabel(rank: string): string {
     const rankLabels: Record<string, string> = {
-      source_group: 'Nhom',
-      kingdom: 'Gioi',
-      phylum: 'Nganh',
-      class: 'Lop',
-      order: 'Bo',
-      family: 'Ho',
+      source_group: 'Nhóm',
+      kingdom: 'Giới',
+      phylum: 'Ngành',
+      class: 'Lớp',
+      order: 'Bộ',
+      family: 'Họ',
       genus: 'Chi',
-      species: 'Loai',
+      species: 'Loài',
     };
 
     return rankLabels[rank] ?? rank;

@@ -2,37 +2,6 @@
   min-height: 100dvh;
   background: #f6f8f5;
   color: #17251f;
-  font-family: Arial, sans-serif;
-}
-
-.topbar {
-  width: min(1180px, calc(100% - 48px));
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 auto;
-}
-
-.topbar a {
-  color: #17251f;
-  text-decoration: none;
-}
-
-.brand {
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.topbar div {
-  display: flex;
-  gap: 18px;
-}
-
-.topbar div a {
-  color: #52685d;
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .taxonomy-hero,
@@ -42,12 +11,12 @@
 }
 
 .taxonomy-hero {
-  padding: 54px 0 34px;
+  padding: 32px 0 34px;
 }
 
 .eyebrow {
   margin: 0 0 10px;
-  color: #13743d;
+  color: #0f7540;
   font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
@@ -75,7 +44,7 @@ h1 {
   width: min(820px, 100%);
   margin-top: 28px;
   padding: 10px;
-  border: 1px solid #d9e3dc;
+  border: 1px solid #cfe0d5;
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 18px 44px rgba(23, 37, 31, 0.1);
@@ -85,7 +54,7 @@ h1 {
   min-width: 0;
   height: 52px;
   padding: 0 14px;
-  border: 1px solid #dbe5df;
+  border: 1px solid #d4e2d9;
   border-radius: 6px;
   color: #17251f;
   font-size: 16px;
@@ -100,10 +69,39 @@ button {
   padding: 0 22px;
   border: 0;
   border-radius: 6px;
-  background: #1f6f46;
+  background: linear-gradient(180deg, #23794d, #17623d);
   color: #ffffff;
   font-size: 15px;
   font-weight: 800;
+}
+
+.quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-tags span {
+  color: #60746a;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.quick-tags button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #cfe0d5;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f6f46;
+  font-weight: 800;
+}
+
+.quick-tags button:hover {
+  border-color: #1f6f46;
+  background: #e8f4ec;
 }
 
 .taxonomy-layout {
@@ -116,7 +114,7 @@ button {
 
 .filter-panel,
 .result-panel {
-  border: 1px solid #d9e3dc;
+  border: 1px solid #cfe0d5;
   border-radius: 8px;
   background: #ffffff;
 }
@@ -155,7 +153,7 @@ button {
   gap: 12px;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid #d9e3dc;
+  border: 1px solid #d4e2d9;
   border-radius: 6px;
   background: #ffffff;
   color: #17251f;
@@ -165,7 +163,7 @@ button {
 .rank-list button.is-active,
 .rank-list button:hover {
   border-color: #1f6f46;
-  background: #edf5ef;
+  background: #e8f4ec;
 }
 
 .result-panel {
@@ -192,9 +190,9 @@ h2 {
   grid-template-columns: 148px minmax(0, 1fr) 150px;
   gap: 18px;
   padding: 18px;
-  border: 1px solid #d9e3dc;
+  border: 1px solid #cfe0d5;
   border-radius: 8px;
-  background: #fbfdfb;
+  background: #ffffff;
 }
 
 .taxon-thumbnail {
@@ -202,7 +200,7 @@ h2 {
   width: 148px;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border: 1px solid #d9e3dc;
+  border: 1px solid #cfe0d5;
   border-radius: 8px;
   background: #edf5ef;
   color: #60746a;
@@ -310,7 +308,7 @@ h2 {
 
 .state-panel {
   padding: 24px;
-  border: 1px dashed #d9e3dc;
+  border: 1px dashed #cfe0d5;
   border-radius: 8px;
   color: #52685d;
   font-weight: 700;
@@ -333,7 +331,7 @@ h2 {
 .pagination button {
   min-width: 38px;
   height: 38px;
-  border: 1px solid #d9e3dc;
+  border: 1px solid #cfe0d5;
   border-radius: 6px;
   background: #ffffff;
   color: #17251f;
@@ -454,14 +452,9 @@ h2 {
 }
 
 @media (max-width: 620px) {
-  .topbar,
   .taxonomy-hero,
   .taxonomy-layout {
     width: min(100% - 28px, 1180px);
-  }
-
-  .topbar div {
-    display: none;
   }
 
   h1 {

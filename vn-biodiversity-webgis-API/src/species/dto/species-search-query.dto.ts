@@ -7,4 +7,5 @@ export interface SpeciesSearchQueryDto {
   order?: string;
   family?: string;
   genus?: string;
+  taxonId?: string;
 }

@@ -1,11 +1,7 @@
 <main class="taxonomy-page">
-  <nav class="topbar" aria-label="Điều hướng phân loại sinh học">
-    <a class="brand" routerLink="/">VN Biodiversity WebGIS</a>
-    <div>
-      <a routerLink="/species-list">Danh mục loài</a>
-      <a routerLink="/map">Bản đồ</a>
-    </div>
-  </nav>
+  <app-site-header
+    sectionLabel="Phân loại sinh học"
+  />
 
   <section class="taxonomy-hero">
     <p class="eyebrow">Taxonomy search</p>
@@ -23,6 +19,13 @@
       />
       <button type="submit">Tìm kiếm</button>
     </form>
+
+    <div class="quick-tags" aria-label="Gợi ý tìm taxonomy">
+      <span>Gợi ý taxon</span>
+      @for (tag of searchTags; track tag.label) {
+        <button type="button" (click)="applySearchTag(tag)">{{ tag.label }}</button>
+      }
+    </div>
   </section>
 
   <section class="taxonomy-layout">

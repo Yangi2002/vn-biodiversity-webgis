@@ -3,7 +3,6 @@ import { Component, DestroyRef, PLATFORM_ID, inject, signal } from '@angular/cor
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 
 import type {
   TaxonomyRepresentativeImage,
@@ -12,6 +11,7 @@ import type {
 } from '../../data-access/models/taxonomy.model';
 import { TaxonomyService } from '../../data-access/services/taxonomy.service';
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
+import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 
 interface TaxonomyState {
@@ -20,9 +20,14 @@ interface TaxonomyState {
   page: number;
 }
 
+interface TaxonomySearchTag {
+  label: string;
+  query: string;
+}
+
 @Component({
   selector: 'app-taxonomy-page',
-  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent],
+  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent, SiteHeaderComponent],
   templateUrl: './taxonomy.page.html',
   styleUrl: './taxonomy.page.css',
 })
@@ -35,6 +40,14 @@ export class TaxonomyPage {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly footerLinks = FOOTER_CREDENTIAL_LINKS;
   protected readonly vnscLogoSrc = VNSC_LOGO_SRC;
+  protected readonly searchTags: TaxonomySearchTag[] = [
+    { label: 'Animalia', query: 'Animalia' },
+    { label: 'Plantae', query: 'Plantae' },
+    { label: 'Amphibia', query: 'Amphibia' },
+    { label: 'Magnoliaceae', query: 'Magnoliaceae' },
+    { label: 'Ba ba', query: 'ba ba' },
+    { label: 'Bọ hung', query: 'bọ hung' },
+  ];
 
   private readonly taxonomyService = inject(TaxonomyService);
   private readonly route = inject(ActivatedRoute);
@@ -54,15 +67,6 @@ export class TaxonomyPage {
       this.rankControl.setValue(state.rank, { emitEvent: false });
       this.search(state);
     });
-
-    this.searchControl.valueChanges
-      .pipe(
-        map((value) => value.trim()),
-        debounceTime(450),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.search(this.createState(1)));
   }
 
   protected submitSearch(event?: Event): void {
@@ -72,6 +76,11 @@ export class TaxonomyPage {
 
   protected applyRank(rank: string): void {
     this.rankControl.setValue(rank, { emitEvent: false });
+    this.search(this.createState(1));
+  }
+
+  protected applySearchTag(tag: TaxonomySearchTag): void {
+    this.searchControl.setValue(tag.query, { emitEvent: false });
     this.search(this.createState(1));
   }
 
@@ -111,7 +120,7 @@ export class TaxonomyPage {
   }
 
   protected relatedSpeciesQuery(item: TaxonomySearchItem): Record<string, string> {
-    return { q: item.vietnameseName || item.canonicalName };
+    return { taxonId: item.taxonId };
   }
 
   protected openImage(image: TaxonomyRepresentativeImage): void {

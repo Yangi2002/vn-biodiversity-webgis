@@ -15,6 +15,7 @@ export interface SpeciesSearchParams {
   order?: string;
   family?: string;
   genus?: string;
+  taxonId?: string;
 }
 
 @Injectable({
@@ -38,7 +39,7 @@ export class SpeciesService {
       httpParams = httpParams.set('limit', params.limit);
     }
 
-    for (const key of ['sourceTable', 'className', 'order', 'family', 'genus'] as const) {
+    for (const key of ['sourceTable', 'className', 'order', 'family', 'genus', 'taxonId'] as const) {
       if (params[key]?.trim()) {
         httpParams = httpParams.set(key, params[key].trim());
       }

@@ -19,6 +19,7 @@ export interface SpeciesSearchFilters {
   order: string;
   family: string;
   genus: string;
+  taxonId: string;
 }
 
 export interface SpeciesFacetItem {

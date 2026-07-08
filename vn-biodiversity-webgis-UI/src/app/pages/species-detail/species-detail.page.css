@@ -4,40 +4,11 @@
   color: #17251f;
 }
 
-.topbar,
 .detail-hero,
 .detail-layout,
 .state-panel {
   width: min(1440px, calc(100% - 56px));
   margin: 0 auto;
-}
-
-.topbar {
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.topbar a {
-  color: #17251f;
-  text-decoration: none;
-}
-
-.brand {
-  font-size: 17px;
-  font-weight: 800;
-}
-
-.topbar div {
-  display: flex;
-  gap: 18px;
-}
-
-.topbar div a {
-  color: #52685d;
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .detail-hero {
@@ -355,15 +326,10 @@ h2 {
 }
 
 @media (max-width: 620px) {
-  .topbar,
   .detail-hero,
   .detail-layout,
   .state-panel {
     width: min(100% - 28px, 1180px);
-  }
-
-  .topbar div {
-    display: none;
   }
 
   .detail-hero {
