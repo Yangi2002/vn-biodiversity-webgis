@@ -27,7 +27,7 @@ export const VNSC_LOGO_SRC = '/images/home/VNSC.jfif';
 export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
   {
     title: 'Tra cứu loài',
-    label: 'Từ điển',
+    label: 'Dictionary',
     description: 'Tìm theo tên Việt Nam, tên khoa học, họ, bộ, lớp hoặc từ khóa liên quan.',
     route: '/species-list',
     icon: '🔍',
