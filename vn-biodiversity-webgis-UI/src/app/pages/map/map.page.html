@@ -1,8 +1,232 @@
 <main class="page-shell">
-  <app-site-header
-    sectionLabel="WebGIS biodiversity"
-  />
+  <app-site-header sectionLabel="WebGIS biodiversity" />
 
-  <p>WebGIS</p>
-  <h1>Ban do phan bo</h1>
+  <section class="map-hero">
+    <div>
+      <p class="eyebrow">WebGIS biodiversity</p>
+      <h1>Bản đồ phân bố sinh học Việt Nam</h1>
+      <p>
+        Hiển thị occurrence theo lưới gom nhóm, giúp quan sát mật độ ghi nhận,
+        số lượng loài và nhóm sinh vật trong phạm vi Việt Nam.
+      </p>
+    </div>
+
+  </section>
+
+  @if (errorMessage() && !overview()) {
+    <section class="state-panel is-error">{{ errorMessage() }}</section>
+  } @else if (overview(); as mapData) {
+    <section class="dashboard-grid" aria-label="Thống kê bản đồ">
+      <article>
+        <span>Occurrence</span>
+        <strong>{{ mapData.summary.totalOccurrences | number }}</strong>
+      </article>
+      <article>
+        <span>Số loài</span>
+        <strong>{{ mapData.summary.totalSpecies | number }}</strong>
+      </article>
+      <article>
+        <span>Động vật</span>
+        <strong>{{ mapData.summary.animalSpecies | number }}</strong>
+      </article>
+      <article>
+        <span>Thực vật</span>
+        <strong>{{ mapData.summary.plantSpecies | number }}</strong>
+      </article>
+      <article>
+        <span>Côn trùng</span>
+        <strong>{{ mapData.summary.insectSpecies | number }}</strong>
+      </article>
+      <article>
+        <span>Observed year</span>
+        <strong>
+          {{ mapData.summary.earliestObservedYear || 'N/A' }}-{{ mapData.summary.latestObservedYear || 'N/A' }}
+        </strong>
+      </article>
+    </section>
+
+    <section class="webgis-filter-panel" aria-label="Bộ lọc WebGIS">
+      <div>
+        <p class="eyebrow">Bộ lọc WebGIS</p>
+        <h2>Lọc theo nhóm và thời gian</h2>
+      </div>
+
+      <form class="webgis-filter-form" (submit)="$event.preventDefault(); applyFilters()">
+        <label>
+          <span>Nhóm sinh vật</span>
+          <select [value]="sourceGroup()" (change)="updateSourceGroup($any($event.target).value)">
+            <option value="all">Tất cả</option>
+            <option value="animal">Động vật</option>
+            <option value="plant">Thực vật</option>
+            <option value="insect">Côn trùng</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Năm từ</span>
+          <input
+            type="number"
+            inputmode="numeric"
+            min="1500"
+            max="2100"
+            placeholder="VD: 2000"
+            [value]="yearFrom()"
+            (input)="updateYearFrom($any($event.target).value)"
+          />
+        </label>
+
+        <label>
+          <span>Năm đến</span>
+          <input
+            type="number"
+            inputmode="numeric"
+            min="1500"
+            max="2100"
+            placeholder="VD: 2026"
+            [value]="yearTo()"
+            (input)="updateYearTo($any($event.target).value)"
+          />
+        </label>
+
+        <label>
+          <span>Kích thước ô</span>
+          <select [value]="gridSize()" (change)="updateGridSize($any($event.target).value)">
+            <option value="0.25">0.25°</option>
+            <option value="0.5">0.5°</option>
+            <option value="1">1°</option>
+          </select>
+        </label>
+
+        <div class="filter-actions">
+          <button type="button" class="ghost-button" (click)="clearFilters()">Xóa</button>
+          <button type="submit">Cập nhật bản đồ</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="webgis-layout">
+      <div class="map-panel">
+        <div class="map-caption">
+          <div>
+            <p class="eyebrow">Mật độ occurrence</p>
+            <h2>Vietnam occurrence overview</h2>
+          </div>
+          <div class="layer-tags" aria-label="Lớp dữ liệu bản đồ">
+            <span>Raster: OpenStreetMap</span>
+            <span>Raster: Satellite</span>
+            <span>Vector-style: Light map</span>
+            <span>Vector: occurrence grid</span>
+            <span>Vector: Vietnam provinces</span>
+            <span>{{ mapData.cells.length }} ô dữ liệu</span>
+          </div>
+        </div>
+
+        <div class="map-stage">
+          <div #leafletMap class="map-canvas" aria-label="Bản đồ gom nhóm occurrence Việt Nam"></div>
+
+          @if (isLoading()) {
+            <div class="map-loading-overlay">Đang cập nhật dữ liệu bản đồ...</div>
+          }
+
+          <aside class="insight-panel" [class.is-collapsed]="!isInsightPanelExpanded()">
+            <div class="insight-heading">
+              <p class="eyebrow">
+                @if (selectedCell()) {
+                  <span><i class="metric-icon">◎</i> Ô đang chọn</span>
+                } @else {
+                  <span><i class="metric-icon">◉</i> Tổng quan bản đồ</span>
+                }
+              </p>
+              <button
+                type="button"
+                class="panel-toggle"
+                [attr.aria-expanded]="isInsightPanelExpanded()"
+                (click)="toggleInsightPanel()"
+              >
+                @if (isInsightPanelExpanded()) {
+                  <span>Thu gọn</span>
+                } @else {
+                  <span>Mở</span>
+                }
+              </button>
+              @if (selectedCell()) {
+                <button type="button" (click)="resetSelection()">Reset</button>
+              }
+            </div>
+
+            @if (isInsightPanelExpanded()) {
+              <div class="insight-body">
+                @if (selectedCell(); as cell) {
+                  <h2>{{ cell.occurrenceCount | number }} occurrence</h2>
+                  <dl>
+                    <div>
+                      <dt><i class="metric-icon">📍</i> Tỉnh / vùng</dt>
+                      <dd>{{ selectedRegionName() }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">⌖</i> Tọa độ ô</dt>
+                      <dd>{{ cell.latitude | number:'1.1-2' }}, {{ cell.longitude | number:'1.1-2' }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">◆</i> Số loài</dt>
+                      <dd>{{ cell.speciesCount | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🐾</i> Động vật</dt>
+                      <dd>{{ cell.animalSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🌱</i> Thực vật</dt>
+                      <dd>{{ cell.plantSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
+                      <dd>{{ cell.insectSpecies | number }}</dd>
+                    </div>
+                  </dl>
+                } @else {
+                  <h2>{{ mapData.summary.totalOccurrences | number }} occurrence</h2>
+                  <dl>
+                    <div>
+                      <dt><i class="metric-icon">◆</i> Tổng số loài</dt>
+                      <dd>{{ mapData.summary.totalSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🐾</i> Động vật</dt>
+                      <dd>{{ mapData.summary.animalSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🌱</i> Thực vật</dt>
+                      <dd>{{ mapData.summary.plantSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
+                      <dd>{{ mapData.summary.insectSpecies | number }}</dd>
+                    </div>
+                    <div>
+                      <dt><i class="metric-icon">📅</i> Observed year</dt>
+                      <dd>{{ mapData.summary.earliestObservedYear || 'N/A' }}-{{ mapData.summary.latestObservedYear || 'N/A' }}</dd>
+                    </div>
+                  </dl>
+                  <p class="insight-hint">Click một ô occurrence để xem chi tiết theo vùng; click nền bản đồ để quay lại tổng quan.</p>
+                }
+              </div>
+            }
+          </aside>
+        </div>
+
+        <div class="legend-row" aria-label="Chú thích mật độ">
+          @for (legend of mapData.legend; track legend.label) {
+            <span>
+              <i [style.background]="legend.color"></i>
+              {{ legend.label }}
+              {{ legend.min }}{{ legend.max ? '-' + legend.max : '+' }}
+            </span>
+          }
+        </div>
+      </div>
+    </section>
+  } @else {
+    <section class="state-panel">Đang tải dữ liệu WebGIS...</section>
+  }
 </main>

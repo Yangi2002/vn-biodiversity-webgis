@@ -30,17 +30,17 @@ export const routes: Routes = [
   {
     path: 'species/:sourceTable/:speciesId',
     component: SpeciesDetailPage,
-    title: 'Chi tiet loai',
+    title: 'Chi tiết loài',
   },
   {
     path: 'taxonomy',
     component: TaxonomyPage,
-    title: 'Phan loai sinh hoc',
+    title: 'Phân loại sinh học',
   },
   {
     path: 'map',
     component: MapPage,
-    title: 'Ban do WebGIS',
+    title: 'Bản đồ WebGIS',
   },
   {
     path: 'endangered-species',
