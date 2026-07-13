@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
 import type { OccurrenceOverviewQueryDto } from '../dto/occurrence-query.dto';
-import type { OccurrenceCellDetail, OccurrenceMapOverview } from '../models/occurrence.model';
+import type { OccurrenceCellDetail, OccurrenceMapOverview, SpeciesOccurrenceMap } from '../models/occurrence.model';
 
 @Injectable({
   providedIn: 'root',
@@ -24,6 +24,20 @@ export class OccurrenceService {
       .set('longitude', String(longitude));
 
     return this.api.get<OccurrenceCellDetail>(API_ENDPOINTS.occurrenceCellDetail, params);
+  }
+
+  getSpeciesOccurrences(sourceTable: string, speciesId: string, query: Pick<OccurrenceOverviewQueryDto, 'yearFrom' | 'yearTo'> = {}) {
+    let params = new HttpParams();
+
+    if (query.yearFrom) {
+      params = params.set('yearFrom', String(query.yearFrom));
+    }
+
+    if (query.yearTo) {
+      params = params.set('yearTo', String(query.yearTo));
+    }
+
+    return this.api.get<SpeciesOccurrenceMap>(API_ENDPOINTS.speciesOccurrences(sourceTable, speciesId), params);
   }
 
   private buildOverviewParams(query: OccurrenceOverviewQueryDto): HttpParams {

@@ -71,6 +71,13 @@
       </div>
     </section>
 
+    <app-species-occurrence-map
+      [sourceTable]="species.sourceTable"
+      [speciesId]="species.speciesId"
+      [speciesName]="displayName(species)"
+      [scientificName]="species.scientificName"
+    />
+
     <section class="detail-layout">
       <div class="content-column">
         @for (field of contentFields(species); track field.key) {

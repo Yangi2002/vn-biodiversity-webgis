@@ -5,6 +5,8 @@ export const API_ENDPOINTS = {
   taxonomySearch: '/taxonomy/search',
   occurrenceMapOverview: '/occurrences/map/overview',
   occurrenceCellDetail: '/occurrences/map/cell-detail',
+  speciesOccurrences: (sourceTable: string, speciesId: string) =>
+    `/occurrences/species/${encodeURIComponent(sourceTable)}/${encodeURIComponent(speciesId)}`,
   speciesDetail: (sourceTable: string, speciesId: string) =>
     `/species/${encodeURIComponent(sourceTable)}/${encodeURIComponent(speciesId)}`,
 } as const;

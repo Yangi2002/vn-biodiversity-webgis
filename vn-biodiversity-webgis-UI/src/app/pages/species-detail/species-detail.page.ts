@@ -15,6 +15,7 @@ import { CredentialsFooterComponent } from '../../shared/components/credentials-
 import { KeywordReferencePanelComponent } from '../../shared/components/keyword-reference-panel/keyword-reference-panel.component';
 import { KeywordRichTextComponent } from '../../shared/components/keyword-rich-text/keyword-rich-text.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
+import { SpeciesOccurrenceMapComponent } from './components/species-occurrence-map/species-occurrence-map.component';
 import { SpeciesImageCarouselComponent } from './species-image-carousel/species-image-carousel.component';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 
@@ -30,6 +31,7 @@ interface SpeciesDetailNavigationState {
     KeywordReferencePanelComponent,
     KeywordRichTextComponent,
     SiteHeaderComponent,
+    SpeciesOccurrenceMapComponent,
   ],
   templateUrl: './species-detail.page.html',
   styleUrl: './species-detail.page.css',
