@@ -8,12 +8,16 @@ import type {
   SpeciesSearchResponse,
 } from './types/species-search-result.type';
 import type { SpeciesDetailResult } from './types/species-detail-result.type';
+import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 60;
 
 @Injectable()
 export class SpeciesService {
+  private readonly searchCache = new TtlCache<SpeciesSearchResponse>(120_000, 120);
+  private readonly detailCache = new TtlCache<SpeciesDetailResult>(600_000, 500);
+
   constructor(private readonly speciesRepository: SpeciesRepository) {}
 
   async search(queryDto: SpeciesSearchQueryDto): Promise<SpeciesSearchResponse> {
@@ -22,6 +26,12 @@ export class SpeciesService {
     const limit = Math.min(this.parsePositiveNumber(queryDto.limit, DEFAULT_LIMIT), MAX_LIMIT);
     const offset = (page - 1) * limit;
     const filters = this.parseFilters(queryDto);
+    const cacheKey = stableCacheKey('species:search', { filters, limit, page, query });
+    const cachedResponse = this.searchCache.get(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
     const [items, total, facets] = await Promise.all([
       this.speciesRepository.search(query, filters, limit, offset),
@@ -30,7 +40,7 @@ export class SpeciesService {
     ]);
     const totalPages = Math.max(1, Math.ceil(total / limit));
 
-    return {
+    const response = {
       items,
       total,
       page,
@@ -42,6 +52,9 @@ export class SpeciesService {
       filters,
       facets,
     };
+
+    this.searchCache.set(cacheKey, response);
+    return response;
   }
 
   async getPrimaryImage(sourceTable: string, speciesId: string): Promise<SpeciesImageResult> {
@@ -103,12 +116,20 @@ export class SpeciesService {
       throw new BadRequestException('Invalid species source table.');
     }
 
+    const cacheKey = stableCacheKey('species:detail', { sourceTable, speciesId });
+    const cachedDetail = this.detailCache.get(cacheKey);
+
+    if (cachedDetail) {
+      return cachedDetail;
+    }
+
     const detail = await this.speciesRepository.findDetail(sourceTable, speciesId);
 
     if (!detail) {
       throw new NotFoundException('Species detail was not found.');
     }
 
+    this.detailCache.set(cacheKey, detail);
     return detail;
   }
 

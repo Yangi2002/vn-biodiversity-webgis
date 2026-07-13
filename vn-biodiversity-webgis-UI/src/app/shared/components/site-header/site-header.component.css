@@ -10,7 +10,7 @@
 
 .site-header-content {
   width: min(1640px, calc(100% - 56px));
-  min-height: 94px;
+  min-height: 112px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -28,8 +28,8 @@
 }
 
 .brand-mark {
-  width: 58px;
-  height: 58px;
+  width: 68px;
+  height: 68px;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -40,8 +40,8 @@
 }
 
 .brand-mark img {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
 }
 
@@ -51,14 +51,14 @@
 }
 
 .brand strong {
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1.2;
 }
 
 .brand small {
   margin-top: 4px;
   color: #1f6f46;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -71,11 +71,11 @@ nav {
 }
 
 nav a {
-  padding: 11px 15px;
+  padding: 12px 17px;
   border: 1px solid transparent;
   border-radius: 999px;
   color: #2f473c;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease;

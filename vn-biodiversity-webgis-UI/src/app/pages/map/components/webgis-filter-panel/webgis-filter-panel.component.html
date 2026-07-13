@@ -1,0 +1,58 @@
+<section class="webgis-filter-panel" aria-label="Bộ lọc WebGIS">
+  <div>
+    <p class="eyebrow">Bộ lọc WebGIS</p>
+    <h2>Lọc occurrence theo nhóm và thời gian</h2>
+  </div>
+
+  <form class="webgis-filter-form" (submit)="$event.preventDefault(); filtersApply.emit()">
+    <label>
+      <span>Nhóm sinh vật</span>
+      <select [value]="sourceGroup" (change)="sourceGroupChange.emit($any($event.target).value)">
+        <option value="all">Tất cả</option>
+        <option value="animal">Động vật</option>
+        <option value="plant">Thực vật</option>
+        <option value="insect">Côn trùng</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Năm từ</span>
+      <input
+        type="number"
+        inputmode="numeric"
+        min="1500"
+        max="2100"
+        placeholder="VD: 2000"
+        [value]="yearFrom"
+        (input)="yearFromChange.emit($any($event.target).value)"
+      />
+    </label>
+
+    <label>
+      <span>Năm đến</span>
+      <input
+        type="number"
+        inputmode="numeric"
+        min="1500"
+        max="2100"
+        placeholder="VD: 2026"
+        [value]="yearTo"
+        (input)="yearToChange.emit($any($event.target).value)"
+      />
+    </label>
+
+    <label>
+      <span>Kích thước ô</span>
+      <select [value]="gridSize" (change)="gridSizeChange.emit($any($event.target).value)">
+        <option value="0.25">0.25°</option>
+        <option value="0.5">0.5°</option>
+        <option value="1">1°</option>
+      </select>
+    </label>
+
+    <div class="filter-actions">
+      <button type="button" class="ghost-button" (click)="filtersClear.emit()">Xóa</button>
+      <button type="submit">Cập nhật bản đồ</button>
+    </div>
+  </form>
+</section>

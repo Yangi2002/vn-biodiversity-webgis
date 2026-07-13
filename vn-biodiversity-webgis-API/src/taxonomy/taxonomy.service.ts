@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 import type { TaxonomySearchQueryDto } from './dto/taxonomy-search-query.dto';
 import { TaxonomyRepository } from './taxonomy.repository';
 import type { TaxonomySearchResponse } from './types/taxonomy-search-result.type';
+import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 
 @Injectable()
 export class TaxonomyService {
+  private readonly searchCache = new TtlCache<TaxonomySearchResponse>(300_000, 120);
+
   constructor(private readonly taxonomyRepository: TaxonomyRepository) {}
 
   async search(query: TaxonomySearchQueryDto): Promise<TaxonomySearchResponse> {
@@ -13,6 +16,12 @@ export class TaxonomyService {
     const page = this.parsePositiveInteger(query.page, 1);
     const limit = Math.min(this.parsePositiveInteger(query.limit, 20), 60);
     const offset = (page - 1) * limit;
+    const cacheKey = stableCacheKey('taxonomy:search', { limit, page, q, rank });
+    const cachedResponse = this.searchCache.get(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
     const [items, total, ranks] = await Promise.all([
       this.taxonomyRepository.search(q, rank, limit, offset),
@@ -20,7 +29,7 @@ export class TaxonomyService {
       this.taxonomyRepository.rankFacets(q),
     ]);
 
-    return {
+    const response = {
       items,
       total,
       page,
@@ -30,6 +39,9 @@ export class TaxonomyService {
       rank,
       facets: { ranks },
     };
+
+    this.searchCache.set(cacheKey, response);
+    return response;
   }
 
   private parsePositiveInteger(value: string | number | undefined, fallback: number): number {

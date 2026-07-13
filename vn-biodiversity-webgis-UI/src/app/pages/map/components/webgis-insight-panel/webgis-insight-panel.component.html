@@ -1,0 +1,85 @@
+<aside class="insight-panel" [class.is-collapsed]="!isExpanded">
+  <div class="insight-heading">
+    <p class="eyebrow">
+      @if (selectedCell) {
+        <span><i class="metric-icon">◎</i> Ô đang chọn</span>
+      } @else {
+        <span><i class="metric-icon">◉</i> Tổng quan bản đồ</span>
+      }
+    </p>
+    <button
+      type="button"
+      class="panel-toggle"
+      [attr.aria-expanded]="isExpanded"
+      (click)="expandedToggle.emit()"
+    >
+      @if (isExpanded) {
+        <span>Thu gọn</span>
+      } @else {
+        <span>Mở</span>
+      }
+    </button>
+    @if (selectedCell) {
+      <button type="button" (click)="selectionReset.emit()">Reset</button>
+    }
+  </div>
+
+  @if (isExpanded) {
+    <div class="insight-body">
+      @if (selectedCell; as cell) {
+        <h2>{{ cell.occurrenceCount | number }} occurrence</h2>
+        <dl>
+          <div>
+            <dt><i class="metric-icon">📍</i> Tỉnh / vùng</dt>
+            <dd>{{ selectedRegionName }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">⌖</i> Tọa độ ô</dt>
+            <dd>{{ cell.latitude | number:'1.1-2' }}, {{ cell.longitude | number:'1.1-2' }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">◆</i> Số loài</dt>
+            <dd>{{ cell.speciesCount | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🐾</i> Động vật</dt>
+            <dd>{{ cell.animalSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🌱</i> Thực vật</dt>
+            <dd>{{ cell.plantSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
+            <dd>{{ cell.insectSpecies | number }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <h2>{{ summary.totalOccurrences | number }} occurrence</h2>
+        <dl>
+          <div>
+            <dt><i class="metric-icon">◆</i> Tổng số loài</dt>
+            <dd>{{ summary.totalSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🐾</i> Động vật</dt>
+            <dd>{{ summary.animalSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🌱</i> Thực vật</dt>
+            <dd>{{ summary.plantSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
+            <dd>{{ summary.insectSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">▣</i> Observed year</dt>
+            <dd>{{ summary.earliestObservedYear || 'N/A' }}-{{ summary.latestObservedYear || 'N/A' }}</dd>
+          </div>
+        </dl>
+        <p class="insight-hint">Click một ô occurrence để xem chi tiết theo vùng; click nền bản đồ để quay lại tổng quan.</p>
+      }
+    </div>
+  }
+</aside>

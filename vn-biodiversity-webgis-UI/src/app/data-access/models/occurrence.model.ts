@@ -43,3 +43,33 @@ export interface OccurrenceMapOverview {
   cells: OccurrenceMapCell[];
   legend: OccurrenceMapLegendItem[];
 }
+
+export interface OccurrenceCellSpecies {
+  sourceTable: string;
+  sourceLabel: string;
+  speciesId: string;
+  vietnameseName: string | null;
+  scientificName: string | null;
+  family: string | null;
+  orderName: string | null;
+  className: string | null;
+  occurrenceCount: number;
+  detailUrl: string;
+}
+
+export interface OccurrenceCellTaxonomyGroup {
+  rank: string;
+  canonicalName: string;
+  vietnameseName: string | null;
+  speciesCount: number;
+  occurrenceCount: number;
+}
+
+export interface OccurrenceCellDetail {
+  cellId: string;
+  latitude: number;
+  longitude: number;
+  gridSize: number;
+  representativeSpecies: OccurrenceCellSpecies[];
+  taxonomyGroups: OccurrenceCellTaxonomyGroup[];
+}

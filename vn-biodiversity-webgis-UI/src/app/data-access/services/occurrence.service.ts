@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
 import type { OccurrenceOverviewQueryDto } from '../dto/occurrence-query.dto';
-import type { OccurrenceMapOverview } from '../models/occurrence.model';
+import type { OccurrenceCellDetail, OccurrenceMapOverview } from '../models/occurrence.model';
 
 @Injectable({
   providedIn: 'root',
@@ -12,6 +12,21 @@ export class OccurrenceService {
   private readonly api = inject(HttpApiService);
 
   getMapOverview(query: OccurrenceOverviewQueryDto = {}) {
+    const params = this.buildOverviewParams(query);
+
+    return this.api.get<OccurrenceMapOverview>(API_ENDPOINTS.occurrenceMapOverview, params);
+  }
+
+  // Used by the WebGIS detail panel under the map after a grid cell is selected.
+  getCellDetail(latitude: number, longitude: number, query: OccurrenceOverviewQueryDto = {}) {
+    let params = this.buildOverviewParams(query)
+      .set('latitude', String(latitude))
+      .set('longitude', String(longitude));
+
+    return this.api.get<OccurrenceCellDetail>(API_ENDPOINTS.occurrenceCellDetail, params);
+  }
+
+  private buildOverviewParams(query: OccurrenceOverviewQueryDto): HttpParams {
     let params = new HttpParams();
 
     if (query.gridSize) {
@@ -30,6 +45,6 @@ export class OccurrenceService {
       params = params.set('yearTo', String(query.yearTo));
     }
 
-    return this.api.get<OccurrenceMapOverview>(API_ENDPOINTS.occurrenceMapOverview, params);
+    return params;
   }
 }

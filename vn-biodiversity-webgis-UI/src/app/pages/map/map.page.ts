@@ -1,4 +1,4 @@
-import { DecimalPipe, isPlatformBrowser } from '@angular/common';
+﻿import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -13,9 +13,16 @@ import {
 import type * as Leaflet from 'leaflet';
 
 import { OccurrenceService } from '../../data-access/services/occurrence.service';
-import type { OccurrenceMapCell, OccurrenceMapOverview } from '../../data-access/models/occurrence.model';
+import type {
+  OccurrenceCellDetail,
+  OccurrenceMapCell,
+  OccurrenceMapOverview,
+} from '../../data-access/models/occurrence.model';
 import type { OccurrenceOverviewQueryDto } from '../../data-access/dto/occurrence-query.dto';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
+import { OccurrenceCellDetailPanelComponent } from './components/occurrence-cell-detail-panel/occurrence-cell-detail-panel.component';
+import { WebgisFilterPanelComponent } from './components/webgis-filter-panel/webgis-filter-panel.component';
+import { WebgisInsightPanelComponent } from './components/webgis-insight-panel/webgis-insight-panel.component';
 
 type SourceGroupFilter = NonNullable<OccurrenceOverviewQueryDto['sourceGroup']>;
 
@@ -40,7 +47,13 @@ const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
 
 @Component({
   selector: 'app-map-page',
-  imports: [DecimalPipe, SiteHeaderComponent],
+  imports: [
+    DecimalPipe,
+    OccurrenceCellDetailPanelComponent,
+    SiteHeaderComponent,
+    WebgisFilterPanelComponent,
+    WebgisInsightPanelComponent,
+  ],
   templateUrl: './map.page.html',
   styleUrl: './map.page.css',
 })
@@ -72,16 +85,21 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   readonly yearTo = signal('');
   readonly gridSize = signal(DEFAULT_GRID_SIZE);
   readonly selectedRegionName = signal('');
+  readonly selectedCellDetail = signal<OccurrenceCellDetail | null>(null);
+  readonly isCellDetailLoading = signal(false);
+  readonly cellDetailError = signal('');
 
   private leaflet?: typeof Leaflet;
   private leafletMapElement?: ElementRef<HTMLElement>;
   private map?: Leaflet.Map;
+  private mapInitialization?: Promise<void>;
   private vietnamBounds?: Leaflet.LatLngBounds;
   private occurrenceLayer?: Leaflet.LayerGroup;
   private vietnamBoundaryLayer?: Leaflet.GeoJSON;
   private vietnamProvinceFeatures: VietnamProvinceFeature[] = [];
   private layerControl?: Leaflet.Control.Layers;
   private readonly cellLayers = new Map<string, Leaflet.Rectangle>();
+  private readonly cellDetailCache = new Map<string, OccurrenceCellDetail>();
 
   ngOnInit(): void {
     if (this.isBrowser) {
@@ -111,6 +129,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       next: (overview) => {
         this.overview.set(overview);
         this.selectedCell.set(null);
+        this.selectedCellDetail.set(null);
+        this.cellDetailError.set('');
         this.isLoading.set(false);
         this.queueRenderOverview();
       },
@@ -126,11 +146,15 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.selectedRegionName.set(this.buildRegionLabel(cell));
     this.isInsightPanelExpanded.set(true);
     this.applyCellSelection(cell.cellId);
+    this.loadCellDetail(cell);
   }
 
   resetSelection(): void {
     this.selectedCell.set(null);
     this.selectedRegionName.set('');
+    this.selectedCellDetail.set(null);
+    this.cellDetailError.set('');
+    this.isCellDetailLoading.set(false);
     this.applyCellSelection('');
   }
 
@@ -167,6 +191,54 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.loadOverview();
   }
 
+  private loadCellDetail(cell: OccurrenceMapCell): void {
+    const cacheKey = this.buildCellDetailCacheKey(cell);
+    const cachedDetail = this.cellDetailCache.get(cacheKey);
+
+    if (cachedDetail) {
+      this.selectedCellDetail.set(cachedDetail);
+      this.cellDetailError.set('');
+      this.isCellDetailLoading.set(false);
+      return;
+    }
+
+    this.selectedCellDetail.set(null);
+    this.cellDetailError.set('');
+    this.isCellDetailLoading.set(true);
+
+    this.occurrenceService.getCellDetail(cell.latitude, cell.longitude, this.currentQuery()).subscribe({
+      next: (detail) => {
+        if (this.selectedCell()?.cellId !== cell.cellId) {
+          return;
+        }
+
+        this.cellDetailCache.set(cacheKey, detail);
+        this.selectedCellDetail.set(detail);
+        this.isCellDetailLoading.set(false);
+      },
+      error: () => {
+        if (this.selectedCell()?.cellId !== cell.cellId) {
+          return;
+        }
+
+        this.cellDetailError.set('Chưa tải được danh sách loài trong ô này.');
+        this.isCellDetailLoading.set(false);
+      },
+    });
+  }
+
+  private buildCellDetailCacheKey(cell: OccurrenceMapCell): string {
+    const query = this.currentQuery();
+
+    return [
+      cell.cellId,
+      query.gridSize,
+      query.sourceGroup,
+      query.yearFrom ?? '',
+      query.yearTo ?? '',
+    ].join('|');
+  }
+
   private queueRenderOverview(): void {
     window.requestAnimationFrame(() => void this.renderOverview());
   }
@@ -176,6 +248,21 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    if (this.mapInitialization) {
+      await this.mapInitialization;
+      return;
+    }
+
+    this.mapInitialization = this.createMapInstance();
+
+    try {
+      await this.mapInitialization;
+    } finally {
+      this.mapInitialization = undefined;
+    }
+  }
+
+  private async createMapInstance(): Promise<void> {
     const mapElement = this.leafletMapElement?.nativeElement;
 
     if (!mapElement) {
@@ -183,6 +270,12 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.leaflet = await import('leaflet');
+
+    if (this.map) {
+      return;
+    }
+
+    this.clearLeafletContainerId(mapElement);
 
     this.map = this.leaflet
       .map(mapElement, {
@@ -265,11 +358,21 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
 
   private destroyMapInstance(): void {
     this.map?.remove();
+    this.mapInitialization = undefined;
+    this.clearLeafletContainerId(this.leafletMapElement?.nativeElement);
     this.map = undefined;
     this.occurrenceLayer = undefined;
     this.vietnamBoundaryLayer = undefined;
     this.layerControl = undefined;
     this.cellLayers.clear();
+  }
+
+  private clearLeafletContainerId(mapElement: HTMLElement | undefined): void {
+    if (!mapElement) {
+      return;
+    }
+
+    delete (mapElement as HTMLElement & { _leaflet_id?: number })._leaflet_id;
   }
 
   private async renderOverview(retryCount = 0): Promise<void> {
@@ -320,9 +423,9 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
         sticky: true,
       });
 
-      rectangle.bindPopup(() => this.buildRegionPopup(cell), {
+      rectangle.bindPopup(() => this.buildCellPopup(cell), {
         className: 'occurrence-cell-popup',
-        maxWidth: 240,
+        maxWidth: 320,
       });
 
       rectangle.on('click', (event) => {
@@ -523,11 +626,11 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
-  private buildRegionPopup(cell: OccurrenceMapCell): string {
+  private buildCellPopup(cell: OccurrenceMapCell): string {
     const regionName = this.escapeHtml(this.buildRegionLabel(cell));
 
     return `
-      <strong>V\u00f9ng ghi nh\u1eadn</strong>
+      <strong>${cell.occurrenceCount.toLocaleString('vi-VN')} occurrence</strong>
       <span>${regionName}</span>
     `;
   }
@@ -588,4 +691,5 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     return 'all';
   }
 }
+
 

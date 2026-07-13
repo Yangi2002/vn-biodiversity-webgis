@@ -1,0 +1,81 @@
+<section class="cell-species-panel" aria-label="Loài và taxonomy trong ô occurrence">
+  <div class="cell-species-heading">
+    <div>
+      <p class="eyebrow">Occurrence species</p>
+      @if (selectedCell) {
+        <h2>Loài chủ yếu trong ô đang chọn</h2>
+        <p>{{ selectedRegionName }} · {{ selectedCell.occurrenceCount | number }} occurrence</p>
+      } @else {
+        <h2>Dữ liệu loài theo ô bản đồ</h2>
+        <p>Chọn một ô occurrence trên bản đồ để xem loài đại diện và nhóm taxonomy nổi bật trong vùng đó.</p>
+      }
+    </div>
+  </div>
+
+  @if (!selectedCell) {
+    <div class="cell-detail-empty">
+      Click vào một ô grid trên bản đồ để mở danh sách loài và taxonomy liên quan.
+    </div>
+  } @else if (isLoading) {
+    <div class="cell-detail-empty">Đang tải loài đại diện trong ô...</div>
+  } @else if (errorMessage) {
+    <div class="cell-detail-empty is-error">{{ errorMessage }}</div>
+  } @else if (detail) {
+    <div class="cell-detail-grid">
+      <article class="representative-species">
+        <div class="panel-title-row">
+          <h3>Loài đại diện</h3>
+          <span>{{ detail.representativeSpecies.length }} loài</span>
+        </div>
+
+        @if (detail.representativeSpecies.length) {
+          <div class="species-summary-list">
+            @for (species of detail.representativeSpecies; track species.sourceTable + ':' + species.speciesId) {
+              <a class="species-summary-card" [routerLink]="species.detailUrl">
+                <span class="source-pill">{{ species.sourceLabel }}</span>
+                <strong>{{ speciesDisplayName(species) }}</strong>
+                @if (species.scientificName) {
+                  <em>{{ species.scientificName }}</em>
+                }
+                <small>
+                  @if (species.family) {
+                    Họ: {{ species.family }}
+                  }
+                  @if (species.orderName) {
+                    · Bộ: {{ species.orderName }}
+                  }
+                </small>
+                <b>{{ species.occurrenceCount | number }} occurrence</b>
+              </a>
+            }
+          </div>
+        } @else {
+          <p class="cell-detail-empty">Chưa có loài đại diện trong ô này.</p>
+        }
+      </article>
+
+      <article class="taxonomy-summary">
+        <div class="panel-title-row">
+          <h3>Taxonomy nổi bật</h3>
+          <span>{{ detail.taxonomyGroups.length }} nhóm</span>
+        </div>
+
+        @if (detail.taxonomyGroups.length) {
+          <div class="taxonomy-summary-list">
+            @for (group of detail.taxonomyGroups; track group.rank + ':' + group.canonicalName) {
+              <div class="taxonomy-summary-card">
+                <span>{{ taxonomyRankLabel(group.rank) }}</span>
+                <strong>{{ taxonomyDisplayName(group) }}</strong>
+                <small>
+                  {{ group.speciesCount | number }} loài · {{ group.occurrenceCount | number }} occurrence
+                </small>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="cell-detail-empty">Chưa có nhóm taxonomy nổi bật trong ô này.</p>
+        }
+      </article>
+    </div>
+  }
+</section>

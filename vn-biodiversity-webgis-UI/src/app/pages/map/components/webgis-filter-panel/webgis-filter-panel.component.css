@@ -1,0 +1,92 @@
+.webgis-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 18px;
+  align-items: end;
+  border: 1px solid #d1e3d7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 16px 36px rgba(27, 74, 47, 0.06);
+  margin-bottom: 14px;
+  padding: 18px;
+}
+
+.eyebrow {
+  color: #00713d;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.webgis-filter-panel h2 {
+  margin: 0;
+  font-size: 1.28rem;
+}
+
+.webgis-filter-form {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr 0.9fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.webgis-filter-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.webgis-filter-form label span {
+  color: #506659;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.webgis-filter-form input,
+.webgis-filter-form select {
+  width: 100%;
+  border: 1px solid #cfe0d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #183226;
+  font-size: 1rem;
+  font-weight: 700;
+  min-height: 48px;
+  padding: 0 12px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.filter-actions button {
+  border: 1px solid #1f7a4d;
+  border-radius: 999px;
+  background: #1f7a4d;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 48px;
+  padding: 0 18px;
+  white-space: nowrap;
+}
+
+.filter-actions .ghost-button {
+  background: #fff;
+  color: #0f6f43;
+}
+
+@media (max-width: 980px) {
+  .webgis-filter-panel,
+  .webgis-filter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-actions {
+    justify-content: start;
+  }
+}

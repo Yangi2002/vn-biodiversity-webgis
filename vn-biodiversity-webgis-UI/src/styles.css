@@ -4,6 +4,23 @@
   box-sizing: border-box;
 }
 
+:root {
+  color: #17251f;
+  background: #f6f8f5;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
 body {
   margin: 0;
+  color: #17251f;
+  background: #f6f8f5;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

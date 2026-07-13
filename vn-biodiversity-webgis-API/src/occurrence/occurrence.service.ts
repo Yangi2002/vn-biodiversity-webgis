@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import type { OccurrenceCellDetailQueryDto } from './dto/occurrence-cell-detail-query.dto';
 import type { OccurrenceOverviewQueryDto } from './dto/occurrence-overview-query.dto';
 import { OccurrenceRepository } from './occurrence.repository';
-import type { OccurrenceMapOverview } from './types/occurrence-overview.type';
+import type { OccurrenceCellDetail, OccurrenceMapOverview } from './types/occurrence-overview.type';
+import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 
 const DEFAULT_GRID_SIZE = 0.5;
 const MIN_GRID_SIZE = 0.1;
@@ -18,13 +20,48 @@ export interface OccurrenceOverviewFilters {
 
 @Injectable()
 export class OccurrenceService {
+  private readonly overviewCache = new TtlCache<OccurrenceMapOverview>(120_000, 60);
+  private readonly cellDetailCache = new TtlCache<OccurrenceCellDetail>(300_000, 300);
+
   constructor(private readonly occurrenceRepository: OccurrenceRepository) {}
 
   getMapOverview(query: OccurrenceOverviewQueryDto): Promise<OccurrenceMapOverview> {
     const gridSize = this.parseGridSize(query.gridSize);
     const filters = this.parseFilters(query);
+    const cacheKey = stableCacheKey('occurrence:overview', { filters, gridSize });
+    const cachedOverview = this.overviewCache.get(cacheKey);
 
-    return this.occurrenceRepository.getMapOverview(gridSize, filters);
+    if (cachedOverview) {
+      return Promise.resolve(cachedOverview);
+    }
+
+    return this.occurrenceRepository.getMapOverview(gridSize, filters).then((overview) => {
+      this.overviewCache.set(cacheKey, overview);
+      return overview;
+    });
+  }
+
+  getCellDetail(query: OccurrenceCellDetailQueryDto): Promise<OccurrenceCellDetail> {
+    const gridSize = this.parseGridSize(query.gridSize);
+    const latitude = this.parseCoordinate(query.latitude, 'latitude', -90, 90);
+    const longitude = this.parseCoordinate(query.longitude, 'longitude', -180, 180);
+    const filters = this.parseFilters(query);
+    const cacheKey = stableCacheKey('occurrence:cell-detail', {
+      filters,
+      gridSize,
+      latitude,
+      longitude,
+    });
+    const cachedDetail = this.cellDetailCache.get(cacheKey);
+
+    if (cachedDetail) {
+      return Promise.resolve(cachedDetail);
+    }
+
+    return this.occurrenceRepository.getCellDetail(gridSize, latitude, longitude, filters).then((detail) => {
+      this.cellDetailCache.set(cacheKey, detail);
+      return detail;
+    });
   }
 
   private parseGridSize(value: string | undefined): number {
@@ -70,6 +107,16 @@ export class OccurrenceService {
     const parsed = Number(value);
 
     if (!Number.isInteger(parsed) || parsed < MIN_OBSERVED_YEAR || parsed > MAX_OBSERVED_YEAR) {
+      throw new BadRequestException(`Invalid ${fieldName}.`);
+    }
+
+    return parsed;
+  }
+
+  private parseCoordinate(value: string | undefined, fieldName: string, min: number, max: number): number {
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
       throw new BadRequestException(`Invalid ${fieldName}.`);
     }
 
