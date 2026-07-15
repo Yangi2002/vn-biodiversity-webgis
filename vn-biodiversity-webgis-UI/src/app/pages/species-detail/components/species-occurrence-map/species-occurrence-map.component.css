@@ -71,6 +71,64 @@
   font-size: 1.45rem;
 }
 
+.species-map-filter {
+  align-items: end;
+  border: 1px solid #d5e4d8;
+  background: #fff;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) auto auto;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+}
+
+.species-map-filter label {
+  color: #506659;
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 850;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.species-map-filter input,
+.species-map-filter select {
+  border: 1px solid #cfe0d4;
+  background: #fbfdf9;
+  color: #14251d;
+  font: inherit;
+  font-size: 0.92rem;
+  min-height: 42px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.species-map-filter button {
+  border: 1px solid #b9d7c5;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f6f43;
+  cursor: pointer;
+  font-weight: 850;
+  min-height: 42px;
+  padding: 8px 14px;
+}
+
+.species-map-filter-status {
+  align-items: center;
+  color: #486251;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 750;
+  margin: -6px 0 14px;
+}
+
+.species-map-filter-status strong {
+  color: #0f6f43;
+}
+
 .species-map-shell {
   border: 1px solid #cfe0d4;
   background: #eaf3ed;
@@ -148,16 +206,6 @@
   background: #eaf5ee;
 }
 
-.metric-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.1em;
-  font-style: normal;
-  line-height: 1;
-  margin-right: 4px;
-}
-
 .insight-body h3 {
   color: #14251d;
   font-size: 1.45rem;
@@ -228,6 +276,14 @@
   display: block;
   font-size: 0.98rem;
   line-height: 1.2;
+}
+
+.sensitive-note {
+  color: #8b5b15;
+  font-size: 0.83rem;
+  font-weight: 750;
+  line-height: 1.45;
+  margin: 8px 0 0;
 }
 
 .metadata-details {
@@ -379,16 +435,12 @@
   margin: 12px 0 0;
 }
 
-.insight-body a,
 .source-link {
   color: #006b3f;
-  font-weight: 850;
-  text-decoration: none;
-}
-
-.source-link {
   display: inline-flex;
+  font-weight: 850;
   margin-top: 14px;
+  text-decoration: none;
 }
 
 .insight-hint {
@@ -457,9 +509,17 @@
   background: #fff;
 }
 
+:host ::ng-deep .species-pin-marker.is-protected .pin-marker-core {
+  background: #9a5b13;
+}
+
 :host ::ng-deep .species-pin-marker:hover .pin-marker-core {
   background: #0f6f43;
   transform: rotate(-45deg) scale(1.08);
+}
+
+:host ::ng-deep .species-pin-marker.is-protected:hover .pin-marker-core {
+  background: #7c4210;
 }
 
 .map-state {
@@ -515,6 +575,14 @@
   }
 
   .occurrence-summary {
+    display: grid;
+  }
+
+  .species-map-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .species-map-filter-status {
     display: grid;
   }
 

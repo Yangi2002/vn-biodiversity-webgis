@@ -66,6 +66,14 @@ export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
     status: 'Xem hồ sơ',
     queryParams: { focus: 'source' },
   },
+ {
+    title: 'Thống kê loài',
+    label: 'Statistics',
+    description: 'Xem các thống kê về loài và phân bố của chúng.',
+    route: '/statistics',
+    icon: '📊',
+    status: 'Xem thống kê',
+  },
 ];
 
 export const HOME_HERO_SLIDES: readonly HeroSlide[] = [

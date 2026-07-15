@@ -1,0 +1,868 @@
+.statistics-page {
+  padding: 0 0 56px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(118, 184, 111, 0.18), transparent 32%),
+    linear-gradient(180deg, #eaf5ef 0, #f6f8f5 34%, #f4f8f5 100%);
+  color: #17251f;
+}
+
+.statistics-hero,
+.stats-filter,
+app-dashboard-metric-strip,
+.dashboard-tabs,
+.dashboard-layout,
+.state-panel {
+  width: min(1640px, calc(100% - 56px));
+  margin: 0 auto;
+}
+
+app-dashboard-metric-strip {
+  display: block;
+  margin-top: 18px;
+}
+
+.statistics-hero {
+  padding: 40px 0 22px;
+}
+
+.hero-grid,
+.stats-filter,
+.dashboard-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.hero-grid {
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: center;
+}
+
+.eyebrow,
+.stats-filter span,
+.panel-heading span {
+  color: #00713d;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.statistics-hero h1 {
+  max-width: 880px;
+  margin: 0;
+  font-size: clamp(2.9rem, 4vw, 4.8rem);
+}
+
+.statistics-hero p:not(.eyebrow) {
+  max-width: 900px;
+  margin: 14px 0 0;
+  color: #41594b;
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.hero-card,
+.stats-filter,
+.panel,
+.state-panel {
+  border: 1px solid #cfe0d5;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 42px rgba(23, 37, 31, 0.07);
+}
+
+.hero-card,
+.panel {
+  min-width: 0;
+  padding: 20px;
+}
+
+.hero-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.8rem;
+}
+
+.hero-card small {
+  display: block;
+  margin-top: 10px;
+  color: #60746a;
+  font-weight: 800;
+}
+
+.stats-filter {
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  align-items: end;
+  gap: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px);
+}
+
+.stats-filter strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 1.08rem;
+}
+
+.stats-filter-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) minmax(210px, 1.18fr) minmax(150px, 0.85fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.stats-filter label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: #506659;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.stats-filter input,
+.stats-filter select {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  border: 1px solid #cfe0d5;
+  border-radius: 8px;
+  background: #fff;
+  color: #17251f;
+  font-size: 1rem;
+  padding: 0 12px;
+}
+
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.filter-actions button {
+  white-space: nowrap;
+}
+
+button {
+  cursor: pointer;
+  height: 48px;
+  border-radius: 999px;
+  font-weight: 900;
+  padding: 0 18px;
+}
+
+.primary-button {
+  border: 0;
+  background: #1f7a4e;
+  color: #fff;
+}
+
+.ghost-button {
+  border: 1px solid #1f7a4e;
+  background: #fff;
+  color: #1f7a4e;
+}
+
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 8px;
+  border: 1px solid #cfe0d5;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.dashboard-tabs button {
+  height: 42px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #344d3f;
+}
+
+.dashboard-tabs button.is-active {
+  border-color: #b9d8c3;
+  background: #e9f5ed;
+  color: #006d3b;
+}
+
+.dashboard-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.dashboard-layout {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  align-items: start;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.group-view-toolbar {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #cfe0d5;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.group-view-toolbar span {
+  color: #00713d;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.group-view-toolbar strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.18rem;
+}
+
+.segmented-control {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid #cfe0d5;
+  border-radius: 999px;
+  background: #f6fbf8;
+}
+
+.segmented-control button {
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: #355343;
+}
+
+.segmented-control button.is-active {
+  background: #1f7a4e;
+  color: #fff;
+}
+
+.panel-heading,
+.rank-row div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-heading {
+  margin-bottom: 14px;
+}
+
+.panel-heading h2 {
+  margin: 6px 0 0;
+  font-size: 1.46rem;
+  line-height: 1.15;
+}
+
+.panel-heading > strong {
+  color: #1f7a4e;
+  white-space: nowrap;
+}
+
+.species-panel,
+.donut-detail-panel,
+.region-detail-panel,
+.species-ranking,
+.taxonomy-panel,
+.region-year-panel {
+  grid-column: span 2;
+}
+
+.year-panel {
+  grid-column: span 3;
+}
+
+.overview-source-panel {
+  grid-column: span 1;
+}
+
+.overview-taxonomy-panel {
+  grid-column: span 3;
+}
+
+.overview-region-year-panel {
+  grid-column: span 4;
+}
+
+.species-overview {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.donut-chart {
+  display: grid;
+  place-items: center;
+  width: 180px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.donut-chart > div,
+.detail-donut > div {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #dbe9df;
+}
+
+.detail-donut-layout {
+  display: grid;
+  grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+}
+
+.detail-donut {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 166px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.mini-donut-layout {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+
+.mini-donut {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.mini-donut span {
+  display: grid;
+  place-items: center;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  color: #17251f;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.detail-donut span {
+  max-width: 78px;
+  color: #486154;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.detail-donut strong {
+  font-size: 1.65rem;
+}
+
+.donut-legend {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.donut-legend a,
+.donut-legend div {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  gap: 9px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #e3eee7;
+  color: inherit;
+  text-decoration: none;
+}
+
+.donut-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.donut-legend span {
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.donut-legend small {
+  color: #1f7a4e;
+  font-weight: 900;
+}
+
+.donut-legend.is-mini {
+  gap: 5px;
+}
+
+.donut-legend.is-mini a {
+  grid-template-columns: 10px minmax(0, 1fr) auto auto;
+  gap: 7px 8px;
+  padding: 5px 0;
+}
+
+.donut-legend.is-mini i {
+  width: 10px;
+  height: 10px;
+}
+
+.group-list,
+.rank-bars,
+.compact-bars,
+.region-breakdown-list,
+.species-table {
+  display: grid;
+  gap: 9px;
+}
+
+.group-list div {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e3eee7;
+}
+
+.group-list i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.region-breakdown-card,
+.quality-panel dl div {
+  border: 1px solid #e0ece5;
+  border-radius: 10px;
+  background: #fbfdfb;
+}
+
+.region-breakdown-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.region-species-list > strong {
+  color: #1f6f46;
+}
+
+.region-breakdown-card header span,
+.rank-row small,
+.species-table small {
+  color: #60746a;
+  font-weight: 800;
+}
+
+.species-share-row,
+.species-table a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.species-share-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 12px;
+  align-items: center;
+}
+
+.species-share-row div strong,
+.species-share-row div span,
+.species-table span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.species-share-row div span,
+.species-table span {
+  margin-top: 3px;
+  color: #8a3c1d;
+  font-size: 0.86rem;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.species-share-row small,
+.species-table b {
+  color: #1f7a4e;
+  font-weight: 900;
+}
+
+.species-share-row i,
+.rank-row i,
+.compact-bars i {
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e3eee7;
+}
+
+.species-share-row i {
+  grid-column: 1 / -1;
+  height: 8px;
+}
+
+.species-share-row b,
+.rank-row b,
+.compact-bars b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f7a4e;
+}
+
+.year-bars {
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  height: 220px;
+  padding: 14px 8px 4px;
+  border: 1px solid #e0ece5;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fff, #f4faf6);
+}
+
+.year-bar {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+}
+
+.year-bar i {
+  display: block;
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(180deg, #2b8a5a, #8cc97f);
+}
+
+.year-bar span {
+  margin-top: 7px;
+  color: #60746a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.year-tooltip {
+  position: absolute;
+  right: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 4;
+  display: none;
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid #b9d8c3;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(23, 37, 31, 0.18);
+  color: #344d3f;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  transform: translateX(50%);
+}
+
+.year-tooltip b {
+  display: block;
+  color: #006d3b;
+  font-size: 0.9rem;
+}
+
+.year-bar:hover .year-tooltip {
+  display: block;
+}
+
+.rank-row,
+.compact-bars div {
+  display: grid;
+  gap: 8px;
+}
+
+.taxonomy-grid,
+.region-year-list {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  display: grid;
+  gap: 9px;
+}
+
+.taxonomy-grid {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
+.taxonomy-grid div,
+.region-year-list section {
+  border: 1px solid #e0ece5;
+  border-radius: 10px;
+  background: #fbfdfb;
+}
+
+.taxonomy-grid div {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  padding: 11px 12px;
+}
+
+.taxonomy-grid span {
+  color: #00713d;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.taxonomy-grid strong {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.taxonomy-grid small,
+.region-year-list header span {
+  color: #60746a;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.region-year-list section {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+}
+
+.region-year-list header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.region-year-bars {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  height: 72px;
+  padding: 7px;
+  border-radius: 7px;
+  background: #f0f7f3;
+}
+
+.region-year-bars i {
+  min-width: 5px;
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #1f7a4e, #8cc97f);
+}
+
+.rank-row span,
+.compact-bars span {
+  font-weight: 900;
+}
+
+.rank-row i,
+.compact-bars i {
+  height: 10px;
+}
+
+.compact-bars div {
+  grid-template-columns: 1fr 1.6fr auto;
+  align-items: center;
+}
+
+.region-breakdown-list {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
+.region-breakdown-card header {
+  display: grid;
+  gap: 4px;
+}
+
+.region-breakdown-card header strong,
+.species-table strong {
+  overflow-wrap: anywhere;
+}
+
+.stacked-bar {
+  display: flex;
+  overflow: hidden;
+  height: 12px;
+  border-radius: 999px;
+  background: #e3eee7;
+}
+
+.stacked-bar i {
+  min-width: 4px;
+  height: 100%;
+}
+
+.region-species-list {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding-top: 10px;
+  border-top: 1px solid #e3eee7;
+}
+
+.species-share-row.is-compact {
+  padding: 8px 0;
+  border-top: 1px solid #edf4ef;
+}
+
+.quality-panel dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.quality-panel dl div {
+  padding: 12px;
+}
+
+.quality-panel dt {
+  color: #60746a;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.quality-panel dd {
+  margin: 7px 0 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.species-table a {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(150px, 0.7fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #e0ece5;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.species-table a > i {
+  grid-column: 1 / -1;
+  display: block;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #e3eee7;
+}
+
+.species-table a > i b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f7a4e;
+}
+
+.species-table em {
+  color: #1f7a4e;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.species-share-row:hover,
+.species-table a:hover {
+  border-color: #b9d8c3;
+  background: #f3faf5;
+  color: #0f6f43;
+}
+
+.state-panel {
+  margin-top: 18px;
+  padding: 28px;
+  color: #40584a;
+  font-weight: 800;
+}
+
+.state-panel.is-error {
+  border-color: #d8b8a8;
+  color: #883d22;
+}
+
+@media (max-width: 1180px) {
+  .hero-grid,
+  .stats-filter,
+  .stats-filter-form,
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .species-panel,
+  .region-detail-panel,
+  .species-ranking,
+  .taxonomy-panel,
+  .region-year-panel,
+  .overview-source-panel,
+  .overview-taxonomy-panel,
+  .overview-region-year-panel,
+  .year-panel {
+    grid-column: auto;
+  }
+
+  .region-breakdown-list {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
+
+  .region-year-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .statistics-hero,
+  .stats-filter,
+  app-dashboard-metric-strip,
+  .dashboard-tabs,
+  .dashboard-layout,
+  .state-panel {
+    width: min(100% - 28px, 1640px);
+  }
+
+  .statistics-hero h1 {
+    font-size: 2.8rem;
+  }
+
+  .species-overview,
+  .detail-donut-layout,
+  .region-breakdown-list,
+  .taxonomy-grid,
+  .quality-panel dl,
+  .species-table a {
+    grid-template-columns: 1fr;
+  }
+
+  .donut-chart {
+    width: min(220px, 100%);
+  }
+}

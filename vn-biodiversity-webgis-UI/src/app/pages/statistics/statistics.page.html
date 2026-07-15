@@ -1,0 +1,569 @@
+<app-site-header sectionLabel="Thống kê biodiversity" />
+
+<main class="statistics-page">
+  <section class="statistics-hero">
+    <p class="eyebrow">Biodiversity dashboard</p>
+    <div class="hero-grid">
+      <div>
+        <h1>Thống kê dữ liệu đa dạng sinh học</h1>
+        <p>
+          Tổng hợp số loài, occurrence, vùng ghi nhận, thời gian quan sát và chất lượng dữ liệu để hỗ trợ nghiên cứu,
+          giám sát và phân tích WebGIS.
+        </p>
+      </div>
+
+      @if (dashboard(); as data) {
+        <aside class="hero-card">
+          <span>Observed year</span>
+          <strong>{{ observedRange(data) }}</strong>
+          <small>{{ data.summary.totalOccurrences | number }} occurrence trong hệ thống</small>
+        </aside>
+      }
+    </div>
+  </section>
+
+  <section class="stats-filter" aria-label="Bộ lọc thống kê">
+    <div class="filter-copy">
+      <span>Bộ lọc dashboard</span>
+      <strong>Theo nhóm, năm và dữ liệu ảnh</strong>
+    </div>
+
+    <form class="stats-filter-form" (submit)="$event.preventDefault(); loadDashboard()">
+      <label>
+        Nhóm sinh vật
+        <select [ngModel]="sourceGroup()" name="sourceGroup" (ngModelChange)="updateSourceGroup($event)">
+          <option value="all">Tất cả</option>
+          <option value="animal">Động vật</option>
+          <option value="plant">Thực vật</option>
+          <option value="insect">Côn trùng</option>
+        </select>
+      </label>
+
+      <label>
+        Năm từ
+        <input
+          type="number"
+          inputmode="numeric"
+          placeholder="VD: 2000"
+          [ngModel]="yearFrom()"
+          name="yearFrom"
+          (ngModelChange)="updateYearFrom($event)"
+        />
+      </label>
+
+      <label>
+        Năm đến
+        <input
+          type="number"
+          inputmode="numeric"
+          placeholder="VD: 2026"
+          [ngModel]="yearTo()"
+          name="yearTo"
+          (ngModelChange)="updateYearTo($event)"
+        />
+      </label>
+
+      <label>
+        Nguồn ghi nhận
+        <select [ngModel]="basisOfRecord()" name="basisOfRecord" (ngModelChange)="updateBasisOfRecord($event)">
+          <option value="all">Tất cả</option>
+          @for (basis of dashboard()?.basisOfRecord ?? []; track basis.name) {
+            <option [value]="basis.name">{{ basis.name }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Ảnh occurrence
+        <select [ngModel]="hasImage()" name="hasImage" (ngModelChange)="updateHasImage($event)">
+          <option value="all">Tất cả</option>
+          <option value="true">Có ảnh</option>
+          <option value="false">Chưa có ảnh</option>
+        </select>
+      </label>
+
+      <div class="filter-actions">
+        <button type="button" class="ghost-button" (click)="clearFilters()">Xóa</button>
+        <button type="button" class="ghost-button" [disabled]="!dashboard()" (click)="exportDashboardCsv()">Export CSV</button>
+        <button type="submit" class="primary-button" [disabled]="isLoading()">
+          {{ isLoading() ? 'Đang cập nhật' : 'Cập nhật' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  @if (isLoading() && !dashboard()) {
+    <section class="state-panel">Đang tải dữ liệu thống kê...</section>
+  } @else if (errorMessage() && !dashboard()) {
+    <section class="state-panel is-error">{{ errorMessage() }}</section>
+  } @else if (dashboard(); as data) {
+    @if (isLoading()) {
+      <section class="state-panel is-inline-loading">Đang cập nhật dữ liệu theo bộ lọc...</section>
+    }
+
+    <app-dashboard-metric-strip [items]="summaryMetrics()" />
+
+    <nav class="dashboard-tabs" aria-label="Nhóm nội dung thống kê">
+      <button
+        type="button"
+        [class.is-active]="activeTab() === 'overview'"
+        [disabled]="isGroupFiltered()"
+        (click)="showTab('overview')"
+      >
+        Tổng quan
+      </button>
+      <button
+        type="button"
+        [class.is-active]="activeTab() === 'group-detail'"
+        [disabled]="!isGroupFiltered()"
+        (click)="showTab('group-detail')"
+      >
+        Phân tích nhóm
+      </button>
+    </nav>
+
+    <section class="dashboard-layout">
+      @if (activeTab() === 'overview') {
+        <article class="panel species-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Tỷ lệ loài</span>
+              <h2>Ba nhóm dữ liệu chính</h2>
+            </div>
+            <strong>{{ speciesGroupTotal() | number }} loài</strong>
+          </div>
+
+          <div class="species-overview">
+            <div class="donut-chart" [style.background]="donutBackground(data.speciesGroups)">
+              <div>
+                <span>Species</span>
+                <strong>{{ speciesGroupTotal() | number }}</strong>
+              </div>
+            </div>
+
+            <div class="group-list">
+              @for (group of data.speciesGroups; track group.key) {
+                <div>
+                  <i [style.background]="groupColor(group.key)"></i>
+                  <span>{{ group.label }}</span>
+                  <strong>{{ group.speciesCount | number }} loài</strong>
+                  <small>{{ groupRatio(group, speciesGroupTotal()) }}%</small>
+                </div>
+              }
+            </div>
+          </div>
+        </article>
+
+        <article class="panel donut-detail-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Region share</span>
+              <h2>Vùng ghi nhận tổng quát</h2>
+            </div>
+            <strong>{{ selectedGroupLabel() }}</strong>
+          </div>
+
+          <div class="detail-donut-layout">
+            <div class="detail-donut" [style.background]="donutMetricBackground(regionDonutItems())">
+              <div>
+                <span>Top vùng</span>
+                <strong>{{ regionDonutItems().length }}</strong>
+              </div>
+            </div>
+
+            <div class="donut-legend">
+              @for (item of regionDonutItems(); track item.key) {
+                <div>
+                  <i [style.background]="item.color"></i>
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value | number }}</strong>
+                  <small>{{ item.percent }}%</small>
+                </div>
+              }
+            </div>
+          </div>
+        </article>
+
+        <article class="panel quality-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Data quality</span>
+              <h2>Chất lượng occurrence</h2>
+            </div>
+          </div>
+
+          <dl>
+            <div>
+              <dt>Tọa độ hợp lệ</dt>
+              <dd>{{ data.dataQuality.validCoordinates | number }}</dd>
+            </div>
+            <div>
+              <dt>Có vấn đề geospatial</dt>
+              <dd>{{ data.dataQuality.geospatialIssues | number }}</dd>
+            </div>
+            <div>
+              <dt>Thiếu ngày ghi nhận</dt>
+              <dd>{{ data.dataQuality.missingObservedDate | number }}</dd>
+            </div>
+            <div>
+              <dt>Có ảnh</dt>
+              <dd>{{ data.dataQuality.withImages | number }}</dd>
+            </div>
+            <div>
+              <dt>Chưa có ảnh</dt>
+              <dd>{{ data.dataQuality.withoutImages | number }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="panel year-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Temporal trend</span>
+              <h2>Occurrence theo năm</h2>
+            </div>
+            <strong>{{ recentYears().length }} mốc</strong>
+          </div>
+
+          <div class="year-bars" aria-label="Biểu đồ occurrence theo năm">
+            @for (year of recentYears(); track year.year) {
+              <div class="year-bar">
+                <i [style.height]="yearHeight(year)"></i>
+                <span>{{ year.year }}</span>
+                <strong class="year-tooltip">
+                  <b>{{ year.year }}</b>
+                  {{ year.occurrenceCount | number }} occurrence · {{ year.speciesCount | number }} loài
+                </strong>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel source-panel overview-source-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Data source</span>
+              <h2>Dạng ghi nhận</h2>
+            </div>
+          </div>
+
+          <div class="compact-bars">
+            @for (basis of data.basisOfRecord; track basis.name) {
+              <div>
+                <span>{{ basis.name }}</span>
+                <i><b [style.width]="barWidth(basis.count, maxBasisCount())"></b></i>
+                <strong>{{ basis.count | number }}</strong>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel taxonomy-panel overview-taxonomy-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Taxonomy depth</span>
+              <h2>Phân loại sâu theo lớp, bộ, họ, chi</h2>
+            </div>
+            <strong>{{ data.taxonomyHighlights.length }} nhóm</strong>
+          </div>
+
+          <div class="taxonomy-grid">
+            @for (taxon of data.taxonomyHighlights; track taxon.rank + taxon.canonicalName) {
+              <div>
+                <span>{{ taxon.rankLabel }}</span>
+                <strong>{{ taxon.canonicalName }}</strong>
+                <small>{{ taxon.speciesCount | number }} loài · {{ taxon.occurrenceCount | number }} occurrence · {{ taxon.regionCount | number }} vùng</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel region-year-panel overview-region-year-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Region timeline</span>
+              <h2>Occurrence theo tỉnh/vùng qua năm</h2>
+            </div>
+            <strong>{{ regionYearGroups().length }} vùng</strong>
+          </div>
+
+          <div class="region-year-list">
+            @for (region of regionYearGroups(); track region.region) {
+              <section>
+                <header>
+                  <strong>{{ region.region }}</strong>
+                  <span>{{ region.totalOccurrence | number }} occurrence</span>
+                </header>
+                <div class="region-year-bars">
+                  @for (year of region.years.slice(-18); track year.region + year.year) {
+                    <i [style.height]="regionYearHeight(year)" [title]="year.year + ': ' + year.occurrenceCount + ' occurrence'"></i>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        </article>
+      }
+
+      @if (activeTab() === 'group-detail' && isGroupFiltered()) {
+        <section class="group-view-toolbar" aria-label="Chọn kiểu hiển thị phân tích nhóm">
+          <div>
+            <span>Kiểu hiển thị</span>
+            <strong>{{ selectedGroupLabel() }}</strong>
+          </div>
+
+          <div class="segmented-control">
+            <button
+              type="button"
+              [class.is-active]="groupVisualMode() === 'bar'"
+              (click)="setGroupVisualMode('bar')"
+            >
+              Thanh ngang
+            </button>
+            <button
+              type="button"
+              [class.is-active]="groupVisualMode() === 'donut'"
+              (click)="setGroupVisualMode('donut')"
+            >
+              Biểu đồ tròn
+            </button>
+          </div>
+        </section>
+
+        <article class="panel year-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Temporal trend</span>
+              <h2>Occurrence theo năm</h2>
+            </div>
+            <strong>{{ selectedGroupLabel() }} · {{ recentYears().length }} mốc</strong>
+          </div>
+
+          <div class="year-bars" aria-label="Biểu đồ occurrence theo năm">
+            @for (year of recentYears(); track year.year) {
+              <div class="year-bar">
+                <i [style.height]="yearHeight(year)"></i>
+                <span>{{ year.year }}</span>
+                <strong class="year-tooltip">
+                  <b>{{ year.year }}</b>
+                  {{ year.occurrenceCount | number }} occurrence · {{ year.speciesCount | number }} loài
+                </strong>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel source-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Data source</span>
+              <h2>Dạng ghi nhận</h2>
+            </div>
+            <strong>{{ data.basisOfRecord.length }} dạng</strong>
+          </div>
+
+          <div class="compact-bars">
+            @for (basis of data.basisOfRecord; track basis.name) {
+              <div>
+                <span>{{ basis.name }}</span>
+                <i><b [style.width]="barWidth(basis.count, maxBasisCount())"></b></i>
+                <strong>{{ basis.count | number }}</strong>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel taxonomy-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Taxonomy depth</span>
+              <h2>Phân loại sâu của {{ selectedGroupLabel() }}</h2>
+            </div>
+            <strong>{{ data.taxonomyHighlights.length }} nhóm</strong>
+          </div>
+
+          <div class="taxonomy-grid">
+            @for (taxon of data.taxonomyHighlights; track taxon.rank + taxon.canonicalName) {
+              <div>
+                <span>{{ taxon.rankLabel }}</span>
+                <strong>{{ taxon.canonicalName }}</strong>
+                <small>{{ taxon.speciesCount | number }} loài · {{ taxon.occurrenceCount | number }} occurrence · {{ taxon.regionCount | number }} vùng</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel region-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Spatial ranking</span>
+              <h2>Vùng ghi nhận nổi bật</h2>
+            </div>
+            <strong>Top {{ data.occurrencesByRegion.length }}</strong>
+          </div>
+
+          @if (groupVisualMode() === 'donut') {
+            <div class="detail-donut-layout">
+              <div class="detail-donut" [style.background]="donutMetricBackground(regionDonutItems())">
+                <div>
+                  <span>Region</span>
+                  <strong>{{ regionDonutItems().length }}</strong>
+                </div>
+              </div>
+
+              <div class="donut-legend">
+                @for (item of regionDonutItems(); track item.key) {
+                  <div>
+                    <i [style.background]="item.color"></i>
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.value | number }}</strong>
+                    <small>{{ item.percent }}%</small>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="rank-bars">
+              @for (region of data.occurrencesByRegion; track region.region) {
+                <div class="rank-row">
+                  <div>
+                    <span>{{ region.region }}</span>
+                    <strong>{{ region.occurrenceCount | number }} occurrence</strong>
+                  </div>
+                  <i><b [style.width]="barWidth(region.occurrenceCount, maxRegionOccurrence())"></b></i>
+                  <small>{{ region.speciesCount | number }} loài · {{ regionRatio(region) }}%</small>
+                </div>
+              }
+            </div>
+          }
+        </article>
+
+        <article class="panel species-ranking">
+          <div class="panel-heading">
+            <div>
+              <span>Research species</span>
+              <h2>Loài có nhiều ghi nhận</h2>
+            </div>
+            <strong>{{ data.summary.totalOccurrences | number }} occurrence</strong>
+          </div>
+
+          @if (groupVisualMode() === 'donut') {
+            <div class="detail-donut-layout">
+              <div class="detail-donut" [style.background]="donutMetricBackground(speciesDonutItems())">
+                <div>
+                  <span>Species</span>
+                  <strong>{{ speciesDonutItems().length }}</strong>
+                </div>
+              </div>
+
+              <div class="donut-legend">
+                @for (item of speciesDonutItems(); track item.key) {
+                  <a [routerLink]="item.detailUrl || '/species-list'">
+                    <i [style.background]="item.color"></i>
+                    <span>{{ item.label }}</span>
+                    <strong>{{ item.value | number }}</strong>
+                    <small>{{ item.percent }}%</small>
+                  </a>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="species-table">
+              @for (species of data.speciesRanking; track species.sourceTable + species.speciesId) {
+                <a [routerLink]="species.detailUrl">
+                  <div>
+                    <strong>{{ species.vietnameseName || species.scientificName || 'Chưa rõ tên' }}</strong>
+                    <span>{{ species.scientificName || 'Chưa có tên khoa học' }}</span>
+                  </div>
+                  <small>{{ species.family || 'Chưa rõ họ' }}</small>
+                  <b>{{ species.occurrenceCount | number }}</b>
+                  <em>{{ speciesRankingRatio(species) }}%</em>
+                  <i><b [style.width]="speciesRankingWidth(species)"></b></i>
+                </a>
+              }
+            </div>
+          }
+        </article>
+
+        <article class="panel region-detail-panel">
+          <div class="panel-heading">
+            <div>
+              <span>Region analysis</span>
+              <h2>Cơ cấu vùng và loài nổi bật</h2>
+            </div>
+            <strong>{{ regionBreakdown().length }} vùng</strong>
+          </div>
+
+          <div class="region-breakdown-list">
+            @for (region of regionBreakdown(); track region.region) {
+              <section class="region-breakdown-card">
+                <header>
+                  <strong>{{ region.region }}</strong>
+                  <span>{{ region.totalSpecies | number }} loài · {{ region.totalOccurrence | number }} occurrence</span>
+                </header>
+
+                <div class="stacked-bar" aria-label="Tỷ lệ nhóm sinh vật trong vùng">
+                  @for (group of region.groups; track group.sourceGroup) {
+                    <i
+                      [style.width]="regionGroupShare(group, region.totalOccurrence)"
+                      [style.background]="groupColor(group.sourceGroup)"
+                      [title]="group.sourceGroupLabel + ': ' + group.occurrenceCount + ' occurrence'"
+                    ></i>
+                  }
+                </div>
+
+                @for (speciesGroup of regionSpeciesComposition(); track speciesGroup.key) {
+                  @if (speciesGroup.key === region.region) {
+                    @if (groupVisualMode() === 'donut') {
+                      <div class="region-species-list">
+                        <strong>Loài chiếm tỷ lệ cao</strong>
+                        <div class="mini-donut-layout">
+                          <div class="mini-donut" [style.background]="donutMetricBackground(regionSpeciesDonutItems(region.region), true)">
+                            <span>{{ regionSpeciesDonutItems(region.region).length }}</span>
+                          </div>
+
+                          <div class="donut-legend is-mini">
+                            @for (item of regionSpeciesDonutItems(region.region); track item.key) {
+                              <a [routerLink]="item.detailUrl || '/species-list'">
+                                <i [style.background]="item.color"></i>
+                                <span>{{ item.label }}</span>
+                                <strong>{{ item.value | number }}</strong>
+                                <small>{{ item.percent }}%</small>
+                              </a>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="region-species-list">
+                        <strong>Loài chiếm tỷ lệ cao</strong>
+                        @for (species of speciesGroup.items; track species.sourceTable + species.speciesId) {
+                          <a [routerLink]="species.detailUrl" class="species-share-row is-compact">
+                            <div>
+                              <strong>{{ species.vietnameseName || species.scientificName || 'Chưa rõ tên' }}</strong>
+                              <span>{{ species.sourceGroupLabel }}</span>
+                            </div>
+                            <small>{{ species.sharePercent }}%</small>
+                            <i><b [style.width]="speciesShareWidth(species)"></b></i>
+                          </a>
+                        }
+                      </div>
+                    }
+                  }
+                }
+              </section>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  }
+</main>
+
+<app-credentials-footer
+  [links]="footerLinks"
+  [logoSrc]="vnscLogoSrc"
+  logoAlt="Logo Trung tâm Vũ trụ Việt Nam"
+  organizationName="Trung tâm Vũ trụ Việt Nam (VNSC)"
+  organizationNameEn="Vietnam National Space Center"
+/>

@@ -30,6 +30,7 @@ const MAP_INTERACTION_BOUNDS: Leaflet.LatLngBoundsExpression = [
   [27.0, 118.5],
 ];
 const PIN_MARKER_HTML = '<span class="pin-marker-core"></span>';
+const MAX_RENDERED_MARKERS = 500;
 
 @Component({
   selector: 'app-species-occurrence-map',
@@ -42,6 +43,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   readonly speciesId = input.required<string>();
   readonly speciesName = input('');
   readonly scientificName = input<string | null>(null);
+  readonly isEndangeredSpecies = input(false);
 
   @ViewChild('mapContainer')
   private set mapContainerRef(value: ElementRef<HTMLElement> | undefined) {
@@ -59,6 +61,10 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   protected readonly selectedPoint = signal<SpeciesOccurrencePoint | null>(null);
   protected readonly isInsightPanelExpanded = signal(true);
   protected readonly brokenImageKeys = signal<Set<string>>(new Set());
+  protected readonly yearFromFilter = signal('');
+  protected readonly yearToFilter = signal('');
+  protected readonly sourceFilter = signal('all');
+  protected readonly imageFilter = signal('all');
 
   private readonly occurrenceService = inject(OccurrenceService);
   private readonly destroyRef = inject(DestroyRef);
@@ -106,16 +112,48 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.focusCurrentOccurrenceBounds();
   }
 
+  protected resetFilters(): void {
+    this.yearFromFilter.set('');
+    this.yearToFilter.set('');
+    this.sourceFilter.set('all');
+    this.imageFilter.set('all');
+    this.selectedPoint.set(null);
+    this.renderPoints({ fitBounds: true });
+  }
+
+  protected updateYearFromFilter(value: string): void {
+    this.yearFromFilter.set(value.trim());
+  }
+
+  protected updateYearToFilter(value: string): void {
+    this.yearToFilter.set(value.trim());
+  }
+
+  protected updateSourceFilter(value: string): void {
+    this.sourceFilter.set(value);
+    this.applyMapFilters();
+  }
+
+  protected updateImageFilter(value: string): void {
+    this.imageFilter.set(value);
+    this.applyMapFilters();
+  }
+
+  protected applyMapFilters(): void {
+    this.selectedPoint.set(null);
+    this.renderPoints({ fitBounds: true });
+  }
+
   protected coordinateText(point: SpeciesOccurrencePoint): string {
     return `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}`;
   }
 
   protected latitudeText(point: SpeciesOccurrencePoint): string {
-    return point.latitude.toFixed(6);
+    return this.displayLatitude(point).toFixed(this.isCoordinateProtected() ? 2 : 6);
   }
 
   protected longitudeText(point: SpeciesOccurrencePoint): string {
-    return point.longitude.toFixed(6);
+    return this.displayLongitude(point).toFixed(this.isCoordinateProtected() ? 2 : 6);
   }
 
   protected canShowOccurrenceImage(point: SpeciesOccurrencePoint): boolean {
@@ -124,6 +162,38 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
 
   protected markOccurrenceImageBroken(point: SpeciesOccurrencePoint): void {
     this.brokenImageKeys.update((keys) => new Set(keys).add(point.occurrenceKey));
+  }
+
+  protected filteredPointCount(): number {
+    return this.filteredOccurrencePoints().length;
+  }
+
+  protected displayedPointCount(): number {
+    return this.displayedOccurrencePoints().length;
+  }
+
+  protected isSamplingMarkers(): boolean {
+    return this.filteredPointCount() > this.displayedPointCount();
+  }
+
+  protected sourceOptions(): string[] {
+    const sources = new Set(
+      (this.occurrenceMap()?.points ?? [])
+        .map((point) => point.basisOfRecord || point.qualityGrade)
+        .filter((source): source is string => Boolean(source)),
+    );
+
+    return Array.from(sources).sort((a, b) => a.localeCompare(b));
+  }
+
+  protected coordinatesNotice(): string {
+    return this.isCoordinateProtected()
+      ? 'Loài đang ở mức EN, tọa độ được làm mờ để hạn chế lộ vị trí nhạy cảm.'
+      : 'Tọa độ đang hiển thị theo dữ liệu gốc.';
+  }
+
+  protected isCoordinateProtected(): boolean {
+    return this.isEndangeredSpecies();
   }
 
   protected placeText(point: SpeciesOccurrencePoint): string {
@@ -252,7 +322,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     }
 
     this.markerLayer.clearLayers();
-    const points = this.occurrenceMap()?.points ?? [];
+    const points = this.displayedOccurrencePoints();
 
     if (!points.length) {
       this.focusVietnam();
@@ -277,7 +347,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
         this.isInsightPanelExpanded.set(true);
       });
       marker.addTo(this.markerLayer!);
-      bounds.extend([point.latitude, point.longitude]);
+      bounds.extend([this.displayLatitude(point), this.displayLongitude(point)]);
     });
 
     if (options.fitBounds) {
@@ -287,14 +357,14 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
 
   private createOccurrenceMarker(point: SpeciesOccurrencePoint): Leaflet.Marker {
     const pinIcon = this.leaflet!.divIcon({
-      className: 'species-pin-marker',
+      className: this.isCoordinateProtected() ? 'species-pin-marker is-protected' : 'species-pin-marker',
       html: PIN_MARKER_HTML,
       iconAnchor: [14, 34],
       iconSize: [28, 34],
       popupAnchor: [0, -30],
     });
 
-    return this.leaflet!.marker([point.latitude, point.longitude], {
+    return this.leaflet!.marker([this.displayLatitude(point), this.displayLongitude(point)], {
       icon: pinIcon,
       keyboard: true,
       title: this.speciesName() || this.scientificName() || this.speciesId(),
@@ -319,7 +389,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
       return;
     }
 
-    const points = this.occurrenceMap()?.points ?? [];
+    const points = this.displayedOccurrencePoints();
 
     if (!points.length) {
       this.focusVietnam();
@@ -327,8 +397,67 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     }
 
     const bounds = this.leaflet.latLngBounds([]);
-    points.forEach((point) => bounds.extend([point.latitude, point.longitude]));
+    points.forEach((point) => bounds.extend([this.displayLatitude(point), this.displayLongitude(point)]));
     this.focusOccurrenceBounds(bounds);
+  }
+
+  private filteredOccurrencePoints(): SpeciesOccurrencePoint[] {
+    const points = this.occurrenceMap()?.points ?? [];
+    const yearFrom = Number(this.yearFromFilter());
+    const yearTo = Number(this.yearToFilter());
+    const hasYearFrom = Number.isFinite(yearFrom) && this.yearFromFilter() !== '';
+    const hasYearTo = Number.isFinite(yearTo) && this.yearToFilter() !== '';
+    const source = this.sourceFilter();
+    const imageMode = this.imageFilter();
+
+    return points.filter((point) => {
+      if (hasYearFrom && (!point.observedYear || point.observedYear < yearFrom)) {
+        return false;
+      }
+
+      if (hasYearTo && (!point.observedYear || point.observedYear > yearTo)) {
+        return false;
+      }
+
+      if (source !== 'all' && source !== (point.basisOfRecord || point.qualityGrade || '')) {
+        return false;
+      }
+
+      if (imageMode === 'with-image' && !point.imageUrl) {
+        return false;
+      }
+
+      if (imageMode === 'without-image' && point.imageUrl) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  private displayedOccurrencePoints(): SpeciesOccurrencePoint[] {
+    return this.samplePoints(this.filteredOccurrencePoints(), MAX_RENDERED_MARKERS);
+  }
+
+  private samplePoints(points: SpeciesOccurrencePoint[], limit: number): SpeciesOccurrencePoint[] {
+    if (points.length <= limit) {
+      return points;
+    }
+
+    const step = points.length / limit;
+    return Array.from({ length: limit }, (_, index) => points[Math.floor(index * step)]);
+  }
+
+  private displayLatitude(point: SpeciesOccurrencePoint): number {
+    return this.isCoordinateProtected() ? this.blurCoordinate(point.latitude) : point.latitude;
+  }
+
+  private displayLongitude(point: SpeciesOccurrencePoint): number {
+    return this.isCoordinateProtected() ? this.blurCoordinate(point.longitude) : point.longitude;
+  }
+
+  private blurCoordinate(value: number): number {
+    return Math.round(value * 10) / 10;
   }
 
   private focusVietnam(): void {

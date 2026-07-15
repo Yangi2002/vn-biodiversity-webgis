@@ -13,34 +13,7 @@
   @if (errorMessage() && !overview()) {
     <section class="state-panel is-error">{{ errorMessage() }}</section>
   } @else if (overview(); as mapData) {
-    <section class="dashboard-grid" aria-label="Thống kê bản đồ">
-      <article>
-        <span>Occurrence</span>
-        <strong>{{ mapData.summary.totalOccurrences | number }}</strong>
-      </article>
-      <article>
-        <span>Số loài</span>
-        <strong>{{ mapData.summary.totalSpecies | number }}</strong>
-      </article>
-      <article>
-        <span>Động vật</span>
-        <strong>{{ mapData.summary.animalSpecies | number }}</strong>
-      </article>
-      <article>
-        <span>Thực vật</span>
-        <strong>{{ mapData.summary.plantSpecies | number }}</strong>
-      </article>
-      <article>
-        <span>Côn trùng</span>
-        <strong>{{ mapData.summary.insectSpecies | number }}</strong>
-      </article>
-      <article>
-        <span>Observed year</span>
-        <strong>
-          {{ mapData.summary.earliestObservedYear || 'N/A' }}-{{ mapData.summary.latestObservedYear || 'N/A' }}
-        </strong>
-      </article>
-    </section>
+    <app-dashboard-metric-strip [items]="overviewMetrics()" />
 
     <app-webgis-filter-panel
       [sourceGroup]="sourceGroup()"

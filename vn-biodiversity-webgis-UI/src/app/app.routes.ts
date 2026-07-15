@@ -3,6 +3,7 @@ import { HomePage } from './pages/home/home.page';
 import { MapPage } from './pages/map/map.page';
 import { SpeciesDetailPage } from './pages/species-detail/species-detail.page';
 import { SpeciesListPage } from './pages/species-list/species-list.page';
+import { StatisticsPage } from './pages/statistics/statistics.page';
 import { TaxonomyPage } from './pages/taxonomy/taxonomy.page';
 import { EndangeredSpeciesPage } from './pages/endangered-species/endangered-species.page';
 
@@ -41,6 +42,11 @@ export const routes: Routes = [
     path: 'map',
     component: MapPage,
     title: 'Bản đồ WebGIS',
+  },
+  {
+    path: 'statistics',
+    component: StatisticsPage,
+    title: 'Thống kê biodiversity',
   },
   {
     path: 'endangered-species',

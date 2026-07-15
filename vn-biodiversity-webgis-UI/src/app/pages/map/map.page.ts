@@ -1,4 +1,4 @@
-﻿import { DecimalPipe, isPlatformBrowser } from '@angular/common';
+﻿import { isPlatformBrowser } from '@angular/common';
 import {
   AfterViewInit,
   Component,
@@ -7,6 +7,7 @@ import {
   OnInit,
   PLATFORM_ID,
   ViewChild,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -19,6 +20,10 @@ import type {
   OccurrenceMapOverview,
 } from '../../data-access/models/occurrence.model';
 import type { OccurrenceOverviewQueryDto } from '../../data-access/dto/occurrence-query.dto';
+import {
+  DashboardMetricItem,
+  DashboardMetricStripComponent,
+} from '../../shared/components/dashboard-metric-strip/dashboard-metric-strip.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import { OccurrenceCellDetailPanelComponent } from './components/occurrence-cell-detail-panel/occurrence-cell-detail-panel.component';
 import { WebgisFilterPanelComponent } from './components/webgis-filter-panel/webgis-filter-panel.component';
@@ -48,7 +53,7 @@ const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
 @Component({
   selector: 'app-map-page',
   imports: [
-    DecimalPipe,
+    DashboardMetricStripComponent,
     OccurrenceCellDetailPanelComponent,
     SiteHeaderComponent,
     WebgisFilterPanelComponent,
@@ -88,6 +93,25 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   readonly selectedCellDetail = signal<OccurrenceCellDetail | null>(null);
   readonly isCellDetailLoading = signal(false);
   readonly cellDetailError = signal('');
+  readonly overviewMetrics = computed<DashboardMetricItem[]>(() => {
+    const summary = this.overview()?.summary;
+
+    if (!summary) {
+      return [];
+    }
+
+    return [
+      { label: 'Occurrence', value: summary.totalOccurrences },
+      { label: 'Số loài', value: summary.totalSpecies },
+      { label: 'Động vật', value: summary.animalSpecies, accent: 'animal' },
+      { label: 'Thực vật', value: summary.plantSpecies, accent: 'plant' },
+      { label: 'Côn trùng', value: summary.insectSpecies, accent: 'insect' },
+      {
+        label: 'Observed year',
+        value: `${summary.earliestObservedYear || 'N/A'}-${summary.latestObservedYear || 'N/A'}`,
+      },
+    ];
+  });
 
   private leaflet?: typeof Leaflet;
   private leafletMapElement?: ElementRef<HTMLElement>;

@@ -6,7 +6,7 @@
     </div>
 
     @if (occurrenceMap(); as mapData) {
-      <span>{{ mapData.points.length | number }} điểm hiển thị</span>
+      <span>{{ displayedPointCount() | number }} / {{ filteredPointCount() | number }} điểm hiển thị</span>
     }
   </div>
 
@@ -24,6 +24,71 @@
         <small>Có ảnh</small>
         <strong>{{ mapData.summary.imageCount | number }}</strong>
       </span>
+    </div>
+
+    <section class="species-map-filter" aria-label="Lọc occurrence của loài">
+      <div>
+        <label for="species-map-year-from">Năm từ</label>
+        <input
+          id="species-map-year-from"
+          type="number"
+          inputmode="numeric"
+          placeholder="VD: 2000"
+          [value]="yearFromFilter()"
+          (input)="updateYearFromFilter($any($event.target).value)"
+          (change)="applyMapFilters()"
+        />
+      </div>
+
+      <div>
+        <label for="species-map-year-to">Năm đến</label>
+        <input
+          id="species-map-year-to"
+          type="number"
+          inputmode="numeric"
+          placeholder="VD: 2026"
+          [value]="yearToFilter()"
+          (input)="updateYearToFilter($any($event.target).value)"
+          (change)="applyMapFilters()"
+        />
+      </div>
+
+      <div>
+        <label for="species-map-source">Nguồn ghi nhận</label>
+        <select
+          id="species-map-source"
+          [value]="sourceFilter()"
+          (change)="updateSourceFilter($any($event.target).value)"
+        >
+          <option value="all">Tất cả</option>
+          @for (source of sourceOptions(); track source) {
+            <option [value]="source">{{ source }}</option>
+          }
+        </select>
+      </div>
+
+      <div>
+        <label for="species-map-image">Ảnh</label>
+        <select
+          id="species-map-image"
+          [value]="imageFilter()"
+          (change)="updateImageFilter($any($event.target).value)"
+        >
+          <option value="all">Tất cả</option>
+          <option value="with-image">Có ảnh</option>
+          <option value="without-image">Chưa có ảnh</option>
+        </select>
+      </div>
+
+      <button type="button" (click)="resetFilters()">Xóa lọc</button>
+    </section>
+
+    <div class="species-map-filter-status">
+      <span>{{ displayedPointCount() | number }} marker đang hiển thị từ {{ filteredPointCount() | number }} điểm phù hợp.</span>
+      @if (isSamplingMarkers()) {
+        <strong>Đang lấy mẫu đại diện để bản đồ không bị nặng.</strong>
+      }
+      <span>{{ coordinatesNotice() }}</span>
     </div>
   }
 
@@ -77,6 +142,9 @@
                       <strong>{{ longitudeText(point) }}</strong>
                     </span>
                   </dd>
+                  @if (isCoordinateProtected()) {
+                    <p class="sensitive-note">Loài đang ở mức EN, tọa độ đã được làm mờ.</p>
+                  }
                 </div>
                 <div>
                   <dt>Ngày ghi nhận</dt>
@@ -202,6 +270,8 @@
       <div class="map-state">Đang tải bản đồ phân bố...</div>
     } @else if (errorMessage()) {
       <div class="map-state is-error">{{ errorMessage() }}</div>
+    } @else if (occurrenceMap()?.points?.length && !filteredPointCount()) {
+      <div class="map-state">Không có điểm ghi nhận phù hợp với bộ lọc hiện tại.</div>
     } @else if (!occurrenceMap()?.points?.length) {
       <div class="map-state">Chưa có điểm ghi nhận hợp lệ cho loài này.</div>
     }

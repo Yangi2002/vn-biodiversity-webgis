@@ -1,0 +1,17 @@
+<section class="metric-strip" [class.is-light]="variant === 'light'" aria-label="Dashboard summary">
+  @for (item of items; track item.label) {
+    <article [class]="'metric-card accent-' + (item.accent || 'default')">
+      <span>{{ item.label }}</span>
+      <strong>
+        @if (isNumber(item.value)) {
+          {{ item.value | number }}
+        } @else {
+          {{ item.value }}
+        }
+      </strong>
+      @if (item.helper) {
+        <small>{{ item.helper }}</small>
+      }
+    </article>
+  }
+</section>
