@@ -44,6 +44,33 @@
           </div>
         }
 
+        @if (species.conservation.vnRedListProfile; as profile) {
+          <section class="conservation-card">
+            <div>
+              <p class="eyebrow">Danh sách đỏ Việt Nam</p>
+              <h2>{{ profile.redlistCategory || 'Chưa rõ mức nguy cơ' }}</h2>
+              @if (profile.redlistCriteria) {
+                <span>{{ profile.redlistCriteria }}</span>
+              }
+            </div>
+            <dl>
+              @if (profile.publishedYear) {
+                <div>
+                  <dt>Năm đánh giá</dt>
+                  <dd>{{ profile.publishedYear }}</dd>
+                </div>
+              }
+              @if (profile.conservationStatus) {
+                <div>
+                  <dt>Tình trạng</dt>
+                  <dd>{{ profile.conservationStatus }}</dd>
+                </div>
+              }
+            </dl>
+            <a [href]="profile.pageUrl" target="_blank" rel="noopener">Mở hồ sơ VN Red List</a>
+          </section>
+        }
+
         @if (taxonomyPath(species).length) {
           <section class="taxonomy-tree" aria-label="Cây phân loại sinh học">
             <div class="taxonomy-tree-heading">
@@ -117,6 +144,44 @@
             }
           </div>
         </section>
+
+        @if (species.conservation.vnRedListProfile; as profile) {
+          <section class="record-panel conservation-detail-panel">
+            <h2>Bảo tồn</h2>
+            <div class="record-list">
+              @if (profile.distributionVietnam) {
+                <div class="record-row">
+                  <dt>Phân bố Việt Nam</dt>
+                  <dd>{{ profile.distributionVietnam }}</dd>
+                </div>
+              }
+              @if (profile.habitat) {
+                <div class="record-row">
+                  <dt>Sinh cảnh</dt>
+                  <dd>{{ profile.habitat }}</dd>
+                </div>
+              }
+              @if (profile.threats) {
+                <div class="record-row">
+                  <dt>Mối đe dọa</dt>
+                  <dd>{{ profile.threats }}</dd>
+                </div>
+              }
+              @if (profile.conservationMeasuresExisting) {
+                <div class="record-row">
+                  <dt>Biện pháp hiện có</dt>
+                  <dd>{{ profile.conservationMeasuresExisting }}</dd>
+                </div>
+              }
+              @if (profile.conservationMeasuresProposed) {
+                <div class="record-row">
+                  <dt>Biện pháp đề xuất</dt>
+                  <dd>{{ profile.conservationMeasuresProposed }}</dd>
+                </div>
+              }
+            </div>
+          </section>
+        }
       </aside>
     </section>
   }

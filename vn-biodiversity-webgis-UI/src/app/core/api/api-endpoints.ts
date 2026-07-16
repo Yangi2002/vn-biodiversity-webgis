@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   speciesSearch: '/species/search',
   taxonomySearch: '/taxonomy/search',
   statsDashboard: '/stats/dashboard',
+  endangeredSpecies: '/conservation/endangered-species',
   occurrenceMapOverview: '/occurrences/map/overview',
   occurrenceCellDetail: '/occurrences/map/cell-detail',
   speciesOccurrences: (sourceTable: string, speciesId: string) =>

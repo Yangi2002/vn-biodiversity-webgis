@@ -1,13 +1,4 @@
-export interface ConservationSpeciesResponse {
-  items: ConservationSpeciesItem[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  summary: ConservationSummary;
-  categoryOptions: ConservationCategoryOption[];
-  observationTerms: ObservationTermOption[];
-}
+import type { SpeciesSourceTable } from '../../species/types/species-source.type';
 
 export interface ConservationSummary {
   totalMatchedSpecies: number;
@@ -22,7 +13,7 @@ export interface ConservationCategorySummary {
 }
 
 export interface ConservationSourceGroupSummary {
-  sourceTable: string;
+  sourceTable: SpeciesSourceTable;
   sourceLabel: string;
   total: number;
 }
@@ -33,15 +24,8 @@ export interface ConservationCategoryOption {
   severityOrder: number | null;
 }
 
-export interface ObservationTermOption {
-  termId: string;
-  label: string;
-  termType: string | null;
-  total: number;
-}
-
 export interface ConservationSpeciesItem {
-  sourceTable: string;
+  sourceTable: SpeciesSourceTable;
   sourceLabel: string;
   speciesId: string;
   vietnameseName: string | null;
@@ -63,4 +47,22 @@ export interface ConservationSpeciesItem {
   representativeImageUrl: string | null;
   matchMethod: string;
   confidence: number;
+}
+
+export interface ConservationSpeciesResponse {
+  items: ConservationSpeciesItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  summary: ConservationSummary;
+  categoryOptions: ConservationCategoryOption[];
+  observationTerms: ObservationTermOption[];
+}
+
+export interface ObservationTermOption {
+  termId: string;
+  label: string;
+  termType: string | null;
+  total: number;
 }

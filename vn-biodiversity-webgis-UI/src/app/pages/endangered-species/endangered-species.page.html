@@ -1,8 +1,205 @@
-<main class="page-shell">
-  <app-site-header
-    sectionLabel="WebGIS biodiversity"
-  />
+<main class="endangered-page">
+  <app-site-header sectionLabel="Danh sách đỏ Việt Nam" />
 
-  <p>IUCN Red List</p>
-  <h1>Danh sách đỏ</h1>
+  <section class="page-hero">
+    <p class="eyebrow">VN Red List</p>
+    <h1>Loài nguy cấp và dữ liệu bảo tồn</h1>
+    <p>
+      Theo dõi các loài đã được liên kết với hồ sơ VN Red List, mức nguy cơ, phân bố,
+      sinh cảnh và các ghi chú bảo tồn phục vụ tra cứu và phân tích WebGIS.
+    </p>
+  </section>
+
+  <section class="dashboard-shell">
+    <app-dashboard-metric-strip [items]="metricItems()" variant="dark" />
+
+    <form class="filter-bar" (submit)="$event.preventDefault(); applyFilters()">
+      <div class="filter-title">
+        <span>Bộ lọc bảo tồn</span>
+        <strong>Tìm theo loài, mức nguy cơ và nhóm sinh vật</strong>
+      </div>
+
+      <label>
+        <span>Tìm loài</span>
+        <input
+          type="search"
+          placeholder="Ví dụ: sao la, Panthera, Magnolia..."
+          [value]="queryDraft()"
+          (input)="updateQuery($any($event.target).value)"
+        />
+      </label>
+
+      <label>
+        <span>Mức nguy cơ</span>
+        <select [value]="categoryDraft()" (change)="updateCategory($any($event.target).value)">
+          <option value="">Tất cả</option>
+          @for (category of categoryOptions(); track category.category) {
+            <option [value]="category.category">{{ category.category }} - {{ category.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        <span>Nhóm sinh vật</span>
+        <select [value]="sourceTableDraft()" (change)="updateSourceTable($any($event.target).value)">
+          <option value="">Tất cả</option>
+          @for (source of sourceOptions; track source.value) {
+            <option [value]="source.value">{{ source.label }}</option>
+          }
+        </select>
+      </label>
+
+      @if (data()?.observationTerms?.length) {
+        <label>
+          <span>Dạng quan sát</span>
+          <select [value]="observationTermDraft()" (change)="updateObservationTerm($any($event.target).value)">
+            <option value="">Tất cả</option>
+            @for (term of data()!.observationTerms; track term.termId) {
+              <option [value]="term.termId">{{ term.label }} ({{ term.total | number }})</option>
+            }
+          </select>
+        </label>
+      }
+
+      <div class="filter-actions">
+        <button type="button" class="ghost-button" (click)="resetFilters()">Xóa</button>
+        <button type="submit">Cập nhật</button>
+      </div>
+    </form>
+
+    @if (data(); as redListData) {
+      <section class="summary-grid">
+        <article class="summary-card">
+          <div class="card-heading">
+            <p class="eyebrow">Mức nguy cơ</p>
+            <strong>{{ redListData.summary.categories.length }} nhóm</strong>
+          </div>
+          <div class="risk-list">
+            @for (category of redListData.summary.categories; track category.category) {
+              <span [class]="categoryClass(category.category)">
+                <strong>{{ category.category }}</strong>
+                <small>{{ riskLabel(category.category) }}</small>
+                <small>{{ category.total | number }} loài</small>
+              </span>
+            }
+          </div>
+        </article>
+
+        <article class="summary-card">
+          <div class="card-heading">
+            <p class="eyebrow">Nhóm dữ liệu</p>
+            <strong>{{ redListData.summary.sourceGroups.length }} nhóm</strong>
+          </div>
+          <div class="source-list">
+            @for (source of redListData.summary.sourceGroups; track source.sourceTable) {
+              <div>
+                <span>{{ source.sourceLabel }}</span>
+                <strong>{{ source.total | number }}</strong>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    }
+
+    <section class="result-panel">
+      <div class="result-heading">
+        <div>
+          <p class="eyebrow">Kết quả</p>
+          <h2>
+            @if (data(); as redListData) {
+              {{ redListData.total | number }} loài được tìm thấy
+            } @else {
+              Đang tải dữ liệu
+            }
+          </h2>
+        </div>
+
+        @if (data(); as redListData) {
+          <span>Trang {{ redListData.page }} / {{ redListData.totalPages }}</span>
+        }
+      </div>
+
+      @if (isLoading()) {
+        <div class="state-box">Đang tải danh sách đỏ Việt Nam...</div>
+      } @else if (errorMessage()) {
+        <div class="state-box is-error">{{ errorMessage() }}</div>
+      } @else if (data()?.items?.length) {
+        <div class="species-grid">
+          @for (item of data()!.items; track item.sourceTable + ':' + item.speciesId) {
+            <article class="redlist-card">
+              <a class="image-link" [routerLink]="['/species', item.sourceTable, item.speciesId]">
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" [alt]="displayName(item)" loading="lazy" />
+                } @else {
+                  <span>Chưa có ảnh</span>
+                }
+              </a>
+
+              <div class="card-body">
+                <div class="card-title">
+                  <div class="card-kicker">
+                    <span>{{ item.sourceLabel }}</span>
+                    <strong [class]="categoryClass(item.redlistCategory)">
+                      {{ item.redlistCategory || 'N/A' }} - {{ riskLabel(item.redlistCategory) }}
+                    </strong>
+                  </div>
+                  <h3>{{ displayName(item) }}</h3>
+                  @if (item.scientificName) {
+                    <em>{{ item.scientificName }}</em>
+                  }
+                </div>
+
+                <dl>
+                  <div>
+                    <dt>Mức nguy cơ</dt>
+                    <dd>{{ riskLabel(item.redlistCategory) }}</dd>
+                  </div>
+                  @if (item.redlistCriteria) {
+                    <div>
+                      <dt>Tiêu chí</dt>
+                      <dd>{{ item.redlistCriteria }}</dd>
+                    </div>
+                  }
+                  @if (item.publishedYear) {
+                    <div>
+                      <dt>Năm đánh giá</dt>
+                      <dd>{{ item.publishedYear }}</dd>
+                    </div>
+                  }
+                  @if (item.family) {
+                    <div>
+                      <dt>Họ</dt>
+                      <dd>{{ item.family }}</dd>
+                    </div>
+                  }
+                </dl>
+
+                @if (item.distributionVietnam || item.habitat || item.threats) {
+                  <p class="short-note">
+                    {{ item.distributionVietnam || item.habitat || item.threats }}
+                  </p>
+                }
+
+                <div class="card-actions">
+                  <a [routerLink]="['/species', item.sourceTable, item.speciesId]">Mở hồ sơ loài</a>
+                  <a [href]="item.pageUrl" target="_blank" rel="noopener">Nguồn VN Red List</a>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+
+        <nav class="pagination" aria-label="Phân trang danh sách đỏ">
+          <button type="button" [disabled]="data()!.page <= 1" (click)="goToPage(1)">&lt;&lt;</button>
+          <button type="button" [disabled]="data()!.page <= 1" (click)="goToPage(data()!.page - 1)">&lt;</button>
+          <span>{{ data()!.page }} / {{ data()!.totalPages }}</span>
+          <button type="button" [disabled]="data()!.page >= data()!.totalPages" (click)="goToPage(data()!.page + 1)">&gt;</button>
+          <button type="button" [disabled]="data()!.page >= data()!.totalPages" (click)="goToPage(data()!.totalPages)">&gt;&gt;</button>
+        </nav>
+      } @else {
+        <div class="state-box">Chưa có loài phù hợp với bộ lọc hiện tại.</div>
+      }
+    </section>
+  </section>
 </main>

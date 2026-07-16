@@ -126,7 +126,7 @@ export class SpeciesImageCarouselComponent {
   }
 
   protected displayImageUrl(image: SpeciesCarouselImage): string {
-    return image.showpicMetadata?.sourceImageUrl || image.showpicMetadata?.thumbnailUrl || image.imageUrl;
+    return image.imageUrl;
   }
 
   private setActive(index: number): void {

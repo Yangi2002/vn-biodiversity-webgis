@@ -130,13 +130,7 @@ export class SpeciesDetailPage {
   }
 
   protected isEndangeredSpecies(detail: SpeciesDetailResponse): boolean {
-    return detail.fields.some((field) => {
-      if (!['tinh_trang', 'phan_hang'].includes(field.key)) {
-        return false;
-      }
-
-      return /\bEN\b/i.test(field.value ?? '');
-    });
+    return detail.conservation?.isSensitiveOccurrence ?? false;
   }
 
   protected hasValue(field: SpeciesDetailField): boolean {

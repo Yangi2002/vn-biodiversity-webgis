@@ -99,6 +99,53 @@ h1 {
   display: block;
 }
 
+.conservation-card {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid #d9e3dc;
+  border-left: 5px solid #c25f2a;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.conservation-card h2 {
+  margin: 0;
+  color: #c25f2a;
+  font-size: 36px;
+}
+
+.conservation-card span {
+  color: #52685d;
+  font-weight: 850;
+}
+
+.conservation-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.conservation-card dt {
+  color: #52685d;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.conservation-card dd {
+  margin: 4px 0 0;
+  color: #17251f;
+  font-weight: 850;
+}
+
+.conservation-card a {
+  color: #1f6f46;
+  font-weight: 900;
+}
+
 .taxonomy-tree {
   margin-top: 22px;
   padding: 18px 20px;
@@ -260,6 +307,10 @@ h2 {
 
 .record-panel h2 {
   font-size: 22px;
+}
+
+.conservation-detail-panel {
+  border-left: 4px solid #c25f2a;
 }
 
 .record-list {

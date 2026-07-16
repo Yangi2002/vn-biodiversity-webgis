@@ -64,6 +64,47 @@ export interface SpeciesKeywordReference {
   images: SpeciesKeywordImage[];
 }
 
+export interface SpeciesConservationTerm {
+  termId: string;
+  termText: string;
+  termType: string;
+  categoryCode: string | null;
+  criteriaCode: string | null;
+  severityOrder: number | null;
+  sourceField: string | null;
+  matchedText: string | null;
+  context: string | null;
+}
+
+export interface SpeciesVnRedListProfile {
+  profileId: string;
+  pageUrl: string;
+  scientificName: string | null;
+  vietnameseName: string | null;
+  pageTitle: string | null;
+  redlistCategory: string | null;
+  redlistCriteria: string | null;
+  publishedYear: string | null;
+  assessor: string | null;
+  distributionVietnam: string | null;
+  distributionWorld: string | null;
+  habitat: string | null;
+  threats: string | null;
+  conservationStatus: string | null;
+  conservationMeasuresExisting: string | null;
+  conservationMeasuresProposed: string | null;
+  representativeImageUrl: string | null;
+  matchMethod: string | null;
+  confidence: number | null;
+}
+
+export interface SpeciesConservationSummary {
+  vnRedListProfile: SpeciesVnRedListProfile | null;
+  terms: SpeciesConservationTerm[];
+  highestRiskCategory: string | null;
+  isSensitiveOccurrence: boolean;
+}
+
 export interface SpeciesDetailResult {
   sourceTable: SpeciesSourceTable;
   sourceLabel: string;
@@ -79,5 +120,6 @@ export interface SpeciesDetailResult {
   images: SpeciesDetailImage[];
   taxonomyPath: SpeciesTaxonomyNode[];
   keywords: SpeciesKeywordReference[];
+  conservation: SpeciesConservationSummary;
   fields: SpeciesDetailField[];
 }

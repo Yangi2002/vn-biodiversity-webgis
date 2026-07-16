@@ -12,6 +12,7 @@ import type {
   SpeciesDetailField,
   SpeciesDetailImage,
   SpeciesDetailResult,
+  SpeciesConservationSummary,
   SpeciesKeywordReference,
   SpeciesTaxonomyNode,
 } from './types/species-detail-result.type';
@@ -90,6 +91,40 @@ interface KeywordImageRow {
   keyword_id: bigint | number;
   image_order: number;
   mime_type: string | null;
+}
+
+interface ConservationTermRow {
+  term_id: bigint | number;
+  term_text: string;
+  term_type: string;
+  category_code: string | null;
+  criteria_code: string | null;
+  severity_order: number | null;
+  source_field: string | null;
+  matched_text: string | null;
+  context: string | null;
+}
+
+interface VnRedListProfileRow {
+  profile_id: bigint | number;
+  page_url: string;
+  scientific_name: string | null;
+  vietnamese_name: string | null;
+  page_title: string | null;
+  redlist_category: string | null;
+  redlist_criteria: string | null;
+  published_year: string | null;
+  assessor: string | null;
+  distribution_vietnam: string | null;
+  distribution_world: string | null;
+  habitat: string | null;
+  threats: string | null;
+  conservation_status: string | null;
+  conservation_measures_existing: string | null;
+  conservation_measures_proposed: string | null;
+  representative_image_url: string | null;
+  match_method: string | null;
+  confidence: number | null;
 }
 
 interface FacetRow {
@@ -367,10 +402,11 @@ export class SpeciesRepository {
       return null;
     }
 
-    const [images, taxonomyPath, keywords] = await Promise.all([
+    const [images, taxonomyPath, keywords, conservation] = await Promise.all([
       this.findImageList(sourceTable, speciesId),
       this.findTaxonomyPath(sourceTable, speciesId),
       this.findKeywordReferences(sourceTable, speciesId),
+      this.findConservationSummary(sourceTable, speciesId),
     ]);
 
     return {
@@ -388,6 +424,7 @@ export class SpeciesRepository {
       images,
       taxonomyPath,
       keywords,
+      conservation,
       fields: this.mapDetailFields(row),
     };
   }
@@ -794,6 +831,124 @@ export class SpeciesRepository {
         })),
       };
     });
+  }
+
+  private async findConservationSummary(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+  ): Promise<SpeciesConservationSummary> {
+    const [termRows, profileRows] = await Promise.all([
+      this.prisma.$queryRawUnsafe<ConservationTermRow[]>(
+        `
+          SELECT
+            term.term_id,
+            term.term_text,
+            term.term_type,
+            term.category_code,
+            term.criteria_code,
+            term.severity_order,
+            link.source_field,
+            link.matched_text,
+            link.context
+          FROM species_conservation_terms link
+          JOIN conservation_terms term
+            ON term.term_id = link.term_id
+          WHERE link.source_table = $1
+            AND link.species_id = $2
+          ORDER BY
+            term.severity_order ASC NULLS LAST,
+            term.term_type ASC,
+            term.term_text ASC
+        `,
+        sourceTable,
+        speciesId,
+      ),
+      this.prisma.$queryRawUnsafe<VnRedListProfileRow[]>(
+        `
+          SELECT
+            profile.profile_id,
+            profile.page_url,
+            profile.scientific_name,
+            profile.vietnamese_name,
+            profile.page_title,
+            profile.redlist_category,
+            profile.redlist_criteria,
+            profile.published_year,
+            profile.assessor,
+            profile.distribution_vietnam,
+            profile.distribution_world,
+            profile.habitat,
+            profile.threats,
+            profile.conservation_status,
+            profile.conservation_measures_existing,
+            profile.conservation_measures_proposed,
+            profile.representative_image_url,
+            match.match_method,
+            match.confidence
+          FROM species_vnredlist_matches match
+          JOIN vnredlist_profiles profile
+            ON profile.profile_id = match.profile_id
+          WHERE match.source_table = $1
+            AND match.species_id = $2
+          ORDER BY
+            match.confidence DESC,
+            profile.profile_id ASC
+          LIMIT 1
+        `,
+        sourceTable,
+        speciesId,
+      ),
+    ]);
+
+    const terms = termRows.map((row) => ({
+      termId: String(row.term_id),
+      termText: row.term_text,
+      termType: row.term_type,
+      categoryCode: row.category_code,
+      criteriaCode: row.criteria_code,
+      severityOrder: row.severity_order,
+      sourceField: row.source_field,
+      matchedText: row.matched_text,
+      context: row.context,
+    }));
+    const profile = profileRows[0] ?? null;
+    const highestRiskCategory =
+      profile?.redlist_category?.trim() ||
+      terms.find((term) => term.termType === 'redlist_category')?.categoryCode ||
+      null;
+
+    return {
+      vnRedListProfile: profile
+        ? {
+            profileId: String(profile.profile_id),
+            pageUrl: profile.page_url,
+            scientificName: profile.scientific_name,
+            vietnameseName: profile.vietnamese_name,
+            pageTitle: profile.page_title,
+            redlistCategory: profile.redlist_category,
+            redlistCriteria: profile.redlist_criteria,
+            publishedYear: profile.published_year,
+            assessor: profile.assessor,
+            distributionVietnam: profile.distribution_vietnam,
+            distributionWorld: profile.distribution_world,
+            habitat: profile.habitat,
+            threats: profile.threats,
+            conservationStatus: profile.conservation_status,
+            conservationMeasuresExisting: profile.conservation_measures_existing,
+            conservationMeasuresProposed: profile.conservation_measures_proposed,
+            representativeImageUrl: profile.representative_image_url,
+            matchMethod: profile.match_method,
+            confidence: profile.confidence,
+          }
+        : null,
+      terms,
+      highestRiskCategory,
+      isSensitiveOccurrence: this.isSensitiveRedListCategory(highestRiskCategory),
+    };
+  }
+
+  private isSensitiveRedListCategory(category: string | null): boolean {
+    return category?.trim().toUpperCase() === 'EN';
   }
 
   private normalizeKeywordDescription(value: string | null | undefined): string | null {
