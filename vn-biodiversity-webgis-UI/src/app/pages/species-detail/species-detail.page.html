@@ -49,17 +49,12 @@
             <div>
               <p class="eyebrow">Danh sách đỏ Việt Nam</p>
               <h2>{{ profile.redlistCategory || 'Chưa rõ mức nguy cơ' }}</h2>
-              @if (profile.redlistCriteria) {
-                <span>{{ profile.redlistCriteria }}</span>
-              }
             </div>
             <dl>
-              @if (profile.publishedYear) {
-                <div>
-                  <dt>Năm đánh giá</dt>
-                  <dd>{{ profile.publishedYear }}</dd>
-                </div>
-              }
+              <div>
+                <dt>Năm công bố</dt>
+                <dd>{{ conservationPublishedYear(profile) }}</dd>
+              </div>
               @if (profile.conservationStatus) {
                 <div>
                   <dt>Tình trạng</dt>
@@ -149,12 +144,6 @@
           <section class="record-panel conservation-detail-panel">
             <h2>Bảo tồn</h2>
             <div class="record-list">
-              @if (profile.distributionVietnam) {
-                <div class="record-row">
-                  <dt>Phân bố Việt Nam</dt>
-                  <dd>{{ profile.distributionVietnam }}</dd>
-                </div>
-              }
               @if (profile.habitat) {
                 <div class="record-row">
                   <dt>Sinh cảnh</dt>
@@ -179,6 +168,18 @@
                   <dd>{{ profile.conservationMeasuresProposed }}</dd>
                 </div>
               }
+              <div class="record-row">
+                <dt>Năm công bố</dt>
+                <dd>{{ conservationPublishedYear(profile) }}</dd>
+              </div>
+              <div class="record-row">
+                <dt>Người đánh giá</dt>
+                <dd [title]="conservationEvaluatorTitle(profile)">{{ conservationEvaluatorName(profile) }}</dd>
+              </div>
+              <div class="record-row">
+                <dt>Người đóng góp</dt>
+                <dd [title]="conservationContributorTitle(profile)">{{ conservationContributorName(profile) }}</dd>
+              </div>
             </div>
           </section>
         }

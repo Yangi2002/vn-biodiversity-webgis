@@ -336,8 +336,8 @@ h2 {
   font-size: 15px;
   font-weight: 650;
   line-height: 1.45;
-  overflow-wrap: anywhere;
-  white-space: pre-line;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .record-row dd.is-empty {

@@ -41,6 +41,74 @@ const TAXONOMY_RANK_LABELS: Record<string, string> = {
 export class StatsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getSummary(query: StatsDashboardQueryDto): Promise<StatsSummary> {
+    const filters = this.normalizeFilters(query);
+
+    if (this.canUseFastSummary(filters)) {
+      return this.getFastSummary();
+    }
+
+    const params = [filters.yearFrom, filters.yearTo, filters.sourceGroup, filters.basisOfRecord, filters.hasImage];
+    const baseCte = this.buildBaseCte(filters.sourceGroup);
+    const [summaryRow] = await this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+      SELECT
+        count(DISTINCT source_table || ':' || species_id) AS total_species,
+        count(DISTINCT gbif_occurrence_key) AS total_occurrences,
+        count(DISTINCT region) FILTER (WHERE region IS NOT NULL AND region <> '') AS total_regions,
+        min(observed_year) FILTER (WHERE observed_year IS NOT NULL) AS earliest_observed_year,
+        max(observed_year) FILTER (WHERE observed_year IS NOT NULL) AS latest_observed_year,
+        count(*) FILTER (WHERE image_url IS NOT NULL AND image_url <> '') AS image_count
+      FROM filtered_occurrences`, ...params);
+
+    return this.mapSummary(summaryRow);
+  }
+
+  private async getFastSummary(): Promise<StatsSummary> {
+    const [summaryRow] = await this.prisma.$queryRaw<StatsRow[]>`
+      WITH valid_occurrences AS (
+        SELECT
+          gbif_occurrence_key,
+          observed_date,
+          image_url,
+          coalesce(
+            nullif(source_payload -> 'gadm' -> 'level1' ->> 'name', ''),
+            nullif(source_payload ->> 'gbifRegion', ''),
+            nullif(location, '')
+          ) AS region
+        FROM gbif_occurrences
+        WHERE latitude BETWEEN 8.2 AND 23.5
+          AND longitude BETWEEN 102.1 AND 109.7
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND coalesce(has_geospatial_issue, false) = false
+      )
+      SELECT
+        (
+          (SELECT count(*) FROM animal_db_vn) +
+          (SELECT count(*) FROM plant_db_vn) +
+          (SELECT count(*) FROM insect_db_vn)
+        ) AS total_species,
+        count(gbif_occurrence_key) AS total_occurrences,
+        count(DISTINCT region) FILTER (WHERE region IS NOT NULL AND region <> '') AS total_regions,
+        min(substring(observed_date from 1 for 4)::int) FILTER (WHERE observed_date ~ '^\\d{4}') AS earliest_observed_year,
+        max(substring(observed_date from 1 for 4)::int) FILTER (WHERE observed_date ~ '^\\d{4}') AS latest_observed_year,
+        count(*) FILTER (WHERE image_url IS NOT NULL AND image_url <> '') AS image_count
+      FROM valid_occurrences
+    `;
+
+    return this.mapSummary(summaryRow);
+  }
+
+  private canUseFastSummary(filters: ReturnType<StatsRepository['normalizeFilters']>): boolean {
+    return (
+      filters.sourceGroup === 'all' &&
+      filters.basisOfRecord === 'all' &&
+      filters.hasImage === 'all' &&
+      filters.yearFrom === null &&
+      filters.yearTo === null
+    );
+  }
+
   async getDashboard(query: StatsDashboardQueryDto): Promise<StatsDashboard> {
     const filters = this.normalizeFilters(query);
     const params = [filters.yearFrom, filters.yearTo, filters.sourceGroup, filters.basisOfRecord, filters.hasImage];
@@ -381,6 +449,10 @@ export class StatsRepository {
   }
 
   private parseYear(value: string | undefined): number | null {
+    if (value === undefined || value === null || String(value).trim() === '') {
+      return null;
+    }
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? Math.floor(parsed) : null;
   }

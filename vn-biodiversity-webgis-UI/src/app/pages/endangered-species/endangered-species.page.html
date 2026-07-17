@@ -161,12 +161,14 @@
                       <dd>{{ item.redlistCriteria }}</dd>
                     </div>
                   }
-                  @if (item.publishedYear) {
-                    <div>
-                      <dt>Năm đánh giá</dt>
-                      <dd>{{ item.publishedYear }}</dd>
-                    </div>
-                  }
+                  <div>
+                    <dt>Năm công bố</dt>
+                    <dd>{{ publishedYear(item) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Người đánh giá</dt>
+                    <dd [title]="evaluatorTitle(item)">{{ evaluatorName(item) }}</dd>
+                  </div>
                   @if (item.family) {
                     <div>
                       <dt>Họ</dt>

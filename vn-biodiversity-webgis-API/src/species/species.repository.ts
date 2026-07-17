@@ -48,6 +48,7 @@ interface SpeciesImageRow {
   height: number | null;
   size_bytes: bigint | number;
   showpic_id: bigint | number | null;
+  showpic_has_image_data: boolean | null;
   showpic_vietname: string | null;
   showpic_latinname: string | null;
   showpic_author: string | null;
@@ -115,6 +116,7 @@ interface VnRedListProfileRow {
   redlist_criteria: string | null;
   published_year: string | null;
   assessor: string | null;
+  contributors: string | null;
   distribution_vietnam: string | null;
   distribution_world: string | null;
   habitat: string | null;
@@ -492,6 +494,38 @@ export class SpeciesRepository {
     };
   }
 
+  async findShowpicImageByOrder(
+    sourceTable: SpeciesSourceTable,
+    speciesId: string,
+    imageOrder: number,
+  ): Promise<SpeciesImageResult | null> {
+    const rows = await this.prisma.$queryRawUnsafe<ImageRow[]>(
+      `
+        SELECT image_data, image_mime_type AS mime_type
+        FROM species_showpic_metadata
+        WHERE source_table = $1
+          AND species_id = $2
+          AND image_order = $3
+          AND image_data IS NOT NULL
+        LIMIT 1
+      `,
+      sourceTable,
+      speciesId,
+      imageOrder,
+    );
+
+    const image = rows[0];
+
+    if (!image) {
+      return null;
+    }
+
+    return {
+      imageData: image.image_data,
+      mimeType: image.mime_type ?? 'image/jpeg',
+    };
+  }
+
   async findKeywordImageByOrder(keywordId: string, imageOrder: number): Promise<SpeciesImageResult | null> {
     const rows = await this.prisma.$queryRawUnsafe<ImageRow[]>(
       `
@@ -624,6 +658,7 @@ export class SpeciesRepository {
           species_image.height,
           octet_length(species_image.image_data) AS size_bytes,
           showpic.showpic_id,
+          (showpic.image_data IS NOT NULL) AS showpic_has_image_data,
           showpic.vietname AS showpic_vietname,
           showpic.latinname AS showpic_latinname,
           showpic.author AS showpic_author,
@@ -649,7 +684,8 @@ export class SpeciesRepository {
         WHERE species_image.source_table = $1
           AND species_image.species_id = $2
         ORDER BY
-          (coalesce(species_image.width, 0) * coalesce(species_image.height, 0)) DESC,
+          (coalesce(showpic.image_width, species_image.width, 0) * coalesce(showpic.image_height, species_image.height, 0)) DESC,
+          coalesce(showpic.image_file_size, octet_length(species_image.image_data), 0) DESC,
           octet_length(species_image.image_data) DESC,
           species_image.image_order ASC
       `,
@@ -660,6 +696,9 @@ export class SpeciesRepository {
     return rows.map((row) => ({
       imageOrder: Number(row.image_order),
       imageUrl: `/species/${sourceTable}/${speciesId}/images/${Number(row.image_order)}`,
+      showpicImageUrl: row.showpic_id && row.showpic_has_image_data
+        ? `/species/${sourceTable}/${speciesId}/showpic-images/${Number(row.image_order)}`
+        : null,
       mimeType: row.mime_type ?? 'image/jpeg',
       width: row.width,
       height: row.height,
@@ -875,6 +914,7 @@ export class SpeciesRepository {
             profile.redlist_criteria,
             profile.published_year,
             profile.assessor,
+            profile.contributors,
             profile.distribution_vietnam,
             profile.distribution_world,
             profile.habitat,
@@ -929,6 +969,7 @@ export class SpeciesRepository {
             redlistCriteria: profile.redlist_criteria,
             publishedYear: profile.published_year,
             assessor: profile.assessor,
+            contributors: profile.contributors,
             distributionVietnam: profile.distribution_vietnam,
             distributionWorld: profile.distribution_world,
             habitat: profile.habitat,

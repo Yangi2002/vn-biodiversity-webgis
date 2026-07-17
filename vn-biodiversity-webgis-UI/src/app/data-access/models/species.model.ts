@@ -58,6 +58,7 @@ export interface SpeciesDetailField {
 export interface SpeciesDetailImage {
   imageOrder: number;
   imageUrl: string;
+  showpicImageUrl: string | null;
   mimeType: string;
   width: number | null;
   height: number | null;
@@ -135,6 +136,7 @@ export interface SpeciesVnRedListProfile {
   redlistCriteria: string | null;
   publishedYear: string | null;
   assessor: string | null;
+  contributors: string | null;
   distributionVietnam: string | null;
   distributionWorld: string | null;
   habitat: string | null;

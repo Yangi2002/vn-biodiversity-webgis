@@ -77,7 +77,7 @@
   background: #fff;
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(4, minmax(130px, 1fr)) auto auto;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto auto;
   margin: 0 0 16px;
   padding: 14px 16px;
 }
@@ -112,6 +112,12 @@
   font-weight: 850;
   min-height: 42px;
   padding: 8px 14px;
+}
+
+.species-map-filter .primary-action {
+  border-color: #0f6f43;
+  background: #187846;
+  color: #fff;
 }
 
 .species-map-filter-status {
@@ -161,7 +167,7 @@
   top: 68px;
   bottom: 58px;
   z-index: 500;
-  width: min(350px, calc(100% - 86px));
+  width: min(390px, calc(100% - 86px));
   overflow: auto;
   border: 1px solid #d1e3d7;
   border-radius: 8px;
@@ -169,7 +175,7 @@
   box-shadow: 0 20px 50px rgba(27, 74, 47, 0.1);
 }
 
-.species-map-detail-panel:has(.metadata-details:not([open])) {
+.species-map-detail-panel.is-collapsed {
   bottom: auto;
   width: auto;
   overflow: visible;
@@ -286,36 +292,35 @@
   margin: 8px 0 0;
 }
 
-.metadata-details {
-  background: #fff;
-  padding: 0 18px 0 22px;
-}
-
-.metadata-details:not([open]) {
-  background: transparent;
-  padding: 0;
-}
-
-.metadata-details summary {
-  border-bottom: 1px solid #dce9e0;
-  color: #0f6f43;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 850;
-  list-style-position: inside;
-  padding: 13px 0;
-}
-
-.metadata-details:not([open]) summary {
+.detail-toggle {
   border: 1px solid #b9d7c5;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 32px rgba(27, 74, 47, 0.08);
+  color: #0f6f43;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 850;
+  margin: 12px 14px;
   padding: 8px 12px;
 }
 
-.metadata-details[open] {
-  padding-bottom: 16px;
+.species-map-detail-panel.is-collapsed .detail-toggle {
+  box-shadow: 0 14px 32px rgba(27, 74, 47, 0.08);
+  margin: 0;
+}
+
+.metadata-details {
+  background: #fff;
+  padding: 0 18px 16px 22px;
+}
+
+.metadata-details h3 {
+  border-bottom: 1px solid #dce9e0;
+  color: #0f6f43;
+  font-size: 0.95rem;
+  font-weight: 850;
+  margin: 0;
+  padding: 13px 0;
 }
 
 .metadata-details dl {
@@ -522,6 +527,18 @@
   background: #7c4210;
 }
 
+:host ::ng-deep .species-occurrence-cluster {
+  filter: drop-shadow(0 8px 16px rgba(15, 71, 43, 0.24));
+}
+
+:host ::ng-deep .species-cluster-tooltip {
+  border: 1px solid #b9d7c5;
+  border-radius: 999px;
+  color: #0f6f43;
+  font-weight: 850;
+  padding: 5px 9px;
+}
+
 .map-state {
   align-items: center;
   background: rgba(248, 252, 247, 0.88);
@@ -547,12 +564,13 @@
 }
 
 :host ::ng-deep .species-occurrence-popup span,
+:host ::ng-deep .species-occurrence-popup strong,
 :host ::ng-deep .species-occurrence-popup a {
   display: block;
   font-size: 0.88rem;
 }
 
-:host ::ng-deep .species-occurrence-popup span:first-child {
+:host ::ng-deep .species-occurrence-popup strong {
   color: #14251d;
   font-size: 0.95rem;
   font-weight: 850;

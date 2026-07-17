@@ -29,6 +29,7 @@ interface ConservationSpeciesRow {
   redlist_criteria: string | null;
   published_year: string | null;
   assessor: string | null;
+  contributors: string | null;
   distribution_vietnam: string | null;
   habitat: string | null;
   threats: string | null;
@@ -106,6 +107,7 @@ export class ConservationRepository {
           profile.redlist_criteria,
           profile.published_year,
           profile.assessor,
+          profile.contributors,
           profile.distribution_vietnam,
           profile.habitat,
           profile.threats,
@@ -166,6 +168,7 @@ export class ConservationRepository {
       redlistCriteria: row.redlist_criteria,
       publishedYear: row.published_year,
       assessor: row.assessor,
+      contributors: row.contributors,
       distributionVietnam: row.distribution_vietnam,
       habitat: row.habitat,
       threats: row.threats,

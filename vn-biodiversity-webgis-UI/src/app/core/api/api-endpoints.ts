@@ -3,6 +3,7 @@ export const API_ENDPOINTS = {
   health: '/health',
   speciesSearch: '/species/search',
   taxonomySearch: '/taxonomy/search',
+  statsSummary: '/stats/summary',
   statsDashboard: '/stats/dashboard',
   endangeredSpecies: '/conservation/endangered-species',
   occurrenceMapOverview: '/occurrences/map/overview',

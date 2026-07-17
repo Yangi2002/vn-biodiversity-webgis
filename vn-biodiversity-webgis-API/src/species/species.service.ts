@@ -95,6 +95,30 @@ export class SpeciesService {
     return image;
   }
 
+  async getShowpicImageByOrder(
+    sourceTable: string,
+    speciesId: string,
+    imageOrderValue: string,
+  ): Promise<SpeciesImageResult> {
+    if (!isSpeciesSourceTable(sourceTable)) {
+      throw new BadRequestException('Invalid species source table.');
+    }
+
+    const imageOrder = this.parsePositiveNumber(imageOrderValue, 0);
+
+    if (imageOrder < 1) {
+      throw new BadRequestException('Invalid species showpic image order.');
+    }
+
+    const image = await this.speciesRepository.findShowpicImageByOrder(sourceTable, speciesId, imageOrder);
+
+    if (!image) {
+      throw new NotFoundException('Species showpic image was not found.');
+    }
+
+    return image;
+  }
+
   async getKeywordImageByOrder(keywordId: string, imageOrderValue: string): Promise<SpeciesImageResult> {
     const imageOrder = this.parsePositiveNumber(imageOrderValue, 0);
 

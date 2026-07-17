@@ -5,6 +5,7 @@ interface CacheEntry<T> {
 
 export class TtlCache<T> {
   private readonly entries = new Map<string, CacheEntry<T>>();
+  private readonly pending = new Map<string, Promise<T>>();
 
   constructor(
     private readonly ttlMs: number,
@@ -37,8 +38,35 @@ export class TtlCache<T> {
     });
   }
 
+  getOrSet(key: string, factory: () => Promise<T>): Promise<T> {
+    const cached = this.get(key);
+
+    if (cached !== undefined) {
+      return Promise.resolve(cached);
+    }
+
+    const pending = this.pending.get(key);
+
+    if (pending) {
+      return pending;
+    }
+
+    const request = factory()
+      .then((value) => {
+        this.set(key, value);
+        return value;
+      })
+      .finally(() => {
+        this.pending.delete(key);
+      });
+
+    this.pending.set(key, request);
+    return request;
+  }
+
   clear(): void {
     this.entries.clear();
+    this.pending.clear();
   }
 
   private deleteOldestEntry(): void {

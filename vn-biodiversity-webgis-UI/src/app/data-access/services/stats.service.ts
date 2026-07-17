@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
 import type { StatsDashboardQueryDto } from '../dto/stats-query.dto';
-import type { StatsDashboard } from '../models/stats.model';
+import type { StatsDashboard, StatsSummary } from '../models/stats.model';
 import { catchError, Observable, shareReplay, throwError } from 'rxjs';
 
 @Injectable({
@@ -12,6 +12,39 @@ import { catchError, Observable, shareReplay, throwError } from 'rxjs';
 export class StatsService {
   private readonly api = inject(HttpApiService);
   private readonly dashboardCache = new Map<string, Observable<StatsDashboard>>();
+  private readonly summaryCache = new Map<string, Observable<StatsSummary>>();
+
+  getSummary(query: StatsDashboardQueryDto = {}) {
+    const params = this.buildParams(query);
+    const cacheKey = params.toString() || 'overview';
+    const cached = this.summaryCache.get(cacheKey);
+
+    if (cached) {
+      return cached;
+    }
+
+    const request = this.api
+      .get<StatsSummary>(API_ENDPOINTS.statsSummary, params)
+      .pipe(
+        catchError((error) => {
+          this.summaryCache.delete(cacheKey);
+          return throwError(() => error);
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+
+    this.summaryCache.set(cacheKey, request);
+
+    if (this.summaryCache.size > 12) {
+      const oldestKey = this.summaryCache.keys().next().value;
+
+      if (oldestKey) {
+        this.summaryCache.delete(oldestKey);
+      }
+    }
+
+    return request;
+  }
 
   getDashboard(query: StatsDashboardQueryDto = {}) {
     const params = this.buildParams(query);

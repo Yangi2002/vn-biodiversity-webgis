@@ -11,6 +11,7 @@
       <a routerLink="/taxonomy">Phân loại</a>
       <a routerLink="/map">Bản đồ</a>
       <a routerLink="/statistics">Thống kê</a>
+      <a routerLink="/endangered-species">Danh sách đỏ</a>
     </div>
   </nav>
 
@@ -21,7 +22,8 @@
       <p class="eyebrow">VN Biodiversity WebGIS</p>
       <h1>Từ điển đa dạng sinh học Việt Nam</h1>
       <p class="lead">
-        Tra cứu loài, xem hồ sơ chi tiết, duyệt phân loại sinh học và kết nối dữ liệu loài với bản đồ WebGIS.
+        Tra cứu loài, xem hồ sơ chi tiết, duyệt phân loại sinh học, theo dõi danh sách đỏ
+        và kết nối dữ liệu loài với bản đồ WebGIS.
       </p>
 
       <form class="search-panel" action="/species-list" method="get" (submit)="submitSearch($event)">
@@ -47,10 +49,32 @@
     </div>
   </section>
 
+  <section class="home-data-overview" aria-label="Tổng quan dữ liệu biodiversity">
+    <div class="overview-heading">
+      <div>
+        <p class="eyebrow">Tổng quan dữ liệu</p>
+        <h2>Dữ liệu loài, occurrence và bảo tồn trong một hệ thống</h2>
+      </div>
+      <span>Observed year {{ observedYearRange() }}</span>
+    </div>
+
+    <div class="overview-grid">
+      @for (item of dataHighlights(); track item.label) {
+        <a class="overview-card" [routerLink]="item.route">
+          <strong>{{ item.value === null ? 'Đang tải' : (item.value | number) }}</strong>
+          <span>{{ item.label }}</span>
+          <small>{{ item.helper }}</small>
+        </a>
+      }
+    </div>
+  </section>
+
   <section class="feature-section" aria-labelledby="home-actions-title">
     <div class="section-heading">
-      <p class="eyebrow">Chức năng chính</p>
-      <h2 id="home-actions-title">Khám phá dữ liệu theo cách bạn cần</h2>
+      <div>
+        <p class="eyebrow">Chức năng chính</p>
+        <h2 id="home-actions-title">Khám phá dữ liệu theo cách bạn cần</h2>
+      </div>
     </div>
 
     <div class="feature-grid">
@@ -70,8 +94,10 @@
 
   <section class="source-section" aria-labelledby="source-title">
     <div class="section-heading">
-      <p class="eyebrow">Bộ sưu tập</p>
-      <h2 id="source-title">Khám phá theo nhóm sinh vật</h2>
+      <div>
+        <p class="eyebrow">Bộ sưu tập</p>
+        <h2 id="source-title">Khám phá theo nhóm sinh vật</h2>
+      </div>
     </div>
 
     <div class="source-grid">

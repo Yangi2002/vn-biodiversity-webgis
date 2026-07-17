@@ -91,7 +91,7 @@
 .keyword-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 30000;
   display: grid;
   place-items: center;
   padding: 28px;
@@ -100,6 +100,8 @@
 }
 
 .keyword-dialog {
+  position: relative;
+  z-index: 30001;
   width: min(1040px, 100%);
   max-height: min(820px, calc(100dvh - 56px));
   overflow: hidden;
@@ -293,7 +295,7 @@
 .keyword-image-preview-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10010;
+  z-index: 30010;
   display: grid;
   place-items: center;
   padding: 28px;
@@ -302,6 +304,7 @@
 
 .keyword-image-preview {
   position: relative;
+  z-index: 30011;
   width: min(1120px, 100%);
   height: min(780px, calc(100dvh - 56px));
   display: grid;

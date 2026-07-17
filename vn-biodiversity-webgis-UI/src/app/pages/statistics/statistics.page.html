@@ -167,7 +167,7 @@
             <div class="detail-donut" [style.background]="donutMetricBackground(regionDonutItems())">
               <div>
                 <span>Top vùng</span>
-                <strong>{{ regionDonutItems().length }}</strong>
+                <strong>{{ visibleDonutCount(regionDonutItems()) }}</strong>
               </div>
             </div>
 
@@ -399,7 +399,7 @@
               <span>Spatial ranking</span>
               <h2>Vùng ghi nhận nổi bật</h2>
             </div>
-            <strong>Top {{ data.occurrencesByRegion.length }}</strong>
+            <strong>Top {{ visibleDonutCount(regionDonutItems()) }}</strong>
           </div>
 
           @if (groupVisualMode() === 'donut') {
@@ -407,7 +407,7 @@
               <div class="detail-donut" [style.background]="donutMetricBackground(regionDonutItems())">
                 <div>
                   <span>Region</span>
-                  <strong>{{ regionDonutItems().length }}</strong>
+                  <strong>{{ visibleDonutCount(regionDonutItems()) }}</strong>
                 </div>
               </div>
 
@@ -452,18 +452,27 @@
               <div class="detail-donut" [style.background]="donutMetricBackground(speciesDonutItems())">
                 <div>
                   <span>Species</span>
-                  <strong>{{ speciesDonutItems().length }}</strong>
+                  <strong>{{ visibleDonutCount(speciesDonutItems()) }}</strong>
                 </div>
               </div>
 
               <div class="donut-legend">
                 @for (item of speciesDonutItems(); track item.key) {
-                  <a [routerLink]="item.detailUrl || '/species-list'">
-                    <i [style.background]="item.color"></i>
-                    <span>{{ item.label }}</span>
-                    <strong>{{ item.value | number }}</strong>
-                    <small>{{ item.percent }}%</small>
-                  </a>
+                  @if (item.isRemainder) {
+                    <div class="is-remainder">
+                      <i [style.background]="item.color"></i>
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.value | number }}</strong>
+                      <small>{{ item.percent }}%</small>
+                    </div>
+                  } @else {
+                    <a [routerLink]="item.detailUrl || '/species-list'">
+                      <i [style.background]="item.color"></i>
+                      <span>{{ item.label }}</span>
+                      <strong>{{ item.value | number }}</strong>
+                      <small>{{ item.percent }}%</small>
+                    </a>
+                  }
                 }
               </div>
             </div>
@@ -519,17 +528,26 @@
                         <strong>Loài chiếm tỷ lệ cao</strong>
                         <div class="mini-donut-layout">
                           <div class="mini-donut" [style.background]="donutMetricBackground(regionSpeciesDonutItems(region.region), true)">
-                            <span>{{ regionSpeciesDonutItems(region.region).length }}</span>
+                            <span>{{ visibleDonutCount(regionSpeciesDonutItems(region.region)) }}</span>
                           </div>
 
                           <div class="donut-legend is-mini">
                             @for (item of regionSpeciesDonutItems(region.region); track item.key) {
-                              <a [routerLink]="item.detailUrl || '/species-list'">
-                                <i [style.background]="item.color"></i>
-                                <span>{{ item.label }}</span>
-                                <strong>{{ item.value | number }}</strong>
-                                <small>{{ item.percent }}%</small>
-                              </a>
+                              @if (item.isRemainder) {
+                                <div class="is-remainder">
+                                  <i [style.background]="item.color"></i>
+                                  <span>{{ item.label }}</span>
+                                  <strong>{{ item.value | number }}</strong>
+                                  <small>{{ item.percent }}%</small>
+                                </div>
+                              } @else {
+                                <a [routerLink]="item.detailUrl || '/species-list'">
+                                  <i [style.background]="item.color"></i>
+                                  <span>{{ item.label }}</span>
+                                  <strong>{{ item.value | number }}</strong>
+                                  <small>{{ item.percent }}%</small>
+                                </a>
+                              }
                             }
                           </div>
                         </div>

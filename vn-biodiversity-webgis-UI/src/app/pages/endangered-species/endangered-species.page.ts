@@ -125,6 +125,34 @@ export class EndangeredSpeciesPage {
     return this.categoryOptions().find((option) => option.category === category)?.label ?? category;
   }
 
+  protected publishedYear(item: ConservationSpeciesItem): string {
+    return item.publishedYear?.trim() || 'Chưa có dữ liệu';
+  }
+
+  protected evaluatorName(item: ConservationSpeciesItem): string {
+    return this.compactNameList(item.assessor);
+  }
+
+  protected evaluatorTitle(item: ConservationSpeciesItem): string {
+    return item.assessor?.trim() || 'Không công khai';
+  }
+
+  private compactNameList(value: string | null): string {
+    const text = value?.trim();
+
+    if (!text) {
+      return 'Không công khai';
+    }
+
+    const [firstName, ...others] = text.split(/[,;\n]+/).map((item) => item.trim()).filter(Boolean);
+
+    if (!firstName) {
+      return 'Không công khai';
+    }
+
+    return others.length ? `${firstName}, ...` : firstName;
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.errorMessage.set('');

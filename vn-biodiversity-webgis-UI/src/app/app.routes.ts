@@ -53,5 +53,4 @@ export const routes: Routes = [
     component: EndangeredSpeciesPage,
     title: 'Danh sách đỏ',
   },
-  
 ];

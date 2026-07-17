@@ -31,5 +31,11 @@ export interface SpeciesOccurrenceGadmLevel {
 
 export interface SpeciesOccurrenceMap {
   summary: SpeciesOccurrenceSummary;
+  filters: SpeciesOccurrenceFilterOptions;
   points: SpeciesOccurrencePoint[];
+}
+
+export interface SpeciesOccurrenceFilterOptions {
+  regions: string[];
+  basisOfRecord: string[];
 }

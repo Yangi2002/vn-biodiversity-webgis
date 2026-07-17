@@ -74,6 +74,7 @@ export class SpeciesService {
       images: detail.images.map((image) => ({
         ...image,
         imageUrl: this.api.buildUrl(image.imageUrl),
+        showpicImageUrl: image.showpicImageUrl ? this.api.buildUrl(image.showpicImageUrl) : null,
       })),
       keywords: (detail.keywords ?? []).map((keyword) => ({
         ...keyword,

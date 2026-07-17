@@ -274,6 +274,7 @@ button {
 
 .species-panel,
 .donut-detail-panel,
+.region-panel,
 .region-detail-panel,
 .species-ranking,
 .taxonomy-panel,
@@ -328,6 +329,10 @@ button {
   grid-template-columns: minmax(170px, 210px) minmax(0, 1fr);
   gap: 22px;
   align-items: center;
+}
+
+.region-panel .detail-donut-layout {
+  grid-template-columns: minmax(160px, 190px) minmax(280px, 1fr);
 }
 
 .detail-donut {
@@ -406,12 +411,32 @@ button {
 .donut-legend span {
   font-weight: 900;
   line-height: 1.25;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .donut-legend small {
   color: #1f7a4e;
   font-weight: 900;
+  white-space: nowrap;
+}
+
+.donut-legend strong {
+  white-space: nowrap;
+}
+
+.donut-legend .is-remainder {
+  color: #52665d;
+}
+
+.donut-legend .is-remainder i {
+  box-shadow: inset 0 0 0 1px #bfd5c7;
+}
+
+.donut-legend .is-remainder span,
+.donut-legend .is-remainder strong {
+  font-weight: 850;
 }
 
 .donut-legend.is-mini {
@@ -819,6 +844,7 @@ button {
   }
 
   .species-panel,
+  .region-panel,
   .region-detail-panel,
   .species-ranking,
   .taxonomy-panel,

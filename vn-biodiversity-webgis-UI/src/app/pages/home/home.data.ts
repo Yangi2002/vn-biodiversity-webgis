@@ -58,21 +58,21 @@ export const HOME_FEATURE_LINKS: readonly HomeFeatureLink[] = [
     status: 'Mở bản đồ',
   },
   {
+    title: 'Thống kê loài',
+    label: 'Statistics',
+    description: 'Xem thống kê theo loài, vùng ghi nhận, nguồn dữ liệu và xu hướng occurrence.',
+    route: '/statistics',
+    icon: '📊',
+    status: 'Xem thống kê',
+  },
+  {
     title: 'Danh sách đỏ',
-    label: 'IUCN Red List',
-    description: 'Theo dõi các loài có nguy cơ tuyệt chủng.',
+    label: 'VN Red List',
+    description: 'Theo dõi các loài có nguy cơ tuyệt chủng từ dữ liệu VN Red List.',
     route: '/endangered-species',
     icon: '📕',
     status: 'Xem hồ sơ',
     queryParams: { focus: 'source' },
-  },
- {
-    title: 'Thống kê loài',
-    label: 'Statistics',
-    description: 'Xem các thống kê về loài và phân bố của chúng.',
-    route: '/statistics',
-    icon: '📊',
-    status: 'Xem thống kê',
   },
 ];
 
@@ -110,10 +110,12 @@ export const TRUSTED_SOURCES: readonly TrustedSource[] = [
   { name: 'GBIF', url: 'https://www.gbif.org/' },
   { name: 'iNaturalist', url: 'https://www.inaturalist.org/' },
   { name: 'VNCreatures', url: 'https://www.vncreatures.net/' },
+  { name: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
 ];
 
 export const FOOTER_CREDENTIAL_LINKS: readonly CredentialLink[] = [
   { label: 'GBIF', url: 'https://www.gbif.org/' },
   { label: 'iNaturalist', url: 'https://www.inaturalist.org/' },
   { label: 'VNCreatures', url: 'https://www.vncreatures.net/' },
+  { label: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
 ];

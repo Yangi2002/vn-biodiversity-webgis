@@ -21,18 +21,18 @@ import {
   DashboardMetricStripComponent,
 } from '../../shared/components/dashboard-metric-strip/dashboard-metric-strip.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
+import {
+  ChartMetricItem,
+  donutMetricBackground as buildDonutMetricBackground,
+  metricColor as chartMetricColor,
+  roundPercent as calculatePercent,
+  withRemainderMetric as appendRemainderMetric,
+} from '../../shared/utils/chart-metric.util';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 
 type SourceGroupFilter = NonNullable<StatsDashboardQueryDto['sourceGroup']>;
 type ImageFilter = NonNullable<StatsDashboardQueryDto['hasImage']>;
-type DonutMetric = {
-  key: string;
-  label: string;
-  value: number;
-  percent: number;
-  color: string;
-  detailUrl?: string;
-};
+type DonutMetric = ChartMetricItem;
 type DashboardTab = 'overview' | 'group-detail';
 type GroupVisualMode = 'bar' | 'donut';
 type RegionYearGroup = {
@@ -314,7 +314,7 @@ export class StatisticsPage {
       return [];
     }
 
-    return speciesGroup.items.slice(0, 6).map((species, index) => ({
+    const visibleItems = speciesGroup.items.slice(0, 6).map((species, index) => ({
       key: `${species.sourceTable}-${species.speciesId}`,
       label: species.vietnameseName || species.scientificName || 'Chưa rõ tên',
       value: species.occurrenceCount,
@@ -322,6 +322,8 @@ export class StatisticsPage {
       color: this.metricColor(index),
       detailUrl: species.detailUrl,
     }));
+
+    return this.withRemainderMetric(visibleItems, speciesGroup.totalOccurrence, 'Loài còn lại');
   }
 
   observedRange(dashboard: StatsDashboard): string {
@@ -331,29 +333,15 @@ export class StatisticsPage {
   }
 
   metricColor(index: number): string {
-    const palette = ['#1f7a4e', '#78b86f', '#d69a36', '#2f8f83', '#b65f2a', '#4a9b58', '#8f7a2f', '#5a7f65'];
-    return palette[index % palette.length];
+    return chartMetricColor(index);
   }
 
   donutMetricBackground(items: DonutMetric[], normalizeByValue = false): string {
-    if (!items.length) {
-      return 'conic-gradient(#dcebe1 0deg 360deg)';
-    }
+    return buildDonutMetricBackground(items, normalizeByValue);
+  }
 
-    let cursor = 0;
-    const totalValue = Math.max(1, items.reduce((sum, item) => sum + item.value, 0));
-    const segments = items.map((item) => {
-      const start = cursor;
-      const percent = normalizeByValue ? (item.value / totalValue) * 100 : item.percent;
-      cursor += (percent / 100) * 360;
-      return `${item.color} ${start}deg ${cursor}deg`;
-    });
-
-    if (cursor < 360) {
-      segments.push(`#e3eee7 ${cursor}deg 360deg`);
-    }
-
-    return `conic-gradient(${segments.join(', ')})`;
+  visibleDonutCount(items: DonutMetric[]): number {
+    return items.filter((item) => !item.isRemainder).length;
   }
 
   private buildSpeciesShareGroups(rows: StatsSpeciesShareMetric[], mode: 'sourceGroup' | 'region') {
@@ -437,7 +425,7 @@ export class StatisticsPage {
   private buildSpeciesDonut(rows: StatsSpeciesRanking[]): DonutMetric[] {
     const total = Math.max(1, this.dashboard()?.summary.totalOccurrences ?? 1);
 
-    return rows.slice(0, 8).map((species, index) => ({
+    const visibleItems = rows.slice(0, 12).map((species, index) => ({
       key: `${species.sourceTable}-${species.speciesId}`,
       label: species.vietnameseName || species.scientificName || 'Chưa rõ tên',
       value: species.occurrenceCount,
@@ -445,22 +433,30 @@ export class StatisticsPage {
       color: this.metricColor(index),
       detailUrl: species.detailUrl,
     }));
+
+    return this.withRemainderMetric(visibleItems, total, 'Loài còn lại');
   }
 
   private buildRegionDonut(rows: StatsRegionMetric[]): DonutMetric[] {
     const total = Math.max(1, rows.reduce((sum, region) => sum + region.occurrenceCount, 0));
 
-    return rows.slice(0, 8).map((region, index) => ({
+    const visibleItems = rows.slice(0, 8).map((region, index) => ({
       key: region.region,
       label: region.region,
       value: region.occurrenceCount,
       percent: this.roundPercent(region.occurrenceCount, total),
       color: this.metricColor(index),
     }));
+
+    return this.withRemainderMetric(visibleItems, total, 'Vùng còn lại');
+  }
+
+  private withRemainderMetric(items: DonutMetric[], total: number, label: string): DonutMetric[] {
+    return appendRemainderMetric(items, total, label);
   }
 
   private roundPercent(value: number, total: number): number {
-    return Math.round((value / Math.max(1, total)) * 1000) / 10;
+    return calculatePercent(value, total);
   }
 
   private resolveGroupLabel(group: SourceGroupFilter): string {

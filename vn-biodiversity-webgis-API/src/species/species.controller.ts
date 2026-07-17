@@ -41,6 +41,19 @@ export class SpeciesController {
     response.type(image.mimeType).send(Buffer.from(image.imageData));
   }
 
+  @Get(':sourceTable/:speciesId/showpic-images/:imageOrder')
+  @Header('Cache-Control', 'public, max-age=86400')
+  async getShowpicImageByOrder(
+    @Param('sourceTable') sourceTable: string,
+    @Param('speciesId') speciesId: string,
+    @Param('imageOrder') imageOrder: string,
+    @Res() response: Response,
+  ) {
+    const image = await this.speciesService.getShowpicImageByOrder(sourceTable, speciesId, imageOrder);
+
+    response.type(image.mimeType).send(Buffer.from(image.imageData));
+  }
+
   @Get(':sourceTable/:speciesId/images/:imageOrder')
   @Header('Cache-Control', 'public, max-age=86400')
   async getImageByOrder(

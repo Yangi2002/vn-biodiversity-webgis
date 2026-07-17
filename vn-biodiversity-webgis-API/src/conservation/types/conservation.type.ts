@@ -40,6 +40,7 @@ export interface ConservationSpeciesItem {
   redlistCriteria: string | null;
   publishedYear: string | null;
   assessor: string | null;
+  contributors: string | null;
   distributionVietnam: string | null;
   habitat: string | null;
   threats: string | null;

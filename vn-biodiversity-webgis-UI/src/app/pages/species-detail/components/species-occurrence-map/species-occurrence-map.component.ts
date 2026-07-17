@@ -30,7 +30,14 @@ const MAP_INTERACTION_BOUNDS: Leaflet.LatLngBoundsExpression = [
   [27.0, 118.5],
 ];
 const PIN_MARKER_HTML = '<span class="pin-marker-core"></span>';
-const MAX_RENDERED_MARKERS = 500;
+const DEFAULT_POINT_LIMIT = 700;
+
+interface OccurrenceCluster {
+  latitude: number;
+  longitude: number;
+  count: number;
+  points: SpeciesOccurrencePoint[];
+}
 
 @Component({
   selector: 'app-species-occurrence-map',
@@ -60,9 +67,11 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   protected readonly errorMessage = signal('');
   protected readonly selectedPoint = signal<SpeciesOccurrencePoint | null>(null);
   protected readonly isInsightPanelExpanded = signal(true);
+  protected readonly isDetailPanelExpanded = signal(true);
   protected readonly brokenImageKeys = signal<Set<string>>(new Set());
   protected readonly yearFromFilter = signal('');
   protected readonly yearToFilter = signal('');
+  protected readonly regionFilter = signal('all');
   protected readonly sourceFilter = signal('all');
   protected readonly imageFilter = signal('all');
 
@@ -79,13 +88,14 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   ngAfterViewInit(): void {
     if (this.isBrowser) {
       void this.initializeMap();
-      this.loadSpeciesOccurrences();
+      this.loadSpeciesOccurrences({ fitBounds: true });
     }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['sourceTable'] || changes['speciesId']) {
-      this.loadSpeciesOccurrences();
+      this.lastRequestKey = '';
+      this.loadSpeciesOccurrences({ fitBounds: true });
     }
   }
 
@@ -107,6 +117,10 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.isInsightPanelExpanded.update((isExpanded) => !isExpanded);
   }
 
+  protected toggleDetailPanel(): void {
+    this.isDetailPanelExpanded.update((isExpanded) => !isExpanded);
+  }
+
   protected resetSelectedPoint(): void {
     this.selectedPoint.set(null);
     this.focusCurrentOccurrenceBounds();
@@ -115,10 +129,11 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   protected resetFilters(): void {
     this.yearFromFilter.set('');
     this.yearToFilter.set('');
+    this.regionFilter.set('all');
     this.sourceFilter.set('all');
     this.imageFilter.set('all');
     this.selectedPoint.set(null);
-    this.renderPoints({ fitBounds: true });
+    this.loadSpeciesOccurrences({ fitBounds: true, force: true });
   }
 
   protected updateYearFromFilter(value: string): void {
@@ -129,23 +144,21 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.yearToFilter.set(value.trim());
   }
 
+  protected updateRegionFilter(value: string): void {
+    this.regionFilter.set(value);
+  }
+
   protected updateSourceFilter(value: string): void {
     this.sourceFilter.set(value);
-    this.applyMapFilters();
   }
 
   protected updateImageFilter(value: string): void {
     this.imageFilter.set(value);
-    this.applyMapFilters();
   }
 
   protected applyMapFilters(): void {
     this.selectedPoint.set(null);
-    this.renderPoints({ fitBounds: true });
-  }
-
-  protected coordinateText(point: SpeciesOccurrencePoint): string {
-    return `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}`;
+    this.loadSpeciesOccurrences({ fitBounds: true, force: true });
   }
 
   protected latitudeText(point: SpeciesOccurrencePoint): string {
@@ -164,26 +177,22 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.brokenImageKeys.update((keys) => new Set(keys).add(point.occurrenceKey));
   }
 
-  protected filteredPointCount(): number {
-    return this.filteredOccurrencePoints().length;
-  }
-
   protected displayedPointCount(): number {
-    return this.displayedOccurrencePoints().length;
+    return this.occurrenceMap()?.points.length ?? 0;
   }
 
   protected isSamplingMarkers(): boolean {
-    return this.filteredPointCount() > this.displayedPointCount();
+    const summaryCount = this.occurrenceMap()?.summary.totalOccurrences ?? 0;
+
+    return summaryCount > this.displayedPointCount();
   }
 
   protected sourceOptions(): string[] {
-    const sources = new Set(
-      (this.occurrenceMap()?.points ?? [])
-        .map((point) => point.basisOfRecord || point.qualityGrade)
-        .filter((source): source is string => Boolean(source)),
-    );
+    return this.occurrenceMap()?.filters.basisOfRecord ?? [];
+  }
 
-    return Array.from(sources).sort((a, b) => a.localeCompare(b));
+  protected regionOptions(): string[] {
+    return this.occurrenceMap()?.filters.regions ?? [];
   }
 
   protected coordinatesNotice(): string {
@@ -219,14 +228,22 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     return level.replace('level', 'Level ');
   }
 
-  private loadSpeciesOccurrences(): void {
+  private loadSpeciesOccurrences(options: { fitBounds?: boolean; force?: boolean } = {}): void {
     if (!this.sourceTable() || !this.speciesId()) {
       return;
     }
 
-    const requestKey = `${this.sourceTable()}:${this.speciesId()}`;
+    const requestKey = JSON.stringify({
+      basisOfRecord: this.sourceFilter(),
+      imageMode: this.imageFilter(),
+      region: this.regionFilter(),
+      sourceTable: this.sourceTable(),
+      speciesId: this.speciesId(),
+      yearFrom: this.yearFromFilter(),
+      yearTo: this.yearToFilter(),
+    });
 
-    if (requestKey === this.lastRequestKey) {
+    if (!options.force && requestKey === this.lastRequestKey) {
       return;
     }
 
@@ -235,7 +252,14 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.errorMessage.set('');
 
     this.occurrenceService
-      .getSpeciesOccurrences(this.sourceTable(), this.speciesId())
+      .getSpeciesOccurrences(this.sourceTable(), this.speciesId(), {
+        basisOfRecord: this.sourceFilter(),
+        imageMode: this.imageFilter(),
+        limit: DEFAULT_POINT_LIMIT,
+        region: this.regionFilter(),
+        yearFrom: this.yearFromFilter(),
+        yearTo: this.yearToFilter(),
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (occurrenceMap) => {
@@ -243,7 +267,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
           this.selectedPoint.set(null);
           this.brokenImageKeys.set(new Set());
           this.isLoading.set(false);
-          this.renderPoints({ fitBounds: true });
+          this.renderPoints({ fitBounds: options.fitBounds });
         },
         error: () => {
           this.occurrenceMap.set(null);
@@ -313,6 +337,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.markerLayer = this.leaflet.layerGroup().addTo(this.map);
     this.map.setMaxBounds(MAP_INTERACTION_BOUNDS);
     this.map.on('click', () => this.selectedPoint.set(null));
+    this.map.on('zoomend', () => this.renderPoints());
     window.setTimeout(() => this.map?.invalidateSize(), 120);
   }
 
@@ -322,7 +347,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     }
 
     this.markerLayer.clearLayers();
-    const points = this.displayedOccurrencePoints();
+    const points = this.occurrenceMap()?.points ?? [];
 
     if (!points.length) {
       this.focusVietnam();
@@ -330,29 +355,93 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     }
 
     const bounds = this.leaflet.latLngBounds([]);
+    points.forEach((point) => bounds.extend([this.displayLatitude(point), this.displayLongitude(point)]));
 
-    points.forEach((point) => {
-      const marker = this.createOccurrenceMarker(point);
-
-      marker.bindPopup(this.buildPopup(point), {
-        autoPan: false,
-        autoPanPaddingBottomRight: [430, 60],
-        autoPanPaddingTopLeft: [32, 32],
-        className: 'species-occurrence-popup',
-        maxWidth: 280,
-      });
-      marker.on('click', (event) => {
-        this.leaflet!.DomEvent.stopPropagation(event);
-        this.selectedPoint.set(point);
-        this.isInsightPanelExpanded.set(true);
-      });
-      marker.addTo(this.markerLayer!);
-      bounds.extend([this.displayLatitude(point), this.displayLongitude(point)]);
-    });
+    for (const cluster of this.clusterPoints(points)) {
+      if (cluster.count === 1) {
+        this.addOccurrenceMarker(cluster.points[0]);
+      } else {
+        this.addClusterMarker(cluster);
+      }
+    }
 
     if (options.fitBounds) {
       this.focusOccurrenceBounds(bounds);
     }
+  }
+
+  private addOccurrenceMarker(point: SpeciesOccurrencePoint): void {
+    const marker = this.createOccurrenceMarker(point);
+
+    marker.bindPopup(this.buildPopup(point), {
+      autoPan: false,
+      className: 'species-occurrence-popup',
+      maxWidth: 280,
+    });
+    marker.on('click', (event) => {
+      this.leaflet!.DomEvent.stopPropagation(event);
+      this.selectedPoint.set(point);
+      this.isInsightPanelExpanded.set(true);
+    });
+    marker.addTo(this.markerLayer!);
+  }
+
+  private addClusterMarker(cluster: OccurrenceCluster): void {
+    const marker = this.leaflet!.circleMarker([cluster.latitude, cluster.longitude], {
+      className: 'species-occurrence-cluster',
+      color: '#0f6f43',
+      fillColor: '#17814d',
+      fillOpacity: 0.78,
+      radius: Math.min(13 + Math.sqrt(cluster.count) * 2, 34),
+      weight: 2,
+    });
+
+    marker.bindTooltip(`${cluster.count.toLocaleString('vi-VN')} điểm ghi nhận`, {
+      className: 'species-cluster-tooltip',
+      direction: 'top',
+      sticky: true,
+    });
+    marker.on('click', (event) => {
+      this.leaflet!.DomEvent.stopPropagation(event);
+      this.map?.setView([cluster.latitude, cluster.longitude], Math.min((this.map.getZoom() || DEFAULT_ZOOM) + 2, 12), {
+        animate: false,
+      });
+    });
+    marker.addTo(this.markerLayer!);
+  }
+
+  private clusterPoints(points: SpeciesOccurrencePoint[]): OccurrenceCluster[] {
+    const zoom = this.map?.getZoom() ?? DEFAULT_ZOOM;
+
+    if (zoom >= 9 || points.length < 80) {
+      return points.map((point) => ({
+        count: 1,
+        latitude: this.displayLatitude(point),
+        longitude: this.displayLongitude(point),
+        points: [point],
+      }));
+    }
+
+    const precision = zoom >= 7 ? 1 : 0.5;
+    const clusters = new Map<string, OccurrenceCluster>();
+
+    for (const point of points) {
+      const latitude = this.displayLatitude(point);
+      const longitude = this.displayLongitude(point);
+      const key = `${Math.round(latitude / precision)}:${Math.round(longitude / precision)}`;
+      const cluster = clusters.get(key);
+
+      if (cluster) {
+        cluster.count += 1;
+        cluster.latitude += (latitude - cluster.latitude) / cluster.count;
+        cluster.longitude += (longitude - cluster.longitude) / cluster.count;
+        cluster.points.push(point);
+      } else {
+        clusters.set(key, { count: 1, latitude, longitude, points: [point] });
+      }
+    }
+
+    return Array.from(clusters.values());
   }
 
   private createOccurrenceMarker(point: SpeciesOccurrencePoint): Leaflet.Marker {
@@ -367,7 +456,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     return this.leaflet!.marker([this.displayLatitude(point), this.displayLongitude(point)], {
       icon: pinIcon,
       keyboard: true,
-      title: this.speciesName() || this.scientificName() || this.speciesId(),
+      title: this.placeText(point),
     });
   }
 
@@ -380,7 +469,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
       animate: false,
       maxZoom: 9,
       paddingBottomRight: [430, 70],
-      paddingTopLeft: [410, 36],
+      paddingTopLeft: [380, 36],
     });
   }
 
@@ -389,7 +478,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
       return;
     }
 
-    const points = this.displayedOccurrencePoints();
+    const points = this.occurrenceMap()?.points ?? [];
 
     if (!points.length) {
       this.focusVietnam();
@@ -399,53 +488,6 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     const bounds = this.leaflet.latLngBounds([]);
     points.forEach((point) => bounds.extend([this.displayLatitude(point), this.displayLongitude(point)]));
     this.focusOccurrenceBounds(bounds);
-  }
-
-  private filteredOccurrencePoints(): SpeciesOccurrencePoint[] {
-    const points = this.occurrenceMap()?.points ?? [];
-    const yearFrom = Number(this.yearFromFilter());
-    const yearTo = Number(this.yearToFilter());
-    const hasYearFrom = Number.isFinite(yearFrom) && this.yearFromFilter() !== '';
-    const hasYearTo = Number.isFinite(yearTo) && this.yearToFilter() !== '';
-    const source = this.sourceFilter();
-    const imageMode = this.imageFilter();
-
-    return points.filter((point) => {
-      if (hasYearFrom && (!point.observedYear || point.observedYear < yearFrom)) {
-        return false;
-      }
-
-      if (hasYearTo && (!point.observedYear || point.observedYear > yearTo)) {
-        return false;
-      }
-
-      if (source !== 'all' && source !== (point.basisOfRecord || point.qualityGrade || '')) {
-        return false;
-      }
-
-      if (imageMode === 'with-image' && !point.imageUrl) {
-        return false;
-      }
-
-      if (imageMode === 'without-image' && point.imageUrl) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  private displayedOccurrencePoints(): SpeciesOccurrencePoint[] {
-    return this.samplePoints(this.filteredOccurrencePoints(), MAX_RENDERED_MARKERS);
-  }
-
-  private samplePoints(points: SpeciesOccurrencePoint[], limit: number): SpeciesOccurrencePoint[] {
-    if (points.length <= limit) {
-      return points;
-    }
-
-    const step = points.length / limit;
-    return Array.from({ length: limit }, (_, index) => points[Math.floor(index * step)]);
   }
 
   private displayLatitude(point: SpeciesOccurrencePoint): number {
@@ -469,12 +511,11 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
 
   private buildPopup(point: SpeciesOccurrencePoint): string {
     const location = this.escapeHtml(this.placeText(point));
-    const region = this.escapeHtml(this.regionText(point));
-    const regionLine = region && region !== location ? `<span>${region}</span>` : '';
+    const date = this.escapeHtml(point.observedDate || 'Chưa rõ ngày');
 
     return `
-      <span>${location}</span>
-      ${regionLine}
+      <strong>${location}</strong>
+      <span>${date}</span>
     `;
   }
 

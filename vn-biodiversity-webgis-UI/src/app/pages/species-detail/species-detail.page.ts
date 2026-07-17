@@ -9,6 +9,7 @@ import type {
   SpeciesDetailResponse,
   SpeciesKeywordReference,
   SpeciesTaxonomyNode,
+  SpeciesVnRedListProfile,
 } from '../../data-access/models/species.model';
 import { SpeciesService } from '../../data-access/services/species.service';
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
@@ -110,6 +111,7 @@ export class SpeciesDetailPage {
       {
         imageOrder: 1,
         imageUrl: detail.imageUrl,
+        showpicImageUrl: null,
         mimeType: detail.imageMimeType ?? 'image/jpeg',
         width: null,
         height: null,
@@ -143,6 +145,42 @@ export class SpeciesDetailPage {
 
   protected keywordReferences(detail: SpeciesDetailResponse): SpeciesKeywordReference[] {
     return detail.keywords ?? [];
+  }
+
+  protected conservationPublishedYear(profile: SpeciesVnRedListProfile): string {
+    return profile.publishedYear?.trim() || 'Chưa có dữ liệu';
+  }
+
+  protected conservationEvaluatorName(profile: SpeciesVnRedListProfile): string {
+    return this.compactNameList(profile.assessor);
+  }
+
+  protected conservationEvaluatorTitle(profile: SpeciesVnRedListProfile): string {
+    return profile.assessor?.trim() || 'Không công khai';
+  }
+
+  protected conservationContributorName(profile: SpeciesVnRedListProfile): string {
+    return profile.contributors?.trim() || 'Không công khai';
+  }
+
+  protected conservationContributorTitle(profile: SpeciesVnRedListProfile): string {
+    return profile.contributors?.trim() || 'Không công khai';
+  }
+
+  private compactNameList(value: string | null): string {
+    const text = value?.trim();
+
+    if (!text) {
+      return 'Không công khai';
+    }
+
+    const [firstName, ...others] = text.split(/[,;\n]+/).map((item) => item.trim()).filter(Boolean);
+
+    if (!firstName) {
+      return 'Không công khai';
+    }
+
+    return others.length ? `${firstName}, ...` : firstName;
   }
 
   protected selectKeyword(keyword: SpeciesKeywordReference): void {

@@ -10,6 +10,7 @@ import type {
   OccurrenceMapSummary,
 } from './types/occurrence-overview.type';
 import type {
+  SpeciesOccurrenceFilterOptions,
   SpeciesOccurrenceGadmLevel,
   SpeciesOccurrenceMap,
   SpeciesOccurrencePoint,
@@ -78,6 +79,10 @@ interface SpeciesOccurrenceSummaryRow {
   image_count: bigint | number | null;
 }
 
+interface SpeciesOccurrenceFilterOptionRow {
+  value: string | null;
+}
+
 interface SpeciesOccurrencePointRow {
   occurrence_key: bigint | number;
   latitude: number;
@@ -101,6 +106,15 @@ interface SpeciesOccurrencePointRow {
   basis_of_record: string | null;
   image_url: string | null;
   occurrence_url: string | null;
+}
+
+interface SpeciesOccurrenceFilters {
+  yearFrom: number;
+  yearTo: number;
+  region: string | null;
+  basisOfRecord: string | null;
+  imageMode: string;
+  limit: number;
 }
 
 @Injectable()
@@ -239,36 +253,26 @@ export class OccurrenceRepository {
   async getSpeciesOccurrences(
     sourceTable: string,
     speciesId: string,
-    yearFrom: number,
-    yearTo: number,
-    limit: number,
+    filters: SpeciesOccurrenceFilters,
   ): Promise<SpeciesOccurrenceMap> {
+    const speciesQueryParams = [
+      sourceTable,
+      speciesId,
+      VIETNAM_BOUNDS.minLatitude,
+      VIETNAM_BOUNDS.maxLatitude,
+      VIETNAM_BOUNDS.minLongitude,
+      VIETNAM_BOUNDS.maxLongitude,
+      filters.yearFrom,
+      filters.yearTo,
+      filters.region,
+      filters.basisOfRecord,
+      filters.imageMode,
+    ];
+    const speciesOccurrencesCte = this.buildSpeciesOccurrencesCte();
+
     const summaryQuery = this.prisma.$queryRawUnsafe<SpeciesOccurrenceSummaryRow[]>(
       `
-      WITH species_occurrences AS (
-        SELECT
-          o.gbif_occurrence_key,
-          o.image_url,
-          CASE
-            WHEN o.observed_date ~ '^\\d{4}' THEN substring(o.observed_date from 1 for 4)::int
-            ELSE NULL
-          END AS observed_year
-        FROM species_gbif_occurrence_matches m
-        JOIN gbif_occurrences o
-          ON o.gbif_occurrence_key = m.gbif_occurrence_key
-        WHERE m.source_table = $1
-          AND m.species_id = $2
-          AND o.latitude BETWEEN $3 AND $4
-          AND o.longitude BETWEEN $5 AND $6
-          AND o.latitude IS NOT NULL
-          AND o.longitude IS NOT NULL
-          AND coalesce(o.has_geospatial_issue, false) = false
-          AND (
-            o.observed_date IS NULL
-            OR o.observed_date !~ '^\\d{4}'
-            OR substring(o.observed_date from 1 for 4)::int BETWEEN $7 AND $8
-          )
-      )
+      WITH ${speciesOccurrencesCte}
       SELECT
         count(DISTINCT gbif_occurrence_key) AS total_occurrences,
         min(observed_year) FILTER (WHERE observed_year IS NOT NULL) AS earliest_observed_year,
@@ -276,86 +280,76 @@ export class OccurrenceRepository {
         count(*) FILTER (WHERE image_url IS NOT NULL AND image_url <> '') AS image_count
       FROM species_occurrences
       `,
-      sourceTable,
-      speciesId,
-      VIETNAM_BOUNDS.minLatitude,
-      VIETNAM_BOUNDS.maxLatitude,
-      VIETNAM_BOUNDS.minLongitude,
-      VIETNAM_BOUNDS.maxLongitude,
-      yearFrom,
-      yearTo,
+      ...speciesQueryParams,
     );
 
     const pointsQuery = this.prisma.$queryRawUnsafe<SpeciesOccurrencePointRow[]>(
       `
-      SELECT DISTINCT ON (o.gbif_occurrence_key)
-        o.gbif_occurrence_key AS occurrence_key,
-        o.latitude,
-        o.longitude,
-        o.observed_date,
-        CASE
-          WHEN o.observed_date ~ '^\\d{4}' THEN substring(o.observed_date from 1 for 4)::int
-          ELSE NULL
-        END AS observed_year,
-        o.location,
-        nullif(o.source_payload ->> 'locality', '') AS locality,
-        nullif(o.source_payload ->> 'gbifRegion', '') AS region,
-        nullif(
-          concat_ws(
-            ', ',
-            o.source_payload -> 'gadm' -> 'level3' ->> 'name',
-            o.source_payload -> 'gadm' -> 'level2' ->> 'name',
-            o.source_payload -> 'gadm' -> 'level1' ->> 'name',
-            o.source_payload -> 'gadm' -> 'level0' ->> 'name'
-          ),
-          ''
-        ) AS gadm,
-        nullif(o.source_payload -> 'gadm' -> 'level0' ->> 'gid', '') AS gadm_level0_gid,
-        nullif(o.source_payload -> 'gadm' -> 'level0' ->> 'name', '') AS gadm_level0_name,
-        nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'gid', '') AS gadm_level1_gid,
-        nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'name', '') AS gadm_level1_name,
-        nullif(o.source_payload -> 'gadm' -> 'level2' ->> 'gid', '') AS gadm_level2_gid,
-        nullif(o.source_payload -> 'gadm' -> 'level2' ->> 'name', '') AS gadm_level2_name,
-        nullif(o.source_payload -> 'gadm' -> 'level3' ->> 'gid', '') AS gadm_level3_gid,
-        nullif(o.source_payload -> 'gadm' -> 'level3' ->> 'name', '') AS gadm_level3_name,
-        o.observer,
-        o.quality_grade,
-        o.basis_of_record,
-        o.image_url,
-        o.occurrence_url
-      FROM species_gbif_occurrence_matches m
-      JOIN gbif_occurrences o
-        ON o.gbif_occurrence_key = m.gbif_occurrence_key
-      WHERE m.source_table = $1
-        AND m.species_id = $2
-        AND o.latitude BETWEEN $3 AND $4
-        AND o.longitude BETWEEN $5 AND $6
-        AND o.latitude IS NOT NULL
-        AND o.longitude IS NOT NULL
-        AND coalesce(o.has_geospatial_issue, false) = false
-        AND (
-          o.observed_date IS NULL
-          OR o.observed_date !~ '^\\d{4}'
-          OR substring(o.observed_date from 1 for 4)::int BETWEEN $7 AND $8
-        )
+      WITH ${speciesOccurrencesCte}
+      SELECT
+        occurrence_key,
+        latitude,
+        longitude,
+        observed_date,
+        observed_year,
+        location,
+        locality,
+        region,
+        gadm,
+        gadm_level0_gid,
+        gadm_level0_name,
+        gadm_level1_gid,
+        gadm_level1_name,
+        gadm_level2_gid,
+        gadm_level2_name,
+        gadm_level3_gid,
+        gadm_level3_name,
+        observer,
+        quality_grade,
+        basis_of_record,
+        image_url,
+        occurrence_url
+      FROM species_occurrences
       ORDER BY
-        o.gbif_occurrence_key,
-        CASE WHEN o.image_url IS NULL OR o.image_url = '' THEN 1 ELSE 0 END,
-        o.observed_date DESC NULLS LAST
-      LIMIT $9
+        CASE WHEN image_url IS NULL OR image_url = '' THEN 1 ELSE 0 END,
+        observed_date DESC NULLS LAST,
+        occurrence_key
+      LIMIT $12
       `,
-      sourceTable,
-      speciesId,
-      VIETNAM_BOUNDS.minLatitude,
-      VIETNAM_BOUNDS.maxLatitude,
-      VIETNAM_BOUNDS.minLongitude,
-      VIETNAM_BOUNDS.maxLongitude,
-      yearFrom,
-      yearTo,
-      limit,
+      ...speciesQueryParams,
+      filters.limit,
     );
 
-    const [[summaryRow], pointRows] = await Promise.all([summaryQuery, pointsQuery]);
+    const optionParams = speciesQueryParams.slice(0, 8);
+    const regionOptionsQuery = this.prisma.$queryRawUnsafe<SpeciesOccurrenceFilterOptionRow[]>(
+      `
+      WITH ${this.buildSpeciesOccurrencesCte({ includeOptionalFilters: false })}
+      SELECT DISTINCT display_region AS value
+      FROM species_occurrences
+      WHERE display_region IS NOT NULL AND display_region <> ''
+      ORDER BY display_region
+      LIMIT 120
+      `,
+      ...optionParams,
+    );
+    const basisOptionsQuery = this.prisma.$queryRawUnsafe<SpeciesOccurrenceFilterOptionRow[]>(
+      `
+      WITH ${this.buildSpeciesOccurrencesCte({ includeOptionalFilters: false })}
+      SELECT DISTINCT basis_of_record AS value
+      FROM species_occurrences
+      WHERE basis_of_record IS NOT NULL AND basis_of_record <> ''
+      ORDER BY basis_of_record
+      LIMIT 80
+      `,
+      ...optionParams,
+    );
+
+    const [[summaryRow], pointRows, regionOptions, basisOptions] = await Promise.all([
+      summaryQuery,
+      pointsQuery,
+      regionOptionsQuery,
+      basisOptionsQuery,
+    ]);
 
     return {
       summary: {
@@ -364,6 +358,7 @@ export class OccurrenceRepository {
         latestObservedYear: summaryRow?.latest_observed_year ?? null,
         imageCount: this.toNumber(summaryRow?.image_count),
       },
+      filters: this.mapSpeciesOccurrenceFilterOptions(regionOptions, basisOptions),
       points: this.mapSpeciesOccurrencePoints(pointRows),
     };
   }
@@ -570,6 +565,98 @@ export class OccurrenceRepository {
     `;
   }
 
+  private buildSpeciesOccurrencesCte(options: { includeOptionalFilters?: boolean } = {}): string {
+    const includeOptionalFilters = options.includeOptionalFilters ?? true;
+
+    return `
+      species_occurrences AS (
+        SELECT DISTINCT ON (o.gbif_occurrence_key)
+          o.gbif_occurrence_key AS occurrence_key,
+          o.gbif_occurrence_key,
+          o.latitude,
+          o.longitude,
+          o.observed_date,
+          CASE
+            WHEN o.observed_date ~ '^\\d{4}' THEN substring(o.observed_date from 1 for 4)::int
+            ELSE NULL
+          END AS observed_year,
+          o.location,
+          nullif(o.source_payload ->> 'locality', '') AS locality,
+          nullif(o.source_payload ->> 'gbifRegion', '') AS region,
+          nullif(
+            coalesce(
+              nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'name', ''),
+              nullif(o.source_payload ->> 'gbifRegion', ''),
+              nullif(o.location, '')
+            ),
+            ''
+          ) AS display_region,
+          nullif(
+            concat_ws(
+              ', ',
+              o.source_payload -> 'gadm' -> 'level3' ->> 'name',
+              o.source_payload -> 'gadm' -> 'level2' ->> 'name',
+              o.source_payload -> 'gadm' -> 'level1' ->> 'name',
+              o.source_payload -> 'gadm' -> 'level0' ->> 'name'
+            ),
+            ''
+          ) AS gadm,
+          nullif(o.source_payload -> 'gadm' -> 'level0' ->> 'gid', '') AS gadm_level0_gid,
+          nullif(o.source_payload -> 'gadm' -> 'level0' ->> 'name', '') AS gadm_level0_name,
+          nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'gid', '') AS gadm_level1_gid,
+          nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'name', '') AS gadm_level1_name,
+          nullif(o.source_payload -> 'gadm' -> 'level2' ->> 'gid', '') AS gadm_level2_gid,
+          nullif(o.source_payload -> 'gadm' -> 'level2' ->> 'name', '') AS gadm_level2_name,
+          nullif(o.source_payload -> 'gadm' -> 'level3' ->> 'gid', '') AS gadm_level3_gid,
+          nullif(o.source_payload -> 'gadm' -> 'level3' ->> 'name', '') AS gadm_level3_name,
+          o.observer,
+          o.quality_grade,
+          o.basis_of_record,
+          o.image_url,
+          o.occurrence_url
+        FROM species_gbif_occurrence_matches m
+        JOIN gbif_occurrences o
+          ON o.gbif_occurrence_key = m.gbif_occurrence_key
+        WHERE m.source_table = $1
+          AND m.species_id = $2
+          AND o.latitude BETWEEN $3 AND $4
+          AND o.longitude BETWEEN $5 AND $6
+          AND o.latitude IS NOT NULL
+          AND o.longitude IS NOT NULL
+          AND coalesce(o.has_geospatial_issue, false) = false
+          AND (
+            o.observed_date IS NULL
+            OR o.observed_date !~ '^\\d{4}'
+            OR substring(o.observed_date from 1 for 4)::int BETWEEN $7 AND $8
+          )
+          ${
+            includeOptionalFilters
+              ? `
+          AND (
+            $9::text IS NULL
+            OR coalesce(
+              nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'name', ''),
+              nullif(o.source_payload ->> 'gbifRegion', ''),
+              nullif(o.location, '')
+            ) = $9
+          )
+          AND ($10::text IS NULL OR o.basis_of_record = $10 OR o.quality_grade = $10)
+          AND (
+            $11::text = 'all'
+            OR ($11::text = 'with-image' AND o.image_url IS NOT NULL AND o.image_url <> '')
+            OR ($11::text = 'without-image' AND (o.image_url IS NULL OR o.image_url = ''))
+          )
+              `
+              : ''
+          }
+        ORDER BY
+          o.gbif_occurrence_key,
+          CASE WHEN o.image_url IS NULL OR o.image_url = '' THEN 1 ELSE 0 END,
+          o.observed_date DESC NULLS LAST
+      )
+    `;
+  }
+
   private buildSpeciesUnionCte(): string {
     return `
       species_union AS (
@@ -705,6 +792,20 @@ export class OccurrenceRepository {
       imageUrl: row.image_url,
       occurrenceUrl: row.occurrence_url,
     }));
+  }
+
+  private mapSpeciesOccurrenceFilterOptions(
+    regionRows: SpeciesOccurrenceFilterOptionRow[],
+    basisRows: SpeciesOccurrenceFilterOptionRow[],
+  ): SpeciesOccurrenceFilterOptions {
+    return {
+      regions: this.mapDistinctOptionValues(regionRows),
+      basisOfRecord: this.mapDistinctOptionValues(basisRows),
+    };
+  }
+
+  private mapDistinctOptionValues(rows: SpeciesOccurrenceFilterOptionRow[]): string[] {
+    return rows.map((row) => row.value?.trim()).filter((value): value is string => Boolean(value));
   }
 
   private mapGadmLevels(row: SpeciesOccurrencePointRow): SpeciesOccurrenceGadmLevel[] {

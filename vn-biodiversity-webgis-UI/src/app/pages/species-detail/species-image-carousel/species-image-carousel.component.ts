@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 export interface SpeciesCarouselImage {
   imageOrder: number;
   imageUrl: string;
+  showpicImageUrl?: string | null;
   mimeType?: string;
   width?: number | null;
   height?: number | null;
@@ -126,7 +127,7 @@ export class SpeciesImageCarouselComponent {
   }
 
   protected displayImageUrl(image: SpeciesCarouselImage): string {
-    return image.imageUrl;
+    return image.showpicImageUrl || image.imageUrl;
   }
 
   private setActive(index: number): void {

@@ -5,6 +5,15 @@ import { HttpApiService } from '../../core/api/http-api.service';
 import type { OccurrenceOverviewQueryDto } from '../dto/occurrence-query.dto';
 import type { OccurrenceCellDetail, OccurrenceMapOverview, SpeciesOccurrenceMap } from '../models/occurrence.model';
 
+export interface SpeciesOccurrenceQueryDto {
+  yearFrom?: string | number;
+  yearTo?: string | number;
+  region?: string;
+  basisOfRecord?: string;
+  imageMode?: string;
+  limit?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -26,7 +35,7 @@ export class OccurrenceService {
     return this.api.get<OccurrenceCellDetail>(API_ENDPOINTS.occurrenceCellDetail, params);
   }
 
-  getSpeciesOccurrences(sourceTable: string, speciesId: string, query: Pick<OccurrenceOverviewQueryDto, 'yearFrom' | 'yearTo'> = {}) {
+  getSpeciesOccurrences(sourceTable: string, speciesId: string, query: SpeciesOccurrenceQueryDto = {}) {
     let params = new HttpParams();
 
     if (query.yearFrom) {
@@ -35,6 +44,22 @@ export class OccurrenceService {
 
     if (query.yearTo) {
       params = params.set('yearTo', String(query.yearTo));
+    }
+
+    if (query.region && query.region !== 'all') {
+      params = params.set('region', query.region);
+    }
+
+    if (query.basisOfRecord && query.basisOfRecord !== 'all') {
+      params = params.set('basisOfRecord', query.basisOfRecord);
+    }
+
+    if (query.imageMode && query.imageMode !== 'all') {
+      params = params.set('imageMode', query.imageMode);
+    }
+
+    if (query.limit) {
+      params = params.set('limit', String(query.limit));
     }
 
     return this.api.get<SpeciesOccurrenceMap>(API_ENDPOINTS.speciesOccurrences(sourceTable, speciesId), params);

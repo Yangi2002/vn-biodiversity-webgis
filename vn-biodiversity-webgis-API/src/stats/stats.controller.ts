@@ -6,6 +6,11 @@ import { StatsService } from './stats.service';
 export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
+  @Get('summary')
+  getSummary(@Query() query: StatsDashboardQueryDto) {
+    return this.statsService.getSummary(query);
+  }
+
   @Get('dashboard')
   getDashboard(@Query() query: StatsDashboardQueryDto) {
     return this.statsService.getDashboard(query);

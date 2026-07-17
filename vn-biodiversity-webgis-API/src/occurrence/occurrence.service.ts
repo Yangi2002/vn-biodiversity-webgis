@@ -16,6 +16,7 @@ const MAX_OBSERVED_YEAR = 2100;
 const SOURCE_GROUPS = new Set(['all', 'animal', 'plant', 'insect']);
 const DEFAULT_SPECIES_OCCURRENCE_LIMIT = 500;
 const MAX_SPECIES_OCCURRENCE_LIMIT = 1500;
+const IMAGE_MODES = new Set(['all', 'with-image', 'without-image']);
 
 export interface OccurrenceOverviewFilters {
   sourceGroup: 'all' | 'animal' | 'plant' | 'insect';
@@ -35,16 +36,8 @@ export class OccurrenceService {
     const gridSize = this.parseGridSize(query.gridSize);
     const filters = this.parseFilters(query);
     const cacheKey = stableCacheKey('occurrence:overview', { filters, gridSize });
-    const cachedOverview = this.overviewCache.get(cacheKey);
 
-    if (cachedOverview) {
-      return Promise.resolve(cachedOverview);
-    }
-
-    return this.occurrenceRepository.getMapOverview(gridSize, filters).then((overview) => {
-      this.overviewCache.set(cacheKey, overview);
-      return overview;
-    });
+    return this.overviewCache.getOrSet(cacheKey, () => this.occurrenceRepository.getMapOverview(gridSize, filters));
   }
 
   getCellDetail(query: OccurrenceCellDetailQueryDto): Promise<OccurrenceCellDetail> {
@@ -58,16 +51,10 @@ export class OccurrenceService {
       latitude,
       longitude,
     });
-    const cachedDetail = this.cellDetailCache.get(cacheKey);
 
-    if (cachedDetail) {
-      return Promise.resolve(cachedDetail);
-    }
-
-    return this.occurrenceRepository.getCellDetail(gridSize, latitude, longitude, filters).then((detail) => {
-      this.cellDetailCache.set(cacheKey, detail);
-      return detail;
-    });
+    return this.cellDetailCache.getOrSet(cacheKey, () =>
+      this.occurrenceRepository.getCellDetail(gridSize, latitude, longitude, filters),
+    );
   }
 
   getSpeciesOccurrences(
@@ -81,31 +68,40 @@ export class OccurrenceService {
 
     const yearFrom = this.parseYear(query.yearFrom, 'yearFrom') ?? MIN_OBSERVED_YEAR;
     const yearTo = this.parseYear(query.yearTo, 'yearTo') ?? MAX_OBSERVED_YEAR;
+    const region = this.parseTextFilter(query.region);
+    const basisOfRecord = this.parseTextFilter(query.basisOfRecord);
+    const imageMode = query.imageMode?.trim() || 'all';
 
     if (yearFrom > yearTo) {
       throw new BadRequestException('yearFrom must be lower than yearTo.');
     }
 
+    if (!IMAGE_MODES.has(imageMode)) {
+      throw new BadRequestException('Invalid imageMode.');
+    }
+
     const limit = this.parseLimit(query.limit);
     const cacheKey = stableCacheKey('occurrence:species', {
+      basisOfRecord,
+      imageMode,
       limit,
+      region,
       sourceTable,
       speciesId,
       yearFrom,
       yearTo,
     });
-    const cachedMap = this.speciesOccurrenceCache.get(cacheKey);
 
-    if (cachedMap) {
-      return Promise.resolve(cachedMap);
-    }
-
-    return this.occurrenceRepository
-      .getSpeciesOccurrences(sourceTable, speciesId, yearFrom, yearTo, limit)
-      .then((map) => {
-        this.speciesOccurrenceCache.set(cacheKey, map);
-        return map;
-      });
+    return this.speciesOccurrenceCache.getOrSet(cacheKey, () =>
+      this.occurrenceRepository.getSpeciesOccurrences(sourceTable, speciesId, {
+        basisOfRecord,
+        imageMode,
+        limit,
+        region,
+        yearFrom,
+        yearTo,
+      }),
+    );
   }
 
   private parseGridSize(value: string | undefined): number {
@@ -179,5 +175,15 @@ export class OccurrenceService {
     }
 
     return Math.min(Math.floor(parsed), MAX_SPECIES_OCCURRENCE_LIMIT);
+  }
+
+  private parseTextFilter(value: string | undefined): string | null {
+    const parsed = value?.trim();
+
+    if (!parsed || parsed === 'all') {
+      return null;
+    }
+
+    return parsed.slice(0, 160);
   }
 }

@@ -6,7 +6,7 @@
     </div>
 
     @if (occurrenceMap(); as mapData) {
-      <span>{{ displayedPointCount() | number }} / {{ filteredPointCount() | number }} điểm hiển thị</span>
+      <span>{{ displayedPointCount() | number }} / {{ mapData.summary.totalOccurrences | number }} điểm hiển thị</span>
     }
   </div>
 
@@ -36,7 +36,6 @@
           placeholder="VD: 2000"
           [value]="yearFromFilter()"
           (input)="updateYearFromFilter($any($event.target).value)"
-          (change)="applyMapFilters()"
         />
       </div>
 
@@ -49,8 +48,21 @@
           placeholder="VD: 2026"
           [value]="yearToFilter()"
           (input)="updateYearToFilter($any($event.target).value)"
-          (change)="applyMapFilters()"
         />
+      </div>
+
+      <div>
+        <label for="species-map-region">Vùng / tỉnh</label>
+        <select
+          id="species-map-region"
+          [value]="regionFilter()"
+          (change)="updateRegionFilter($any($event.target).value)"
+        >
+          <option value="all">Tất cả</option>
+          @for (region of regionOptions(); track region) {
+            <option [value]="region">{{ region }}</option>
+          }
+        </select>
       </div>
 
       <div>
@@ -80,13 +92,14 @@
         </select>
       </div>
 
-      <button type="button" (click)="resetFilters()">Xóa lọc</button>
+      <button type="button" class="secondary-action" (click)="resetFilters()">Xóa lọc</button>
+      <button type="button" class="primary-action" (click)="applyMapFilters()">Cập nhật</button>
     </section>
 
     <div class="species-map-filter-status">
-      <span>{{ displayedPointCount() | number }} marker đang hiển thị từ {{ filteredPointCount() | number }} điểm phù hợp.</span>
+      <span>{{ displayedPointCount() | number }} marker đang hiển thị.</span>
       @if (isSamplingMarkers()) {
-        <strong>Đang lấy mẫu đại diện để bản đồ không bị nặng.</strong>
+        <strong>Backend đang lấy mẫu đại diện để bản đồ không bị nặng.</strong>
       }
       <span>{{ coordinatesNotice() }}</span>
     </div>
@@ -170,7 +183,7 @@
               <dl>
                 <div>
                   <dt>Kiểu hiển thị</dt>
-                  <dd>Marker / pinpoint</dd>
+                  <dd>Marker / cluster</dd>
                 </div>
                 <div>
                   <dt>Observed year</dt>
@@ -180,10 +193,6 @@
                   <dt>Điểm có ảnh</dt>
                   <dd>{{ mapData.summary.imageCount | number }}</dd>
                 </div>
-                <div>
-                  <dt>Bảo tồn</dt>
-                  <dd>Giai đoạn sau sẽ ẩn hoặc làm mờ tọa độ loài nhạy cảm.</dd>
-                </div>
               </dl>
               <p class="insight-hint">Click marker để xem observer, ngày ghi nhận, nguồn dữ liệu, tọa độ và ảnh nếu có.</p>
             }
@@ -192,70 +201,74 @@
       </aside>
 
       @if (selectedPoint(); as point) {
-        <aside class="species-map-detail-panel">
-          <details class="metadata-details" open>
-            <summary>Thông tin chi tiết</summary>
-
-            <dl>
-              <div>
-                <dt>Region</dt>
-                <dd>{{ regionText(point) }}</dd>
-              </div>
-              <div>
-                <dt>Locality</dt>
-                <dd>{{ point.locality || point.location || 'Chưa rõ' }}</dd>
-              </div>
-              <div>
-                <dt>Observer</dt>
-                <dd>{{ point.observer || 'Chưa rõ' }}</dd>
-              </div>
-              <div>
-                <dt>Ảnh occurrence</dt>
-                <dd>
-                  @if (canShowOccurrenceImage(point)) {
-                    <a
-                      class="occurrence-image-preview"
-                      [href]="point.imageUrl"
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      <img
-                        [src]="point.imageUrl"
-                        [alt]="'Ảnh occurrence của ' + (speciesName() || scientificName() || speciesId())"
-                        loading="lazy"
-                        referrerpolicy="no-referrer"
-                        (error)="markOccurrenceImageBroken(point)"
-                      />
-                      <span>Mở ảnh lớn</span>
-                    </a>
-                  } @else if (point.imageUrl) {
-                    <a [href]="point.imageUrl" target="_blank" rel="noopener">Mở ảnh</a>
-                  } @else {
-                    <span>Chưa có ảnh</span>
-                  }
-                </dd>
-              </div>
-            </dl>
-
-            @if (point.gadmLevels.length) {
-              <div class="gadm-levels">
-                <h4>GADM {{ point.gadmLevels.length }} level</h4>
-                <ol>
-                  @for (level of point.gadmLevels; track level.level) {
-                    <li>
-                      <small>{{ gadmLevelNumber(level.level) }} · {{ gadmLevelLabel(level.level) }}</small>
-                      <strong>{{ level.name || 'Chưa rõ' }}</strong>
-                      @if (level.gid) {
-                        <span>{{ level.gid }}</span>
-                      }
-                    </li>
-                  }
-                </ol>
-              </div>
+        <aside class="species-map-detail-panel" [class.is-collapsed]="!isDetailPanelExpanded()">
+          <button type="button" class="detail-toggle" (click)="toggleDetailPanel()">
+            @if (isDetailPanelExpanded()) {
+              <span>Ẩn thông tin chi tiết</span>
             } @else {
-              <p class="empty-detail">Chưa có GADM phân cấp.</p>
+              <span>Thông tin chi tiết</span>
             }
-          </details>
+          </button>
+
+          @if (isDetailPanelExpanded()) {
+            <div class="metadata-details">
+              <h3>Thông tin chi tiết</h3>
+              <dl>
+                <div>
+                  <dt>Region</dt>
+                  <dd>{{ regionText(point) }}</dd>
+                </div>
+                <div>
+                  <dt>Locality</dt>
+                  <dd>{{ point.locality || point.location || 'Chưa rõ' }}</dd>
+                </div>
+                <div>
+                  <dt>Observer</dt>
+                  <dd>{{ point.observer || 'Chưa rõ' }}</dd>
+                </div>
+                <div>
+                  <dt>Ảnh occurrence</dt>
+                  <dd>
+                    @if (canShowOccurrenceImage(point)) {
+                      <a class="occurrence-image-preview" [href]="point.imageUrl" target="_blank" rel="noopener">
+                        <img
+                          [src]="point.imageUrl"
+                          [alt]="'Ảnh occurrence của ' + (speciesName() || scientificName() || speciesId())"
+                          loading="lazy"
+                          referrerpolicy="no-referrer"
+                          (error)="markOccurrenceImageBroken(point)"
+                        />
+                        <span>Mở ảnh lớn</span>
+                      </a>
+                    } @else if (point.imageUrl) {
+                      <a [href]="point.imageUrl" target="_blank" rel="noopener">Mở ảnh</a>
+                    } @else {
+                      <span>Chưa có ảnh</span>
+                    }
+                  </dd>
+                </div>
+              </dl>
+
+              @if (point.gadmLevels.length) {
+                <div class="gadm-levels">
+                  <h4>GADM {{ point.gadmLevels.length }} level</h4>
+                  <ol>
+                    @for (level of point.gadmLevels; track level.level) {
+                      <li>
+                        <small>{{ gadmLevelNumber(level.level) }} - {{ gadmLevelLabel(level.level) }}</small>
+                        <strong>{{ level.name || 'Chưa rõ' }}</strong>
+                        @if (level.gid) {
+                          <span>{{ level.gid }}</span>
+                        }
+                      </li>
+                    }
+                  </ol>
+                </div>
+              } @else {
+                <p class="empty-detail">Chưa có GADM phân cấp.</p>
+              }
+            </div>
+          }
         </aside>
       }
 
@@ -270,10 +283,8 @@
       <div class="map-state">Đang tải bản đồ phân bố...</div>
     } @else if (errorMessage()) {
       <div class="map-state is-error">{{ errorMessage() }}</div>
-    } @else if (occurrenceMap()?.points?.length && !filteredPointCount()) {
-      <div class="map-state">Không có điểm ghi nhận phù hợp với bộ lọc hiện tại.</div>
     } @else if (!occurrenceMap()?.points?.length) {
-      <div class="map-state">Chưa có điểm ghi nhận hợp lệ cho loài này.</div>
+      <div class="map-state">Chưa có điểm ghi nhận hợp lệ cho bộ lọc hiện tại.</div>
     }
   </div>
 </section>
