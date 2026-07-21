@@ -4,7 +4,7 @@ import { map } from 'rxjs';
 
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
-import type { TaxonomySearchItem, TaxonomySearchResponse } from '../models/taxonomy.model';
+import type { TaxonomySearchItem, TaxonomySearchResponse, TaxonomyTreeNode } from '../models/taxonomy.model';
 
 export interface TaxonomySearchParams {
   q?: string;
@@ -42,6 +42,14 @@ export class TaxonomyService {
           items: response.items.map((item) => this.withAbsoluteRepresentativeImageUrl(item)),
         })),
       );
+  }
+
+  treeRoots() {
+    return this.api.get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTree);
+  }
+
+  treeChildren(taxonId: string) {
+    return this.api.get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTreeChildren(taxonId));
   }
 
   private withAbsoluteRepresentativeImageUrl(item: TaxonomySearchItem): TaxonomySearchItem {

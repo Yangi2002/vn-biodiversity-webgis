@@ -1,0 +1,31 @@
+<div class="taxonomy-tree" aria-label="Cây phân loại dạng node">
+  <ng-container *ngTemplateOutlet="branchList; context: { $implicit: roots, level: 0 }" />
+</div>
+
+<ng-template #branchList let-nodes let-level="level">
+  <div
+    class="tree-level"
+    [class.is-root]="level === 0"
+    [class.is-nested]="level > 0"
+    [class.has-multiple]="nodes.length > 1"
+  >
+    @for (node of nodes; track node.taxonId) {
+      <div class="tree-branch">
+        @if (level > 0) {
+          <div class="branch-line"></div>
+        }
+
+        <app-taxonomy-node
+          [node]="node"
+          [isSelected]="selectedTaxonId === node.taxonId"
+          (selectNode)="select($event)"
+        />
+
+        @if (node.children?.length) {
+          <div class="branch-line"></div>
+          <ng-container *ngTemplateOutlet="branchList; context: { $implicit: node.children, level: level + 1 }" />
+        }
+      </div>
+    }
+  </div>
+</ng-template>

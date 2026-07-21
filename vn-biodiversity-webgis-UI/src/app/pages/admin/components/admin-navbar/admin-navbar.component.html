@@ -1,0 +1,33 @@
+<aside class="admin-sidebar" aria-label="Admin navigation">
+  <div class="admin-brand">
+    <span class="admin-brand-mark">AD</span>
+    <div>
+      <strong>VN Biodiversity</strong>
+      <small>Administration</small>
+    </div>
+  </div>
+
+  <p class="nav-section-label">Quản trị</p>
+
+  <nav class="admin-nav-links">
+    @for (item of navItems; track item.tab) {
+      <button type="button" [class.is-active]="activeTab() === item.tab" (click)="tabChange.emit(item.tab)">
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-copy">
+          <strong>{{ item.label }}</strong>
+          <small>{{ item.description }}</small>
+        </span>
+      </button>
+    }
+  </nav>
+
+  <div class="admin-user-card">
+    <span class="admin-user-avatar">AD</span>
+    <div>
+      <strong>{{ currentUser?.displayName || 'Quản trị hệ thống' }}</strong>
+      <small>{{ currentUser?.email || 'Admin account' }}</small>
+    </div>
+  </div>
+
+  <button type="button" class="admin-logout" (click)="logout()">Đăng xuất</button>
+</aside>

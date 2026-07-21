@@ -1,0 +1,21 @@
+<button
+  type="button"
+  class="taxonomy-node"
+  [class.is-selected]="isSelected"
+  [class.is-highlighted]="node.isHighlighted"
+  (click)="select()"
+>
+  <span class="node-rank">{{ node.rankLabel }}</span>
+  <strong>{{ displayName() }}</strong>
+
+  @if (hasScientificName()) {
+    <em>{{ node.canonicalName }}</em>
+  }
+
+  <span class="node-meta">
+    {{ node.speciesCount ?? 0 }} loài
+    @if ((node.childCount ?? 0) > 0) {
+      · {{ node.childCount }} nhánh con
+    }
+  </span>
+</button>

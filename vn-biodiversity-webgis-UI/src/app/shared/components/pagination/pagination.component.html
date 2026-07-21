@@ -1,0 +1,36 @@
+<nav class="shared-pagination" [class.is-compact]="compact" [attr.aria-label]="label">
+  <div class="pagination-summary">
+    <strong>Trang {{ page }} / {{ totalPages }}</strong>
+    @if (total || limit) {
+      <span>
+        @if (total) {
+          {{ total }} {{ itemLabel }}
+        }
+        @if (total && limit) {
+          ·
+        }
+        @if (limit) {
+          {{ limit }} mỗi trang
+        }
+      </span>
+    }
+  </div>
+
+  <div class="pagination-actions">
+    <button type="button" [disabled]="!hasPreviousPage" (click)="goToPage(1)">&lt;&lt;</button>
+    <button type="button" [disabled]="!hasPreviousPage" (click)="goToPage(page - 1)">&lt;</button>
+
+    @if (compact) {
+      <span class="compact-page">{{ page }} / {{ totalPages }}</span>
+    } @else {
+      @for (pageNumber of pageNumbers; track pageNumber) {
+        <button type="button" [class.is-active]="pageNumber === page" (click)="goToPage(pageNumber)">
+          {{ pageNumber }}
+        </button>
+      }
+    }
+
+    <button type="button" [disabled]="!hasNextPage" (click)="goToPage(page + 1)">&gt;</button>
+    <button type="button" [disabled]="!hasNextPage" (click)="goToPage(totalPages)">&gt;&gt;</button>
+  </div>
+</nav>

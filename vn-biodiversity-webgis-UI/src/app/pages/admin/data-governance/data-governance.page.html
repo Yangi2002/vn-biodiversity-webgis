@@ -1,0 +1,152 @@
+<main class="admin-shell">
+  <app-admin-navbar [activeTab]="activeTab()" (tabChange)="setActiveTab($event)" />
+
+  <section class="admin-content">
+    <header class="admin-topbar">
+      <div>
+        <p>Data management</p>
+        <h1>Quản trị dữ liệu chính</h1>
+      </div>
+      <button type="button" (click)="reload()">Tải lại dữ liệu</button>
+    </header>
+
+    @switch (activeTab()) {
+      @case ('data') {
+        <section class="admin-hero">
+          <div>
+            <p>Admin console</p>
+            <h2>Ba bảng dữ liệu gốc trong hệ thống</h2>
+            <span>Hiển thị dữ liệu animal, plant và insect theo dạng bảng cơ bản để chuẩn bị cho luồng quản lý và kiểm duyệt.</span>
+          </div>
+
+          <div class="hero-total">
+            <strong>{{ totalRecords() | number }}</strong>
+            <small>record từ 3 bảng chính</small>
+          </div>
+        </section>
+
+        <section class="data-overview">
+          @for (table of mainTables; track table.sourceTable) {
+            @let summary = summaryFor(table);
+
+            <article>
+              <span>{{ table.sourceTable }}</span>
+              <strong>{{ summary.total | number }}</strong>
+              <small>{{ table.label }}</small>
+            </article>
+          }
+        </section>
+
+        <section class="table-stack" aria-label="Bảng dữ liệu chính">
+          @for (table of mainTables; track table.sourceTable) {
+            @let summary = summaryFor(table);
+
+            <article class="sql-table-panel">
+              <header>
+                <div>
+                  <p>{{ table.sourceTable }}</p>
+                  <h2>{{ table.label }}</h2>
+                  <span>{{ table.description }}</span>
+                </div>
+                <div class="table-meta">
+                  <strong>{{ summary.total | number }}</strong>
+                  <small>{{ table.roleLabel }}</small>
+                </div>
+              </header>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã loài</th>
+                  <th>Tên Việt Nam</th>
+                  <th>Tên khoa học</th>
+                  <th>Lớp / nhóm</th>
+                  <th>Bộ</th>
+                  <th>Họ</th>
+                  <th>Nguồn bảng</th>
+                  <th>Hồ sơ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (summary.error) {
+                  <tr>
+                    <td colspan="8" class="table-state">{{ summary.error }}</td>
+                  </tr>
+                } @else if (!summary.items.length) {
+                  <tr>
+                    <td colspan="8" class="table-state">Chưa có dữ liệu trong bảng này.</td>
+                  </tr>
+                } @else {
+                  @for (item of summary.items; track item.sourceTable + '-' + item.speciesId) {
+                    <tr>
+                      <td>
+                        <code>{{ item.speciesId }}</code>
+                      </td>
+                      <td>
+                        <strong>{{ item.vietnameseName || 'Chưa có tên Việt Nam' }}</strong>
+                      </td>
+                      <td>
+                        <em>{{ item.scientificName || 'Chưa có tên khoa học' }}</em>
+                      </td>
+                      <td>{{ item.className || 'Chưa có dữ liệu' }}</td>
+                      <td>{{ item.order || 'Chưa có dữ liệu' }}</td>
+                      <td>{{ item.family || 'Chưa có dữ liệu' }}</td>
+                      <td>{{ item.sourceLabel || table.label }}</td>
+                      <td>
+                        <a [routerLink]="['/species', item.sourceTable, item.speciesId]">Mở</a>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="table-footer">
+            <span>Trang {{ summary.page | number }} / {{ summary.totalPages | number }}</span>
+            <div>
+              <button type="button" [disabled]="summary.page <= 1 || summary.isLoading" (click)="goToPage(table, summary.page - 1)">
+                Trước
+              </button>
+              <button
+                type="button"
+                [disabled]="summary.page >= summary.totalPages || summary.isLoading"
+                (click)="goToPage(table, summary.page + 1)"
+              >
+                Sau
+              </button>
+              <a [routerLink]="['/species-list']" [queryParams]="{ sourceTable: table.sourceTable }">Mở danh sách đầy đủ</a>
+            </div>
+          </footer>
+            </article>
+          }
+        </section>
+      }
+
+      @case ('change-requests') {
+        <section class="admin-placeholder">
+          <p>Change requests</p>
+          <h2>Yêu cầu kiểm duyệt dữ liệu</h2>
+          <span>Danh sách đề xuất thêm, sửa, xóa dữ liệu sẽ được nối vào workflow kiểm duyệt ở bước sau.</span>
+        </section>
+      }
+
+      @case ('users') {
+        <section class="admin-placeholder">
+          <p>User management</p>
+          <h2>Quản lý người dùng</h2>
+          <span>Khu vực này dành cho danh sách tài khoản, trạng thái hoạt động và phân quyền người dùng.</span>
+        </section>
+      }
+
+      @case ('roles') {
+        <section class="admin-placeholder">
+          <p>Role management</p>
+          <h2>Phân quyền dữ liệu</h2>
+          <span>Admin sẽ dùng khu vực này để quản lý quyền Animal Manager, Plant Manager và Insect Manager.</span>
+        </section>
+      }
+    }
+  </section>
+</main>

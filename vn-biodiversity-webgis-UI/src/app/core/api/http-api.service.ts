@@ -36,6 +36,10 @@ export class HttpApiService {
     return this.http.get<T>(this.url(path), { params });
   }
 
+  post<T>(path: string, body: unknown) {
+    return this.http.post<T>(this.url(path), body);
+  }
+
   buildUrl(path: string) {
     return this.url(path);
   }

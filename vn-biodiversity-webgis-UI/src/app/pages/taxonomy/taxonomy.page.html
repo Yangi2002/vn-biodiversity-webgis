@@ -1,177 +1,443 @@
 <main class="taxonomy-page">
-  <app-site-header
-    sectionLabel="Phân loại sinh học"
-  />
+  <app-site-header sectionLabel="Phân loại sinh học" />
 
-  <section class="taxonomy-hero">
-    <p class="eyebrow">Taxonomy search</p>
-    <h1>Phân loại sinh học</h1>
-    <p>
-      Duyệt dữ liệu theo cây phân loại, tìm taxon theo tên khoa học hoặc tên Việt Nam, sau đó mở danh sách loài liên quan.
-    </p>
+  @if (activeView() === 'search') {
+    <section class="taxonomy-hero leaf-hero-surface">
+      <p class="eyebrow">Taxonomy search</p>
+      <h1>Phân loại sinh học</h1>
+      <p>
+        Duyệt dữ liệu theo cây phân loại, tìm taxon theo tên khoa học hoặc tên Việt Nam,
+        sau đó mở danh sách loài liên quan.
+      </p>
 
-    <form class="search-panel" (submit)="submitSearch($event)">
-      <input
-        type="search"
-        [formControl]="searchControl"
-        placeholder="Tìm taxon: Animalia, Amphibia, Ba ba, Magnoliaceae..."
-        aria-label="Tìm kiếm taxon"
-      />
-      <button type="submit">Tìm kiếm</button>
-    </form>
+      <form class="search-panel" (submit)="submitSearch($event)">
+        <input
+          type="search"
+          [formControl]="searchControl"
+          placeholder="Tìm taxon: Animalia, Amphibia, Ba ba, Magnoliaceae..."
+          aria-label="Tìm kiếm taxon"
+        />
+        <button type="submit">Tìm kiếm</button>
+      </form>
 
-    <div class="quick-tags" aria-label="Gợi ý tìm taxonomy">
-      <span>Gợi ý taxon</span>
-      @for (tag of searchTags; track tag.label) {
-        <button type="button" (click)="applySearchTag(tag)">{{ tag.label }}</button>
-      }
-    </div>
-  </section>
+      <div class="quick-tags" aria-label="Gợi ý tìm taxonomy">
+        <span>Gợi ý taxon</span>
 
-  <section class="taxonomy-layout">
-    <aside class="filter-panel">
-      <div class="filter-heading">
-        <p class="eyebrow">Bộ lọc</p>
-        <button type="button" (click)="clearFilters()">Xóa lọc</button>
-      </div>
-
-      <div class="rank-list">
-        <button type="button" [class.is-active]="!rankControl.value" (click)="applyRank('')">
-          <span>Tất cả cấp</span>
-          <strong>{{ response()?.total ?? 0 }}</strong>
-        </button>
-
-        @if (response(); as data) {
-          @for (rank of data.facets.ranks; track rank.value) {
-            <button type="button" [class.is-active]="rankControl.value === rank.value" (click)="applyRank(rank.value)">
-              <span>{{ rank.label }}</span>
-              <strong>{{ rank.count }}</strong>
-            </button>
-          }
+        @for (tag of searchTags; track tag.label) {
+          <button type="button" (click)="applySearchTag(tag)">
+            {{ tag.label }}
+          </button>
         }
       </div>
-    </aside>
+    </section>
+  }
 
-    <section class="result-panel" aria-live="polite">
-      <div class="result-heading">
-        <div>
-          <p class="eyebrow">Kết quả phân loại</p>
-          @if (response(); as data) {
-            <h2>{{ data.total }} taxon</h2>
-          } @else {
-            <h2>Đang chuẩn bị dữ liệu</h2>
+  @if (activeView() === 'search') {
+    <nav class="taxonomy-view-tabs" aria-label="Chế độ xem taxonomy">
+      <button
+        type="button"
+        class="is-active"
+      >
+        Danh sách taxon
+      </button>
+
+      <button
+        type="button"
+        (click)="switchView('tree')"
+      >
+        Cây phân loại
+      </button>
+    </nav>
+  }
+
+  @if (activeView() === 'tree') {
+    <section
+      class="taxonomy-tree-section"
+      aria-label="Cây phân loại sinh học"
+    >
+      <div
+        class="tree-topbar"
+        aria-label="Công cụ cây phân loại"
+      >
+        <span class="tree-brand-mark" aria-hidden="true">⌘</span>
+
+        <div class="tree-mode-pills">
+          <button
+            type="button"
+            (click)="switchView('search')"
+          >
+            Danh sách taxon
+          </button>
+
+          <button
+            type="button"
+            class="is-active"
+          >
+            Cây phân loại
+          </button>
+        </div>
+
+        <form
+          class="tree-search-mini"
+          (submit)="submitSearch($event)"
+        >
+          <span aria-hidden="true">⌕</span>
+
+          <input
+            type="search"
+            [formControl]="searchControl"
+            placeholder="Tìm taxon, tên Latin, hoặc cấp phân loại..."
+            aria-label="Tìm nhanh taxonomy trong chế độ cây"
+          />
+        </form>
+
+        <div
+          class="tree-status-pills"
+          aria-label="Trạng thái cây"
+        >
+          <span>Root</span>
+          <span>Biodiversity</span>
+
+          @if (selectedTreeNode(); as node) {
+            <strong>
+              Đang mở: {{ node.vietnameseName || node.canonicalName }}
+            </strong>
           }
         </div>
       </div>
 
-      @if (isLoading()) {
-        <div class="state-panel">Đang tải dữ liệu phân loại...</div>
-      } @else if (errorMessage()) {
-        <div class="state-panel is-error">{{ errorMessage() }}</div>
-      } @else if (response(); as data) {
-        @if (data.items.length) {
-          <div class="taxon-list">
-            @for (item of data.items; track item.taxonId) {
-              <article class="taxon-card">
-                <button
-                  type="button"
-                  class="taxon-thumbnail"
-                  [class.is-empty]="!item.representativeImage"
-                  [disabled]="!item.representativeImage"
-                  (click)="item.representativeImage && openImage(item.representativeImage)"
-                  [attr.aria-label]="'Xem ảnh đại diện của ' + displayName(item)"
-                >
-                  @if (item.representativeImage; as image) {
-                    <img [src]="image.imageUrl" [alt]="displayName(item)" />
-                    <span>Phóng to ảnh</span>
-                  } @else {
-                    <strong>No image</strong>
-                  }
-                </button>
+      <div class="tree-section-heading">
+        <div class="tree-intro-card leaf-hero-surface">
+          <p class="eyebrow">Taxonomy tree explorer</p>
+          <h2>Cây phân loại dạng node</h2>
 
-                <div class="taxon-main">
-                  <span class="rank-badge">{{ item.rankLabel }}</span>
-                  <h3>{{ displayName(item) }}</h3>
-                  @if (item.vietnameseName && item.vietnameseName !== item.canonicalName) {
-                    <p class="scientific-name">{{ item.canonicalName }}</p>
-                  }
-                  <p class="taxon-path">{{ pathText(item) }}</p>
+          <p>
+            Mỗi ô là một nút thông tin; các đường nối thể hiện hướng nhánh từ cấp
+            phân loại cao xuống nhóm con. Click lại node đang mở để thu nhánh con.
+          </p>
+        </div>
 
-                  <a class="related-link" routerLink="/species-list" [queryParams]="relatedSpeciesQuery(item)">
-                    Xem loài liên quan
-                  </a>
-                </div>
+        @if (selectedTreeNode(); as node) {
+          <aside class="tree-detail-panel">
+            <div class="tree-panel-actions">
+              <p class="eyebrow">Nút đang chọn</p>
 
-                <div class="taxon-meta">
-                  <span>Accepted</span>
-                  <strong>{{ item.speciesCount }} loài</strong>
-                  <small>{{ item.childCount }} nhánh con</small>
-                </div>
-              </article>
+              <button
+                type="button"
+                [disabled]="!canGoBackTreeNode()"
+                (click)="goBackTreeNode()"
+              >
+                Quay lại
+              </button>
+            </div>
+
+            <h3>
+              {{ node.vietnameseName || node.canonicalName }}
+            </h3>
+
+            @if (
+              node.vietnameseName &&
+              node.vietnameseName !== node.canonicalName
+            ) {
+              <p class="scientific-name">
+                {{ node.canonicalName }}
+              </p>
             }
+
+            <dl>
+              <div>
+                <dt>Cấp</dt>
+                <dd>{{ node.rankLabel }}</dd>
+              </div>
+
+              <div>
+                <dt>Số loài</dt>
+                <dd>{{ node.speciesCount ?? 0 }}</dd>
+              </div>
+
+              <div>
+                <dt>Nhánh con</dt>
+                <dd>{{ node.childCount ?? 0 }}</dd>
+              </div>
+            </dl>
+
+            <a
+              routerLink="/species-list"
+              [queryParams]="{ taxonId: node.taxonId }"
+            >
+              Mở danh sách loài
+            </a>
+          </aside>
+        }
+      </div>
+
+      @if (isTreeLoading()) {
+        <div class="state-panel">
+          Đang tải cây phân loại...
+        </div>
+      } @else {
+        <div class="tree-canvas-card">
+          <div
+            class="tree-canvas-tools"
+            aria-hidden="true"
+          >
+            <span>⌕</span>
+            <span>−</span>
+            <span>⛶</span>
+            <span>▣</span>
           </div>
 
-          <nav class="pagination" aria-label="Phân trang taxonomy">
-            <button type="button" [disabled]="data.page === 1" (click)="goToPage(1)">«</button>
-            <button type="button" [disabled]="data.page === 1" (click)="goToPage(data.page - 1)">&lt;</button>
-
-            @for (page of pageNumbers(data); track page) {
-              <button type="button" [class.is-active]="page === data.page" (click)="goToPage(page)">
-                {{ page }}
-              </button>
-            }
-
-            <button type="button" [disabled]="data.page === data.totalPages" (click)="goToPage(data.page + 1)">&gt;</button>
-            <button type="button" [disabled]="data.page === data.totalPages" (click)="goToPage(data.totalPages)">»</button>
-          </nav>
-        } @else {
-          <div class="state-panel">Không tìm thấy taxon phù hợp.</div>
-        }
+          <app-taxonomy-branches
+            [roots]="taxonomyTreeView()"
+            [selectedTaxonId]="selectedTreeNodeId()"
+            (selectNode)="selectTreeNode($event)"
+          />
+        </div>
       }
     </section>
-  </section>
+  } @else {
+    <section class="taxonomy-layout">
+      <aside class="filter-panel">
+        <div class="filter-heading">
+          <p class="eyebrow">Bộ lọc</p>
+
+          <button
+            type="button"
+            (click)="clearFilters()"
+          >
+            Xóa lọc
+          </button>
+        </div>
+
+        <div class="rank-list">
+          <button
+            type="button"
+            [class.is-active]="!rankControl.value"
+            (click)="applyRank('')"
+          >
+            <span>Tất cả cấp</span>
+            <strong>{{ response()?.total ?? 0 }}</strong>
+          </button>
+
+          @if (response(); as data) {
+            @for (rank of data.facets.ranks; track rank.value) {
+              <button
+                type="button"
+                [class.is-active]="rankControl.value === rank.value"
+                (click)="applyRank(rank.value)"
+              >
+                <span>{{ rank.label }}</span>
+                <strong>{{ rank.count }}</strong>
+              </button>
+            }
+          }
+        </div>
+      </aside>
+
+      <section
+        class="result-panel"
+        aria-live="polite"
+      >
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow">Kết quả phân loại</p>
+
+            @if (response(); as data) {
+              <h2>{{ data.total }} taxon</h2>
+            } @else {
+              <h2>Đang chuẩn bị dữ liệu</h2>
+            }
+          </div>
+        </div>
+
+        @if (isLoading()) {
+          <div class="state-panel">
+            Đang tải dữ liệu phân loại...
+          </div>
+        } @else if (errorMessage()) {
+          <div class="state-panel is-error">
+            {{ errorMessage() }}
+          </div>
+        } @else if (response(); as data) {
+          @if (data.items.length) {
+            <div class="taxon-list">
+              @for (item of data.items; track item.taxonId) {
+                <article class="taxon-card">
+                  <button
+                    type="button"
+                    class="taxon-thumbnail"
+                    [class.is-empty]="!item.representativeImage"
+                    [disabled]="!item.representativeImage"
+                    (click)="
+                      item.representativeImage &&
+                      openImage(item.representativeImage)
+                    "
+                    [attr.aria-label]="
+                      'Xem ảnh đại diện của ' + displayName(item)
+                    "
+                  >
+                    @if (item.representativeImage; as image) {
+                      <img
+                        [src]="image.imageUrl"
+                        [alt]="displayName(item)"
+                      />
+
+                      <span>Phóng to ảnh</span>
+                    } @else {
+                      <strong>Chưa có ảnh</strong>
+                    }
+                  </button>
+
+                  <div class="taxon-main">
+                    <span class="rank-badge">
+                      {{ item.rankLabel }}
+                    </span>
+
+                    <h3>{{ displayName(item) }}</h3>
+
+                    @if (
+                      item.vietnameseName &&
+                      item.vietnameseName !== item.canonicalName
+                    ) {
+                      <p class="scientific-name">
+                        {{ item.canonicalName }}
+                      </p>
+                    }
+
+                    <p class="taxon-path">
+                      {{ pathText(item) }}
+                    </p>
+
+                    <a
+                      class="related-link"
+                      routerLink="/species-list"
+                      [queryParams]="relatedSpeciesQuery(item)"
+                    >
+                      Xem loài liên quan
+                    </a>
+                  </div>
+
+                  <div class="taxon-meta">
+                    <span>Accepted</span>
+                    <strong>{{ item.speciesCount }} loài</strong>
+                    <small>{{ item.childCount }} nhánh con</small>
+                  </div>
+                </article>
+              }
+            </div>
+
+            <app-pagination
+              label="Phân trang taxonomy"
+              itemLabel="taxon"
+              [page]="data.page"
+              [totalPages]="data.totalPages"
+              [total]="data.total"
+              [limit]="data.limit"
+              (pageChange)="goToPage($event)"
+            />
+          } @else {
+            <div class="state-panel">
+              Không tìm thấy taxon phù hợp.
+            </div>
+          }
+        }
+      </section>
+    </section>
+  }
 
   @if (selectedImage(); as image) {
-    <div class="image-dialog-backdrop" (click)="closeImage()">
-      <section class="image-dialog" role="dialog" aria-modal="true" aria-label="Chi tiết ảnh đại diện taxon" (click)="$event.stopPropagation()">
-        <button type="button" class="dialog-close" aria-label="Đóng ảnh" (click)="closeImage()">×</button>
+    <div
+      class="image-dialog-backdrop"
+      (click)="closeImage()"
+    >
+      <section
+        class="image-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Chi tiết ảnh đại diện taxon"
+        (click)="$event.stopPropagation()"
+      >
+        <button
+          type="button"
+          class="dialog-close"
+          aria-label="Đóng ảnh"
+          (click)="closeImage()"
+        >
+          ×
+        </button>
 
         <figure>
-          <img [src]="displayImageUrl(image)" [alt]="image.vietnameseName || image.scientificName || 'Ảnh đại diện taxon'" />
+          <img
+            [src]="displayImageUrl(image)"
+            [alt]="
+              image.vietnameseName ||
+              image.scientificName ||
+              'Ảnh đại diện taxon'
+            "
+          />
         </figure>
 
         <aside>
           <p class="eyebrow">Ảnh đại diện</p>
-          <h2>{{ image.vietnameseName || image.scientificName || 'Loài đại diện' }}</h2>
+
+          <h2>
+            {{
+              image.vietnameseName ||
+              image.scientificName ||
+              'Loài đại diện'
+            }}
+          </h2>
+
           @if (image.scientificName) {
-            <p class="scientific-name">{{ image.scientificName }}</p>
+            <p class="scientific-name">
+              {{ image.scientificName }}
+            </p>
           }
 
           <dl>
             <div>
               <dt>Tác giả</dt>
-              <dd>{{ image.metadata?.author || 'Chưa có dữ liệu' }}</dd>
+              <dd>
+                {{ image.metadata?.author || 'Chưa có dữ liệu' }}
+              </dd>
             </div>
+
             <div>
               <dt>Kích thước</dt>
               <dd>{{ imageResolution(image) }}</dd>
             </div>
+
             <div>
               <dt>Dung lượng</dt>
               <dd>{{ fileSize(image) }}</dd>
             </div>
+
             <div>
               <dt>MIME type</dt>
-              <dd>{{ image.metadata?.imageMimeType || image.mimeType }}</dd>
+              <dd>
+                {{
+                  image.metadata?.imageMimeType ||
+                  image.mimeType
+                }}
+              </dd>
             </div>
+
             <div>
               <dt>Mã loài</dt>
-              <dd>{{ image.sourceTable }} / {{ image.speciesId }}</dd>
+              <dd>
+                {{ image.sourceTable }} / {{ image.speciesId }}
+              </dd>
             </div>
           </dl>
 
           @if (image.metadata?.showpicUrl) {
-            <a [href]="image.metadata?.showpicUrl" target="_blank" rel="noopener">Mở trang nguồn ảnh</a>
+            <a
+              [href]="image.metadata?.showpicUrl"
+              target="_blank"
+              rel="noopener"
+            >
+              Mở trang nguồn ảnh
+            </a>
           }
         </aside>
       </section>

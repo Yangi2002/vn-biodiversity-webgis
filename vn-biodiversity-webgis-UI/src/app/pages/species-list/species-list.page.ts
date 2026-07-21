@@ -4,6 +4,7 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import { SpeciesService } from '../../data-access/services/species.service';
 import type { SpeciesSearchItem, SpeciesSearchResponse } from '../../data-access/models/species.model';
@@ -31,7 +32,7 @@ interface SpeciesSearchTag {
 
 @Component({
   selector: 'app-species-list-page',
-  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent, SiteHeaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent, PaginationComponent, SiteHeaderComponent],
   templateUrl: './species-list.page.html',
   styleUrl: './species-list.page.css',
 })

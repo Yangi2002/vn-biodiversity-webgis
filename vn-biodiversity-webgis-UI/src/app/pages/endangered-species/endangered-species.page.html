@@ -1,7 +1,7 @@
 <main class="endangered-page">
   <app-site-header sectionLabel="Danh sách đỏ Việt Nam" />
 
-  <section class="page-hero">
+  <section class="page-hero leaf-hero-surface">
     <p class="eyebrow">VN Red List</p>
     <h1>Loài nguy cấp và dữ liệu bảo tồn</h1>
     <p>
@@ -31,18 +31,28 @@
 
       <label>
         <span>Mức nguy cơ</span>
-        <select [value]="categoryDraft()" (change)="updateCategory($any($event.target).value)">
+        <select
+          [value]="categoryDraft()"
+          (change)="updateCategory($any($event.target).value)"
+        >
           <option value="">Tất cả</option>
+
           @for (category of categoryOptions(); track category.category) {
-            <option [value]="category.category">{{ category.category }} - {{ category.label }}</option>
+            <option [value]="category.category">
+              {{ category.category }} - {{ category.label }}
+            </option>
           }
         </select>
       </label>
 
       <label>
         <span>Nhóm sinh vật</span>
-        <select [value]="sourceTableDraft()" (change)="updateSourceTable($any($event.target).value)">
+        <select
+          [value]="sourceTableDraft()"
+          (change)="updateSourceTable($any($event.target).value)"
+        >
           <option value="">Tất cả</option>
+
           @for (source of sourceOptions; track source.value) {
             <option [value]="source.value">{{ source.label }}</option>
           }
@@ -52,17 +62,30 @@
       @if (data()?.observationTerms?.length) {
         <label>
           <span>Dạng quan sát</span>
-          <select [value]="observationTermDraft()" (change)="updateObservationTerm($any($event.target).value)">
+          <select
+            [value]="observationTermDraft()"
+            (change)="updateObservationTerm($any($event.target).value)"
+          >
             <option value="">Tất cả</option>
+
             @for (term of data()!.observationTerms; track term.termId) {
-              <option [value]="term.termId">{{ term.label }} ({{ term.total | number }})</option>
+              <option [value]="term.termId">
+                {{ term.label }} ({{ term.total | number }})
+              </option>
             }
           </select>
         </label>
       }
 
       <div class="filter-actions">
-        <button type="button" class="ghost-button" (click)="resetFilters()">Xóa</button>
+        <button
+          type="button"
+          class="ghost-button"
+          (click)="resetFilters()"
+        >
+          Xóa
+        </button>
+
         <button type="submit">Cập nhật</button>
       </div>
     </form>
@@ -74,8 +97,12 @@
             <p class="eyebrow">Mức nguy cơ</p>
             <strong>{{ redListData.summary.categories.length }} nhóm</strong>
           </div>
+
           <div class="risk-list">
-            @for (category of redListData.summary.categories; track category.category) {
+            @for (
+              category of redListData.summary.categories;
+              track category.category
+            ) {
               <span [class]="categoryClass(category.category)">
                 <strong>{{ category.category }}</strong>
                 <small>{{ riskLabel(category.category) }}</small>
@@ -90,8 +117,12 @@
             <p class="eyebrow">Nhóm dữ liệu</p>
             <strong>{{ redListData.summary.sourceGroups.length }} nhóm</strong>
           </div>
+
           <div class="source-list">
-            @for (source of redListData.summary.sourceGroups; track source.sourceTable) {
+            @for (
+              source of redListData.summary.sourceGroups;
+              track source.sourceTable
+            ) {
               <div>
                 <span>{{ source.sourceLabel }}</span>
                 <strong>{{ source.total | number }}</strong>
@@ -106,6 +137,7 @@
       <div class="result-heading">
         <div>
           <p class="eyebrow">Kết quả</p>
+
           <h2>
             @if (data(); as redListData) {
               {{ redListData.total | number }} loài được tìm thấy
@@ -116,21 +148,41 @@
         </div>
 
         @if (data(); as redListData) {
-          <span>Trang {{ redListData.page }} / {{ redListData.totalPages }}</span>
+          <span>
+            Trang {{ redListData.page }} / {{ redListData.totalPages }}
+          </span>
         }
       </div>
 
       @if (isLoading()) {
-        <div class="state-box">Đang tải danh sách đỏ Việt Nam...</div>
+        <div class="state-box">
+          Đang tải danh sách đỏ Việt Nam...
+        </div>
       } @else if (errorMessage()) {
-        <div class="state-box is-error">{{ errorMessage() }}</div>
+        <div class="state-box is-error">
+          {{ errorMessage() }}
+        </div>
       } @else if (data()?.items?.length) {
         <div class="species-grid">
-          @for (item of data()!.items; track item.sourceTable + ':' + item.speciesId) {
+          @for (
+            item of data()!.items;
+            track item.sourceTable + ':' + item.speciesId
+          ) {
             <article class="redlist-card">
-              <a class="image-link" [routerLink]="['/species', item.sourceTable, item.speciesId]">
+              <a
+                class="image-link"
+                [routerLink]="[
+                  '/species',
+                  item.sourceTable,
+                  item.speciesId
+                ]"
+              >
                 @if (item.imageUrl) {
-                  <img [src]="item.imageUrl" [alt]="displayName(item)" loading="lazy" />
+                  <img
+                    [src]="item.imageUrl"
+                    [alt]="displayName(item)"
+                    loading="lazy"
+                  />
                 } @else {
                   <span>Chưa có ảnh</span>
                 }
@@ -140,11 +192,17 @@
                 <div class="card-title">
                   <div class="card-kicker">
                     <span>{{ item.sourceLabel }}</span>
-                    <strong [class]="categoryClass(item.redlistCategory)">
-                      {{ item.redlistCategory || 'N/A' }} - {{ riskLabel(item.redlistCategory) }}
+
+                    <strong
+                      [class]="categoryClass(item.redlistCategory)"
+                    >
+                      {{ item.redlistCategory || 'N/A' }} -
+                      {{ riskLabel(item.redlistCategory) }}
                     </strong>
                   </div>
+
                   <h3>{{ displayName(item) }}</h3>
+
                   @if (item.scientificName) {
                     <em>{{ item.scientificName }}</em>
                   }
@@ -155,20 +213,26 @@
                     <dt>Mức nguy cơ</dt>
                     <dd>{{ riskLabel(item.redlistCategory) }}</dd>
                   </div>
+
                   @if (item.redlistCriteria) {
                     <div>
                       <dt>Tiêu chí</dt>
                       <dd>{{ item.redlistCriteria }}</dd>
                     </div>
                   }
+
                   <div>
                     <dt>Năm công bố</dt>
                     <dd>{{ publishedYear(item) }}</dd>
                   </div>
+
                   <div>
                     <dt>Người đánh giá</dt>
-                    <dd [title]="evaluatorTitle(item)">{{ evaluatorName(item) }}</dd>
+                    <dd [title]="evaluatorTitle(item)">
+                      {{ evaluatorName(item) }}
+                    </dd>
                   </div>
+
                   @if (item.family) {
                     <div>
                       <dt>Họ</dt>
@@ -177,30 +241,58 @@
                   }
                 </dl>
 
-                @if (item.distributionVietnam || item.habitat || item.threats) {
+                @if (
+                  item.distributionVietnam ||
+                  item.habitat ||
+                  item.threats
+                ) {
                   <p class="short-note">
-                    {{ item.distributionVietnam || item.habitat || item.threats }}
+                    {{
+                      item.distributionVietnam ||
+                      item.habitat ||
+                      item.threats
+                    }}
                   </p>
                 }
 
                 <div class="card-actions">
-                  <a [routerLink]="['/species', item.sourceTable, item.speciesId]">Mở hồ sơ loài</a>
-                  <a [href]="item.pageUrl" target="_blank" rel="noopener">Nguồn VN Red List</a>
+                  <a
+                    [routerLink]="[
+                      '/species',
+                      item.sourceTable,
+                      item.speciesId
+                    ]"
+                  >
+                    Mở hồ sơ loài
+                  </a>
+
+                  <a
+                    [href]="item.pageUrl"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Nguồn VN Red List
+                  </a>
                 </div>
               </div>
             </article>
           }
         </div>
 
-        <nav class="pagination" aria-label="Phân trang danh sách đỏ">
-          <button type="button" [disabled]="data()!.page <= 1" (click)="goToPage(1)">&lt;&lt;</button>
-          <button type="button" [disabled]="data()!.page <= 1" (click)="goToPage(data()!.page - 1)">&lt;</button>
-          <span>{{ data()!.page }} / {{ data()!.totalPages }}</span>
-          <button type="button" [disabled]="data()!.page >= data()!.totalPages" (click)="goToPage(data()!.page + 1)">&gt;</button>
-          <button type="button" [disabled]="data()!.page >= data()!.totalPages" (click)="goToPage(data()!.totalPages)">&gt;&gt;</button>
-        </nav>
+        <app-pagination
+          label="Phân trang danh sách đỏ"
+          itemLabel="loài"
+          [page]="data()!.page"
+          [totalPages]="data()!.totalPages"
+          [total]="data()!.total"
+          [limit]="data()!.limit"
+          [compact]="true"
+          (pageChange)="goToPage($event)"
+        />
       } @else {
-        <div class="state-box">Chưa có loài phù hợp với bộ lọc hiện tại.</div>
+        <div class="state-box">
+          Chưa có loài phù hợp với bộ lọc hiện tại.
+        </div>
       }
     </section>
   </section>

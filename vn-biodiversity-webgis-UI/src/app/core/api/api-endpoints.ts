@@ -1,8 +1,12 @@
 export const API_ENDPOINTS = {
   root: '/',
   health: '/health',
+  authLogin: '/auth/login',
+  authMe: '/auth/me',
   speciesSearch: '/species/search',
   taxonomySearch: '/taxonomy/search',
+  taxonomyTree: '/taxonomy/tree',
+  taxonomyTreeChildren: (taxonId: string) => `/taxonomy/tree/${encodeURIComponent(taxonId)}/children`,
   statsSummary: '/stats/summary',
   statsDashboard: '/stats/dashboard',
   endangeredSpecies: '/conservation/endangered-species',

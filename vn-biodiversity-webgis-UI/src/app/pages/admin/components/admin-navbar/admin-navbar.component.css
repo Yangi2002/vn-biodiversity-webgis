@@ -1,0 +1,138 @@
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 18px;
+  background: linear-gradient(180deg, #123b2a, #0d2f21);
+  color: #edf8f1;
+}
+
+.admin-brand,
+.admin-user-card,
+.admin-nav-links button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-brand {
+  padding: 4px 8px 18px;
+}
+
+.admin-brand-mark,
+.admin-user-avatar,
+.nav-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  font-weight: 900;
+}
+
+.admin-brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #5fc281, #2c8d58);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.admin-brand strong,
+.admin-user-card strong,
+.nav-copy strong {
+  display: block;
+  font-weight: 900;
+}
+
+.admin-brand small,
+.admin-user-card small,
+.nav-copy small {
+  display: block;
+  margin-top: 3px;
+  color: #afd4bd;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.nav-section-label {
+  margin: 8px 10px 2px;
+  color: #87b49a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-nav-links {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-nav-links button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #dcefe3;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.admin-nav-links button:hover,
+.admin-nav-links button.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  box-shadow: inset 3px 0 #7ed69c;
+}
+
+.nav-icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #bce8ca;
+  font-size: 0.74rem;
+}
+
+.admin-user-card {
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.admin-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e5f3ea;
+  color: #1f6f46;
+}
+
+.admin-logout {
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: #2f8f5b;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .admin-sidebar {
+    position: relative;
+    height: auto;
+  }
+}

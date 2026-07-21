@@ -1,0 +1,79 @@
+.taxonomy-node {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  width: 154px;
+  min-height: 136px;
+  padding: 18px 20px;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(232, 244, 236, 0.96)),
+    #ffffff;
+  clip-path: polygon(24% 4%, 76% 4%, 100% 50%, 76% 96%, 24% 96%, 0 50%);
+  color: #17251f;
+  text-align: center;
+  filter: drop-shadow(0 12px 18px rgba(23, 37, 31, 0.12));
+  transition:
+    background 160ms ease,
+    filter 160ms ease,
+    transform 160ms ease;
+}
+
+.taxonomy-node::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  z-index: -1;
+  clip-path: inherit;
+  background: linear-gradient(180deg, #2b8b5a, #b8d8c5);
+}
+
+.taxonomy-node::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  z-index: -1;
+  clip-path: inherit;
+  background: linear-gradient(180deg, #ffffff, #edf7f1);
+}
+
+.taxonomy-node:hover,
+.taxonomy-node.is-selected {
+  filter: drop-shadow(0 18px 24px rgba(31, 122, 76, 0.22));
+  transform: translateY(-2px);
+}
+
+.taxonomy-node.is-selected::after,
+.taxonomy-node.is-highlighted::after {
+  background: linear-gradient(180deg, #d9f0e3, #ffffff);
+}
+
+.node-rank {
+  color: #08713f;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+strong {
+  overflow-wrap: anywhere;
+  max-width: 104px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+em {
+  color: #8a3c1d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.node-meta {
+  color: #52685d;
+  max-width: 112px;
+  font-size: 11px;
+  font-weight: 800;
+}

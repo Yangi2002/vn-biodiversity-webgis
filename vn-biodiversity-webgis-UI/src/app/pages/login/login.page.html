@@ -1,0 +1,37 @@
+<main class="login-page">
+  <section class="login-card">
+    <a class="login-brand" routerLink="/">
+      <img src="/Header-logo-header.png" width="64" height="64" alt="" />
+      <span>
+        <strong>VN Biodiversity WebGIS</strong>
+        <small>Admin console</small>
+      </span>
+    </a>
+
+    <div class="login-copy">
+      <p>Quản trị hệ thống</p>
+      <h1>Đăng nhập Admin</h1>
+      <span>Truy cập khu vực quản lý user, phân quyền và kiểm duyệt dữ liệu.</span>
+    </div>
+
+    <form class="login-form" (ngSubmit)="submit()">
+      <label>
+        Email
+        <input name="email" type="email" [(ngModel)]="email" autocomplete="email" required />
+      </label>
+
+      <label>
+        Mật khẩu
+        <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
+      </label>
+
+      @if (errorMessage) {
+        <p class="login-error">{{ errorMessage }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+      </button>
+    </form>
+  </section>
+</main>

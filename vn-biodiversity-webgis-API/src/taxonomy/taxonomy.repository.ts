@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type {
   TaxonomyFacetItem,
   TaxonomySearchItem,
+  TaxonomyTreeNode,
 } from './types/taxonomy-search-result.type';
 
 interface CountRow {
@@ -45,6 +46,16 @@ interface TaxonomyRow {
 interface RankFacetRow {
   rank: string;
   total: bigint | number;
+}
+
+interface TaxonomyTreeRow {
+  taxon_id: bigint | number;
+  parent_taxon_id: bigint | number | null;
+  rank: string;
+  canonical_name: string;
+  vietnamese_name: string | null;
+  species_count: bigint | number;
+  child_count: bigint | number;
 }
 
 interface FilterSql {
@@ -307,6 +318,83 @@ export class TaxonomyRepository {
       value: row.rank,
       label: RANK_LABELS[row.rank] ?? row.rank,
       count: Number(row.total),
+    }));
+  }
+
+  async treeRoots(): Promise<TaxonomyTreeNode[]> {
+    return this.findTreeChildren(null);
+  }
+
+  async treeChildren(parentTaxonId: string): Promise<TaxonomyTreeNode[]> {
+    return this.findTreeChildren(parentTaxonId);
+  }
+
+  private async findTreeChildren(parentTaxonId: string | null): Promise<TaxonomyTreeNode[]> {
+    const whereSql = parentTaxonId === null ? 't.parent_taxon_id IS NULL' : 't.parent_taxon_id = $1';
+    const values = parentTaxonId === null ? [] : [BigInt(parentTaxonId)];
+    const rows = await this.prisma.$queryRawUnsafe<TaxonomyTreeRow[]>(
+      `
+        SELECT
+          t.taxon_id,
+          t.parent_taxon_id,
+          t.rank,
+          t.canonical_name,
+          vi.name AS vietnamese_name,
+          coalesce(species_stats.species_count, 0) AS species_count,
+          coalesce(child_stats.child_count, 0) AS child_count
+        FROM taxa t
+        LEFT JOIN LATERAL (
+          SELECT name
+          FROM taxon_names
+          WHERE taxon_id = t.taxon_id
+            AND language_code = 'vi'
+            AND name_type = 'common_name'
+          ORDER BY is_preferred DESC, taxon_name_id ASC
+          LIMIT 1
+        ) vi ON true
+        LEFT JOIN LATERAL (
+          SELECT count(DISTINCT st.source_table || ':' || st.species_id) AS species_count
+          FROM taxon_closure tc
+          JOIN taxa species_taxon
+            ON species_taxon.taxon_id = tc.descendant_taxon_id
+           AND species_taxon.rank = 'species'
+          JOIN species_taxonomy st
+            ON st.taxon_id = species_taxon.taxon_id
+          WHERE tc.ancestor_taxon_id = t.taxon_id
+        ) species_stats ON true
+        LEFT JOIN LATERAL (
+          SELECT count(*) AS child_count
+          FROM taxa child
+          WHERE child.parent_taxon_id = t.taxon_id
+        ) child_stats ON true
+        WHERE ${whereSql}
+        ORDER BY
+          CASE t.rank
+            WHEN 'root' THEN 0
+            WHEN 'kingdom' THEN 1
+            WHEN 'phylum' THEN 2
+            WHEN 'class' THEN 3
+            WHEN 'order' THEN 4
+            WHEN 'family' THEN 5
+            WHEN 'genus' THEN 6
+            WHEN 'species' THEN 7
+            ELSE 8
+          END,
+          t.canonical_name ASC
+      `,
+      ...values,
+    );
+
+    return rows.map((row) => ({
+      taxonId: String(row.taxon_id),
+      parentTaxonId: row.parent_taxon_id === null ? null : String(row.parent_taxon_id),
+      rank: row.rank,
+      rankLabel: RANK_LABELS[row.rank] ?? row.rank,
+      canonicalName: row.canonical_name,
+      vietnameseName: row.vietnamese_name,
+      speciesCount: Number(row.species_count),
+      childCount: Number(row.child_count),
+      children: [],
     }));
   }
 

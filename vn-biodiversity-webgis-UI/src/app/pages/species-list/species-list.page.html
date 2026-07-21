@@ -3,7 +3,7 @@
     sectionLabel="Từ điển loài"
   />
 
-  <section class="search-hero">
+  <section class="search-hero leaf-hero-surface">
     <p class="eyebrow">Từ điển loài</p>
     <h1>Tra cứu đa dạng sinh học Việt Nam</h1>
 
@@ -150,24 +150,15 @@
           </div>
 
           @if (response(); as data) {
-            <nav class="pagination" aria-label="Phân trang kết quả">
-              <div>
-                Trang {{ data.page }} / {{ data.totalPages }}
-                <span>{{ data.total }} loài, {{ data.limit }} loài mỗi trang</span>
-              </div>
-
-              <div class="page-actions">
-                <button type="button" [disabled]="!data.hasPreviousPage" (click)="goToPage(1)">&lt;&lt;</button>
-                <button type="button" [disabled]="!data.hasPreviousPage" (click)="goToPage(data.page - 1)">&lt;</button>
-                @for (page of pageNumbers(data); track page) {
-                  <button type="button" [class.is-active]="page === data.page" (click)="goToPage(page)">
-                    {{ page }}
-                  </button>
-                }
-                <button type="button" [disabled]="!data.hasNextPage" (click)="goToPage(data.page + 1)">&gt;</button>
-                <button type="button" [disabled]="!data.hasNextPage" (click)="goToPage(data.totalPages)">&gt;&gt;</button>
-              </div>
-            </nav>
+            <app-pagination
+              label="Phân trang kết quả"
+              itemLabel="loài"
+              [page]="data.page"
+              [totalPages]="data.totalPages"
+              [total]="data.total"
+              [limit]="data.limit"
+              (pageChange)="goToPage($event)"
+            />
           }
         } @else {
           <div class="state-panel">Chưa có kết quả phù hợp. Hãy thử tên Việt Nam hoặc tên khoa học khác.</div>

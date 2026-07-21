@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { TaxonomySearchQueryDto } from './dto/taxonomy-search-query.dto';
 import { TaxonomyRepository } from './taxonomy.repository';
-import type { TaxonomySearchResponse } from './types/taxonomy-search-result.type';
+import type { TaxonomySearchResponse, TaxonomyTreeNode } from './types/taxonomy-search-result.type';
 import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 
 @Injectable()
 export class TaxonomyService {
   private readonly searchCache = new TtlCache<TaxonomySearchResponse>(300_000, 120);
+  private readonly treeCache = new TtlCache<TaxonomyTreeNode[]>(300_000, 240);
 
   constructor(private readonly taxonomyRepository: TaxonomyRepository) {}
 
@@ -41,6 +42,38 @@ export class TaxonomyService {
     };
 
     this.searchCache.set(cacheKey, response);
+    return response;
+  }
+
+  async treeRoots(): Promise<TaxonomyTreeNode[]> {
+    const cacheKey = 'taxonomy:tree:root';
+    const cachedResponse = this.treeCache.get(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const response = await this.taxonomyRepository.treeRoots();
+    this.treeCache.set(cacheKey, response);
+    return response;
+  }
+
+  async treeChildren(taxonId: string): Promise<TaxonomyTreeNode[]> {
+    const normalizedTaxonId = String(taxonId ?? '').trim();
+
+    if (!normalizedTaxonId || !/^\d+$/.test(normalizedTaxonId)) {
+      return [];
+    }
+
+    const cacheKey = stableCacheKey('taxonomy:tree:children', { taxonId: normalizedTaxonId });
+    const cachedResponse = this.treeCache.get(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const response = await this.taxonomyRepository.treeChildren(normalizedTaxonId);
+    this.treeCache.set(cacheKey, response);
     return response;
   }
 

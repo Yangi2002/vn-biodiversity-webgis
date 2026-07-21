@@ -1,0 +1,81 @@
+.taxonomy-tree {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 520px;
+  padding: 54px 34px 42px;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 24px 24px, rgba(31, 122, 76, 0.1) 1px, transparent 2px),
+    linear-gradient(90deg, rgba(31, 122, 76, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(31, 122, 76, 0.04) 1px, transparent 1px),
+    #f9fcfa;
+  background-size: 48px 48px, 48px 48px, 48px 48px;
+}
+
+.tree-level {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 28px 30px;
+  width: min(100%, 1080px);
+  min-width: 0;
+}
+
+.tree-level.is-root {
+  min-width: 0;
+}
+
+.tree-level.is-nested {
+  margin-top: 0;
+}
+
+.tree-branch {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tree-branch app-taxonomy-node {
+  width: auto;
+}
+
+.branch-line {
+  width: 2px;
+  height: 26px;
+  flex: 0 0 26px;
+  background: linear-gradient(180deg, #2f9864, #a8cfba);
+}
+
+.tree-level.has-multiple::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 7%;
+  right: 7%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #8cc3a5 12%, #8cc3a5 88%, transparent);
+}
+
+.tree-level.is-root::before {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .taxonomy-tree {
+    justify-content: flex-start;
+    padding: 16px;
+  }
+
+  .tree-level {
+    gap: 22px 18px;
+    width: 100%;
+  }
+}

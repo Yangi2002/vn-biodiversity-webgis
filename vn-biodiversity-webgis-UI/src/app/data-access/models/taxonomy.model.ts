@@ -60,3 +60,15 @@ export interface TaxonomySearchResponse {
     ranks: TaxonomyFacetItem[];
   };
 }
+
+export interface TaxonomyTreeNode {
+  taxonId: string;
+  rank: string;
+  rankLabel: string;
+  canonicalName: string;
+  vietnameseName?: string | null;
+  speciesCount?: number;
+  childCount?: number;
+  isHighlighted?: boolean;
+  children?: TaxonomyTreeNode[];
+}

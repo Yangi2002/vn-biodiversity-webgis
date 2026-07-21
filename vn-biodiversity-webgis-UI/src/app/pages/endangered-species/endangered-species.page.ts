@@ -6,11 +6,12 @@ import { RouterLink } from '@angular/router';
 import type { ConservationCategoryOption, ConservationSpeciesItem, ConservationSpeciesResponse } from '../../data-access/models/conservation.model';
 import { ConservationService } from '../../data-access/services/conservation.service';
 import { DashboardMetricStripComponent, type DashboardMetricItem } from '../../shared/components/dashboard-metric-strip/dashboard-metric-strip.component';
+import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 
 @Component({
   selector: 'app-endangered-species-page',
-  imports: [DecimalPipe, RouterLink, SiteHeaderComponent, DashboardMetricStripComponent],
+  imports: [DecimalPipe, RouterLink, SiteHeaderComponent, DashboardMetricStripComponent, PaginationComponent],
   templateUrl: './endangered-species.page.html',
   styleUrl: './endangered-species.page.css',
 })

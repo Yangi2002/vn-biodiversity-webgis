@@ -1,0 +1,121 @@
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    linear-gradient(115deg, rgba(238, 248, 240, 0.92), rgba(250, 251, 246, 0.94)),
+    url('/images/home/green leaf.jfif') center / cover;
+}
+
+.login-card {
+  width: min(100%, 520px);
+  padding: 32px;
+  border: 1px solid #c5ded0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 70px rgba(24, 86, 54, 0.16);
+}
+
+.login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: #10251d;
+  text-decoration: none;
+}
+
+.login-brand img {
+  border: 1px solid #b9d9c6;
+  border-radius: 999px;
+}
+
+.login-brand strong,
+.login-brand small,
+.login-copy span,
+.login-form label,
+.login-form input,
+.login-form button {
+  display: block;
+}
+
+.login-brand strong {
+  font-size: 1.15rem;
+}
+
+.login-brand small,
+.login-copy p {
+  color: #00733e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.login-copy {
+  margin-top: 36px;
+}
+
+.login-copy h1 {
+  margin: 8px 0 10px;
+  color: #10251d;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+}
+
+.login-copy span {
+  max-width: 420px;
+  color: #38574c;
+  line-height: 1.65;
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.login-form label {
+  color: #435f55;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.login-form input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid #c7ddd0;
+  border-radius: 10px;
+  background: #fbfdf9;
+  color: #10251d;
+  font: inherit;
+}
+
+.login-form input:focus {
+  border-color: #177a4d;
+  box-shadow: 0 0 0 4px rgba(23, 122, 77, 0.12);
+  outline: none;
+}
+
+.login-form button {
+  padding: 15px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #177a4d;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.login-form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.login-error {
+  margin: 0;
+  color: #b42318;
+  font-weight: 700;
+}

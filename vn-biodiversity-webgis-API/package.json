@@ -18,6 +18,7 @@
     "prisma:generate": "prisma generate",
     "prisma:pull": "prisma db pull",
     "prisma:studio": "prisma studio",
+    "auth:seed-admin": "node --env-file=.env -r ts-node/register src/scripts/seed-admin-user.ts",
     "images:backfill-metadata": "node --env-file=.env -r ts-node/register src/scripts/backfill-species-image-metadata.ts",
     "test": "jest",
     "test:watch": "jest --watch",

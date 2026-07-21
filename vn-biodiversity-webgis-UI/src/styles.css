@@ -24,3 +24,16 @@ select,
 textarea {
   font: inherit;
 }
+
+.leaf-hero-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #cfe0d5;
+  border-radius: 18px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.91) 56%, rgba(239, 248, 242, 0.62) 100%),
+    url('/images/home/green%20leaf.jfif') right center / auto 120% no-repeat,
+    radial-gradient(circle at 82% 44%, rgba(126, 190, 142, 0.22), transparent 32%),
+    linear-gradient(135deg, #ffffff, #eff8f2);
+  box-shadow: 0 20px 54px rgba(23, 37, 31, 0.08);
+}
