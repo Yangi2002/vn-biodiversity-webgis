@@ -176,6 +176,7 @@ export class SpeciesService {
 
     return {
       sourceTable: isSpeciesSourceTable(sourceTable) ? sourceTable : '',
+      kingdom: (queryDto.kingdom ?? '').trim(),
       className: (queryDto.className ?? '').trim(),
       order: (queryDto.order ?? '').trim(),
       family: (queryDto.family ?? '').trim(),

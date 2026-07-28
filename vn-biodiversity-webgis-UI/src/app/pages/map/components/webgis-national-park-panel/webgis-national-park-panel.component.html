@@ -1,0 +1,52 @@
+<aside class="national-park-panel" [class.is-collapsed]="!isExpanded()">
+  <header>
+    <div>
+      <p class="eyebrow">Lớp vườn quốc gia</p>
+      @if (selectedPark(); as park) {
+        <h2>{{ displayTitle(park) }}</h2>
+      } @else {
+        <h2>Vườn quốc gia</h2>
+      }
+    </div>
+
+    <button type="button" (click)="toggleExpanded()">
+      {{ isExpanded() ? 'Thu gọn' : 'Mở' }}
+    </button>
+  </header>
+
+  @if (isExpanded()) {
+    <div class="national-park-body">
+      @if (isLoading()) {
+        <p class="park-state">Đang tải lớp vườn quốc gia...</p>
+      } @else if (errorMessage()) {
+        <p class="park-state is-error">{{ errorMessage() }}</p>
+      } @else if (selectedPark(); as park) {
+        @if (imageUrl(park)) {
+          <img class="park-cover" [src]="imageUrl(park)" [alt]="displayTitle(park)" />
+        }
+
+        <p class="park-summary">{{ summaryText(park) }}</p>
+
+        <div class="park-actions">
+          @if (park.detailUrl) {
+            <a [href]="park.detailUrl" target="_blank" rel="noopener">Xem chi tiết</a>
+          }
+
+          <button type="button" class="ghost-button" (click)="clearSelection()">Đóng</button>
+        </div>
+      } @else {
+        <dl class="park-overview">
+          <div>
+            <dt>Tổng hồ sơ</dt>
+            <dd>{{ parkCount() | number }}</dd>
+          </div>
+          <div>
+            <dt>Hiển thị trên bản đồ</dt>
+            <dd>{{ visibleParkCount() | number }}</dd>
+          </div>
+        </dl>
+        <p class="park-hint">Click vùng xanh trời để xem tóm tắt vườn quốc gia.</p>
+      }
+    </div>
+  }
+</aside>

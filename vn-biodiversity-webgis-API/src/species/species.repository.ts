@@ -220,7 +220,8 @@ const SPECIES_ENRICHED_CTE_SQL = `
     SELECT
       species_union.*,
       coalesce(taxonomy_source.effective_source_table, species_union.source_table) AS effective_source_table,
-      coalesce(taxonomy_source.effective_source_label, species_union.source_label) AS effective_source_label
+      coalesce(taxonomy_source.effective_source_label, species_union.source_label) AS effective_source_label,
+      taxonomy_source.kingdom_name
     FROM species_union
     LEFT JOIN LATERAL (
       SELECT
@@ -236,6 +237,8 @@ const SPECIES_ENRICHED_CTE_SQL = `
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'animalia') THEN 'Động vật'
           ELSE NULL
         END AS effective_source_label
+        ,
+        max(parent.canonical_name) FILTER (WHERE parent.rank = 'kingdom') AS kingdom_name
       FROM species_taxonomy st
       JOIN taxon_closure tc
         ON tc.descendant_taxon_id = st.taxon_id
@@ -355,15 +358,16 @@ export class SpeciesRepository {
   }
 
   async facets(query: string, filters: SpeciesSearchFilters): Promise<SpeciesSearchFacets> {
-    const [sourceTables, classNames, orders, families, genera] = await Promise.all([
+    const [sourceTables, kingdoms, classNames, orders, families, genera] = await Promise.all([
       this.facet(query, filters, 'effective_source_table', 'effective_source_label'),
+      this.facet(query, filters, 'kingdom_name'),
       this.facet(query, filters, 'class_name'),
       this.facet(query, filters, 'order_name'),
       this.facet(query, filters, 'family'),
       this.facet(query, filters, 'genus_name'),
     ]);
 
-    return { sourceTables, classNames, orders, families, genera };
+    return { sourceTables, kingdoms, classNames, orders, families, genera };
   }
 
   async findDetail(
@@ -554,8 +558,15 @@ export class SpeciesRepository {
   private async facet(
     query: string,
     filters: SpeciesSearchFilters,
-    column: 'effective_source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name',
-    labelColumn: 'effective_source_label' | 'effective_source_table' | 'class_name' | 'order_name' | 'family' | 'genus_name' = column,
+    column: 'effective_source_table' | 'kingdom_name' | 'class_name' | 'order_name' | 'family' | 'genus_name',
+    labelColumn:
+      | 'effective_source_label'
+      | 'effective_source_table'
+      | 'kingdom_name'
+      | 'class_name'
+      | 'order_name'
+      | 'family'
+      | 'genus_name' = column,
   ): Promise<SpeciesFacetItem[]> {
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<FacetRow[]>(
@@ -578,11 +589,30 @@ export class SpeciesRepository {
       ...filterSql.values,
     );
 
-    return rows.map((row) => ({
-      value: row.value ?? '',
-      label: row.label ?? row.value ?? '',
-      count: Number(row.total),
-    }));
+    return rows.map((row) => {
+      const value = row.value ?? '';
+
+      return {
+        value,
+        label: column === 'kingdom_name' ? this.kingdomFacetLabel(value) : (row.label ?? value),
+        count: Number(row.total),
+      };
+    });
+  }
+
+  private kingdomFacetLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    const labels: Record<string, string> = {
+      animalia: 'Động vật - Animalia',
+      plantae: 'Thực vật - Plantae',
+      fungi: 'Nấm - Fungi',
+      chromista: 'Sinh vật nguyên sinh - Chromista',
+      protista: 'Sinh vật nguyên sinh - Protista',
+      bacteria: 'Vi khuẩn thật - Bacteria',
+      archaea: 'Vi khuẩn cổ - Archaea',
+    };
+
+    return labels[normalized] ?? value;
   }
 
   private buildFilterSql(filters: SpeciesSearchFilters, startIndex: number): FilterSql {
@@ -592,6 +622,11 @@ export class SpeciesRepository {
     if (filters.sourceTable) {
       values.push(filters.sourceTable);
       clauses.push(`AND effective_source_table = $${startIndex + values.length - 1}`);
+    }
+
+    if (filters.kingdom) {
+      values.push(filters.kingdom);
+      clauses.push(`AND kingdom_name = $${startIndex + values.length - 1}`);
     }
 
     if (filters.className) {

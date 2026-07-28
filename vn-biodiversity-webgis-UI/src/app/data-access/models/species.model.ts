@@ -15,6 +15,7 @@ export interface SpeciesSearchItem {
 
 export interface SpeciesSearchFilters {
   sourceTable: string;
+  kingdom: string;
   className: string;
   order: string;
   family: string;
@@ -30,6 +31,7 @@ export interface SpeciesFacetItem {
 
 export interface SpeciesSearchFacets {
   sourceTables: SpeciesFacetItem[];
+  kingdoms: SpeciesFacetItem[];
   classNames: SpeciesFacetItem[];
   orders: SpeciesFacetItem[];
   families: SpeciesFacetItem[];

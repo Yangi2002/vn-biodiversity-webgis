@@ -62,10 +62,10 @@
 
         @if (response(); as data) {
           <label>
-            Nhóm sinh vật
-            <select [formControl]="sourceTableControl" (change)="applySourceTableFilter()">
+            Giới
+            <select [formControl]="kingdomControl" (change)="applyKingdomFilter()">
               <option value="">Tất cả</option>
-              @for (facet of data.facets.sourceTables; track facet.value) {
+              @for (facet of data.facets.kingdoms; track facet.value) {
                 <option [value]="facet.value">{{ facet.label }} ({{ facet.count }})</option>
               }
             </select>

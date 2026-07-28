@@ -10,6 +10,10 @@ export const API_ENDPOINTS = {
   statsSummary: '/stats/summary',
   statsDashboard: '/stats/dashboard',
   endangeredSpecies: '/conservation/endangered-species',
+  nationalParks: '/national-parks',
+  nationalParksSummary: '/national-parks/summary',
+  nationalParksMapLayer: '/national-parks/map-layer',
+  nationalParkDetail: (parkId: string) => `/national-parks/${encodeURIComponent(parkId)}`,
   occurrenceMapOverview: '/occurrences/map/overview',
   occurrenceCellDetail: '/occurrences/map/cell-detail',
   speciesOccurrences: (sourceTable: string, speciesId: string) =>

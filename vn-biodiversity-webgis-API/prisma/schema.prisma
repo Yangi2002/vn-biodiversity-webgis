@@ -17,6 +17,53 @@ model app_users {
   user_roles    user_roles[]
 }
 
+model national_parks_vn {
+  park_id               String  @id(map: "pk_national_parks_vn")
+  source                String?
+  map_url               String?
+  detail_url            String?
+  slug                  String?
+  title                 String?
+  map_popup_title       String?
+  map_popup_excerpt     String?
+  map_latitude          String?
+  map_longitude         String?
+  latitude              String?
+  longitude             String?
+  author                String?
+  thumbnail_url         String?
+  tom_tat               String?
+  quyet_dinh_thanh_lap  String?
+  toa_do_dia_ly         String?
+  quy_mo_dien_tich      String?
+  muc_tieu_nhiem_vu     String?
+  co_quan_cap_quan_ly   String?
+  ban_quan_ly           String?
+  vi_tri_dia_ly         String?
+  da_dang_sinh_hoc      String?
+  he_thuc_vat           String?
+  he_dong_vat           String?
+  hoat_dong_du_lich     String?
+  du_an_lien_quan       String?
+  dan_so_trong_vung     String?
+  nguon_tham_khao       String?
+  detail_sections_json  String?
+  content_text          String?
+  image_urls            String?
+  image_captions        String?
+  image_group_id        String?
+  primary_image_url     String?
+  primary_image_path    String?
+  image_count           String?
+  local_image_paths     String?
+  image_metadata_json   String?
+  source_payload        String?
+
+  @@index([detail_url], map: "idx_national_parks_vn_detail_url")
+  @@index([source], map: "idx_national_parks_vn_source")
+  @@index([title], map: "idx_national_parks_vn_title")
+}
+
 model user_roles {
   user_role_id BigInt    @id @default(autoincrement())
   user_id      String    @db.Uuid

@@ -111,6 +111,7 @@ export const TRUSTED_SOURCES: readonly TrustedSource[] = [
   { name: 'iNaturalist', url: 'https://www.inaturalist.org/' },
   { name: 'VNCreatures', url: 'https://www.vncreatures.net/' },
   { name: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
+  { name: 'NBCA', url: 'https://nbca.gov.vn/' },
 ];
 
 export const FOOTER_CREDENTIAL_LINKS: readonly CredentialLink[] = [
@@ -118,4 +119,5 @@ export const FOOTER_CREDENTIAL_LINKS: readonly CredentialLink[] = [
   { label: 'iNaturalist', url: 'https://www.inaturalist.org/' },
   { label: 'VNCreatures', url: 'https://www.vncreatures.net/' },
   { label: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
+  { label: 'NBCA', url: 'https://nbca.gov.vn/' },
 ];

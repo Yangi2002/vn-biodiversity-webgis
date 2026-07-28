@@ -14,6 +14,7 @@ import { TaxonomyService } from '../../data-access/services/taxonomy.service';
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
+import { taxonomyDisplayName } from '../../shared/utils/taxonomy-display.util';
 import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 import { TaxonomyBranchesPage } from './components/taxonomy-branches/taxonomy-branches.page';
 
@@ -134,7 +135,11 @@ export class TaxonomyPage {
   }
 
   protected displayName(item: TaxonomySearchItem): string {
-    return item.vietnameseName || item.canonicalName;
+    return taxonomyDisplayName(item.canonicalName, item.vietnameseName);
+  }
+
+  protected treeNodeDisplayName(node: TaxonomyTreeNode): string {
+    return taxonomyDisplayName(node.canonicalName, node.vietnameseName);
   }
 
   protected pathText(item: TaxonomySearchItem): string {

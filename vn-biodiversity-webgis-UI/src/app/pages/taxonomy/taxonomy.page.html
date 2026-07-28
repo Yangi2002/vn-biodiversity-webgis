@@ -100,7 +100,7 @@
 
           @if (selectedTreeNode(); as node) {
             <strong>
-              Đang mở: {{ node.vietnameseName || node.canonicalName }}
+              Đang mở: {{ treeNodeDisplayName(node) }}
             </strong>
           }
         </div>
@@ -132,7 +132,7 @@
             </div>
 
             <h3>
-              {{ node.vietnameseName || node.canonicalName }}
+              {{ treeNodeDisplayName(node) }}
             </h3>
 
             @if (

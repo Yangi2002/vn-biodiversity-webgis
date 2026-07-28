@@ -3,6 +3,7 @@ export interface SpeciesSearchQueryDto {
   limit?: string;
   page?: string;
   sourceTable?: string;
+  kingdom?: string;
   className?: string;
   order?: string;
   family?: string;

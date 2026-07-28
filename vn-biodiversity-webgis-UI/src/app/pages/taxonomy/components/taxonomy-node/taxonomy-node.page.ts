@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 import type { TaxonomyTreeNode } from '../../../../data-access/models/taxonomy.model';
+import { hasSeparateScientificName, taxonomyDisplayName } from '../../../../shared/utils/taxonomy-display.util';
 
 @Component({
   selector: 'app-taxonomy-node',
@@ -15,11 +16,11 @@ export class TaxonomyNodePage {
   @Output() readonly selectNode = new EventEmitter<TaxonomyTreeNode>();
 
   protected displayName(): string {
-    return this.node.vietnameseName || this.node.canonicalName;
+    return taxonomyDisplayName(this.node.canonicalName, this.node.vietnameseName);
   }
 
   protected hasScientificName(): boolean {
-    return Boolean(this.node.vietnameseName && this.node.vietnameseName !== this.node.canonicalName);
+    return hasSeparateScientificName(this.node.canonicalName, this.displayName());
   }
 
   protected select(): void {

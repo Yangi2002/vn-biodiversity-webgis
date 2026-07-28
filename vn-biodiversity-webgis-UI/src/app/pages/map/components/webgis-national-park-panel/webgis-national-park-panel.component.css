@@ -1,0 +1,147 @@
+.national-park-panel {
+  position: absolute;
+  left: 24px;
+  top: 230px;
+  z-index: 500;
+  width: min(430px, calc(100% - 48px));
+  max-height: calc(100% - 260px);
+  overflow: auto;
+  border: 1px solid #efd5a4;
+  border-radius: 8px;
+  background: rgba(255, 252, 244, 0.96);
+  box-shadow: 0 20px 50px rgba(92, 62, 15, 0.14);
+  color: #1f2c22;
+  padding: 16px;
+}
+
+.national-park-panel.is-collapsed {
+  width: auto;
+  min-width: 238px;
+  padding: 12px 14px;
+  overflow: visible;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.eyebrow {
+  color: #0369a1;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.22rem;
+  line-height: 1.22;
+}
+
+button,
+.park-actions a {
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  background: #f0f9ff;
+  color: #075985;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 8px 13px;
+  text-decoration: none;
+}
+
+.park-actions a {
+  border-color: #0284c7;
+  color: #075985;
+}
+
+.national-park-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.park-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #ead7ad;
+  border-radius: 6px;
+  background: #f8f3e8;
+  object-fit: cover;
+}
+
+.park-summary,
+.park-state,
+.park-hint {
+  color: #39483b;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.park-state.is-error {
+  color: #98421f;
+}
+
+.park-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.park-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.park-overview > div {
+  border: 1px solid #efdfbd;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 10px;
+}
+
+dt {
+  color: #6b6f55;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 4px 0 0;
+  color: #17271d;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+:host ::ng-deep .national-park-tooltip {
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  background: #f0f9ff;
+  box-shadow: 0 10px 24px rgba(7, 89, 133, 0.16);
+  color: #075985;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 6px 10px;
+}
+
+@media (max-width: 980px) {
+  .national-park-panel {
+    position: static;
+    width: auto;
+    margin-top: 12px;
+  }
+}

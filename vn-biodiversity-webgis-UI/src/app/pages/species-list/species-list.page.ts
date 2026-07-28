@@ -14,6 +14,7 @@ interface SearchState {
   q: string;
   page: number;
   sourceTable: string;
+  kingdom: string;
   className: string;
   order: string;
   family: string;
@@ -39,6 +40,7 @@ interface SpeciesSearchTag {
 export class SpeciesListPage {
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly sourceTableControl = new FormControl('', { nonNullable: true });
+  protected readonly kingdomControl = new FormControl('', { nonNullable: true });
   protected readonly classNameControl = new FormControl('', { nonNullable: true });
   protected readonly orderControl = new FormControl('', { nonNullable: true });
   protected readonly familyControl = new FormControl('', { nonNullable: true });
@@ -70,6 +72,7 @@ export class SpeciesListPage {
         q: params.get('q') ?? '',
         page: this.parsePage(params.get('page')),
         sourceTable: params.get('sourceTable') ?? '',
+        kingdom: params.get('kingdom') ?? '',
         className: params.get('className') ?? '',
         order: params.get('order') ?? '',
         family: params.get('family') ?? '',
@@ -81,6 +84,7 @@ export class SpeciesListPage {
 
       this.searchControl.setValue(state.q, { emitEvent: false });
       this.sourceTableControl.setValue(state.sourceTable, { emitEvent: false });
+      this.kingdomControl.setValue(state.kingdom, { emitEvent: false });
       this.classNameControl.setValue(state.className, { emitEvent: false });
       this.orderControl.setValue(state.order, { emitEvent: false });
       this.familyControl.setValue(state.family, { emitEvent: false });
@@ -109,7 +113,7 @@ export class SpeciesListPage {
     this.search(this.createStateFromControls(1));
   }
 
-  protected applySourceTableFilter(): void {
+  protected applyKingdomFilter(): void {
     this.activeTaxonId = '';
     this.classNameControl.setValue('', { emitEvent: false });
     this.orderControl.setValue('', { emitEvent: false });
@@ -142,6 +146,7 @@ export class SpeciesListPage {
   protected clearFilters(): void {
     this.activeTaxonId = '';
     this.sourceTableControl.setValue('');
+    this.kingdomControl.setValue('');
     this.classNameControl.setValue('');
     this.orderControl.setValue('');
     this.familyControl.setValue('');
@@ -229,6 +234,7 @@ export class SpeciesListPage {
         page: state.page,
         limit: 24,
         sourceTable: state.sourceTable,
+        kingdom: state.kingdom,
         className: state.className,
         order: state.order,
         family: state.family,
@@ -262,6 +268,7 @@ export class SpeciesListPage {
       q: this.searchControl.value.trim(),
       page,
       sourceTable: this.sourceTableControl.value,
+      kingdom: this.kingdomControl.value,
       className: this.classNameControl.value,
       order: this.orderControl.value,
       family: this.familyControl.value,

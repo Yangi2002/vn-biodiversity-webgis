@@ -28,6 +28,7 @@ import { SiteHeaderComponent } from '../../shared/components/site-header/site-he
 import { OccurrenceCellDetailPanelComponent } from './components/occurrence-cell-detail-panel/occurrence-cell-detail-panel.component';
 import { WebgisFilterPanelComponent } from './components/webgis-filter-panel/webgis-filter-panel.component';
 import { WebgisInsightPanelComponent } from './components/webgis-insight-panel/webgis-insight-panel.component';
+import { WebgisNationalParkPanelComponent } from './components/webgis-national-park-panel/webgis-national-park-panel.component';
 
 type SourceGroupFilter = NonNullable<OccurrenceOverviewQueryDto['sourceGroup']>;
 
@@ -42,7 +43,7 @@ interface VietnamProvinceFeature {
   };
 }
 
-const DEFAULT_GRID_SIZE = 0.5;
+const DEFAULT_GRID_SIZE = 0.25;
 const VIETNAM_CENTER: Leaflet.LatLngExpression = [16.1, 106.6];
 const INITIAL_MAP_ZOOM = 6.75;
 const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
@@ -58,6 +59,7 @@ const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
     SiteHeaderComponent,
     WebgisFilterPanelComponent,
     WebgisInsightPanelComponent,
+    WebgisNationalParkPanelComponent,
   ],
   templateUrl: './map.page.html',
   styleUrl: './map.page.css',
@@ -122,8 +124,21 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   private vietnamBoundaryLayer?: Leaflet.GeoJSON;
   private vietnamProvinceFeatures: VietnamProvinceFeature[] = [];
   private layerControl?: Leaflet.Control.Layers;
-  private readonly cellLayers = new Map<string, Leaflet.Rectangle>();
+  private readonly cellLayers = new Map<string, Leaflet.Polygon>();
   private readonly cellDetailCache = new Map<string, OccurrenceCellDetail>();
+  readonly nationalParkCloseToken = signal(0);
+
+  get leafletInstance(): typeof Leaflet | null {
+    return this.leaflet ?? null;
+  }
+
+  get mapInstance(): Leaflet.Map | null {
+    return this.map ?? null;
+  }
+
+  get layerControlInstance(): Leaflet.Control.Layers | null {
+    return this.layerControl ?? null;
+  }
 
   ngOnInit(): void {
     if (this.isBrowser) {
@@ -184,6 +199,16 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
 
   toggleInsightPanel(): void {
     this.isInsightPanelExpanded.update((isExpanded) => !isExpanded);
+  }
+
+  handleNationalParkLayerOpenChange(isOpen: boolean): void {
+    if (!isOpen || !this.map || !this.occurrenceLayer) {
+      return;
+    }
+
+    if (this.map.hasLayer(this.occurrenceLayer)) {
+      this.map.removeLayer(this.occurrenceLayer);
+    }
   }
 
   updateSourceGroup(value: string): void {
@@ -340,22 +365,22 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       },
     );
     const vectorLikeLayer = this.leaflet.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
       {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       },
     );
 
-    rasterLayer.addTo(this.map);
+    vectorLikeLayer.addTo(this.map);
     this.occurrenceLayer = this.leaflet.layerGroup().addTo(this.map);
     this.layerControl = this.leaflet
       .control
       .layers(
         {
+          'Vector-style - Light map': vectorLikeLayer,
           'Raster - OpenStreetMap': rasterLayer,
           'Raster - Satellite': satelliteLayer,
-          'Vector-style - Light map': vectorLikeLayer,
         },
         {
           'Vector - Occurrence grid': this.occurrenceLayer,
@@ -367,6 +392,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       )
       .addTo(this.map);
 
+    this.bindOccurrenceLayerEvents();
+
     this.leaflet.control
       .scale({
         imperial: false,
@@ -376,6 +403,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       .addTo(this.map);
 
     this.map.on('click', () => this.resetSelection());
+    this.map.on('zoomend', () => this.refreshHexagonShapes());
 
     void this.loadVietnamBoundary();
   }
@@ -389,6 +417,18 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.vietnamBoundaryLayer = undefined;
     this.layerControl = undefined;
     this.cellLayers.clear();
+  }
+
+  private bindOccurrenceLayerEvents(): void {
+    if (!this.map) {
+      return;
+    }
+
+    this.map.on('overlayadd', (event: Leaflet.LayersControlEvent) => {
+      if (event.layer === this.occurrenceLayer) {
+        this.nationalParkCloseToken.update((value) => value + 1);
+      }
+    });
   }
 
   private clearLeafletContainerId(mapElement: HTMLElement | undefined): void {
@@ -430,34 +470,31 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.focusVietnam();
 
     overview.cells.forEach((cell) => {
-      const rectangle = this.leaflet!.rectangle(
-        [
-          [cell.latitude, cell.longitude],
-          [cell.latitude + overview.gridSize, cell.longitude + overview.gridSize],
-        ],
+      const hexagon = this.leaflet!.polygon(
+        this.getHexagonLatLngs(cell),
         {
           ...this.getCellStyle(cell, this.selectedCell()?.cellId === cell.cellId),
           pane: 'occurrenceGridPane',
         },
       );
 
-      rectangle.bindTooltip(() => this.escapeHtml(this.buildRegionLabel(cell)), {
+      hexagon.bindTooltip(() => this.escapeHtml(this.buildRegionLabel(cell)), {
         className: 'occurrence-region-tooltip',
         direction: 'top',
         sticky: true,
       });
 
-      rectangle.bindPopup(() => this.buildCellPopup(cell), {
+      hexagon.bindPopup(() => this.buildCellPopup(cell), {
         className: 'occurrence-cell-popup',
         maxWidth: 320,
       });
 
-      rectangle.on('click', (event) => {
+      hexagon.on('click', (event) => {
         this.leaflet!.DomEvent.stopPropagation(event);
         this.selectCell(cell);
       });
-      rectangle.addTo(this.occurrenceLayer ?? this.map!);
-      this.cellLayers.set(cell.cellId, rectangle);
+      hexagon.addTo(this.occurrenceLayer ?? this.map!);
+      this.cellLayers.set(cell.cellId, hexagon);
     });
 
     this.applyCellSelection(this.selectedCell()?.cellId ?? '');
@@ -636,6 +673,58 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     overview.cells.forEach((cell) => {
       this.cellLayers.get(cell.cellId)?.setStyle(this.getCellStyle(cell, cell.cellId === cellId));
     });
+  }
+
+  private refreshHexagonShapes(): void {
+    const overview = this.overview();
+
+    if (!overview) {
+      return;
+    }
+
+    overview.cells.forEach((cell) => {
+      this.cellLayers.get(cell.cellId)?.setLatLngs(this.getHexagonLatLngs(cell));
+    });
+  }
+
+  private getHexagonLatLngs(cell: OccurrenceMapCell): Leaflet.LatLngExpression[] {
+    const gridSize = this.overview()?.gridSize ?? this.gridSize();
+    const centerLatitude = cell.latitude + gridSize / 2;
+    const centerLongitude = cell.longitude + gridSize / 2;
+    const zoomFactor = this.getHexagonZoomFactor();
+    const latitudeRadius = gridSize * 0.52 * zoomFactor;
+    const longitudeRadius = gridSize * 0.61 * zoomFactor;
+
+    return Array.from({ length: 6 }, (_, index) => {
+      const angle = (Math.PI / 180) * (60 * index + 30);
+
+      return [
+        centerLatitude + latitudeRadius * Math.sin(angle),
+        centerLongitude + longitudeRadius * Math.cos(angle),
+      ];
+    });
+  }
+
+  private getHexagonZoomFactor(): number {
+    const zoom = this.map?.getZoom() ?? INITIAL_MAP_ZOOM;
+
+    if (zoom >= 11) {
+      return 0.36;
+    }
+
+    if (zoom >= 10) {
+      return 0.5;
+    }
+
+    if (zoom >= 9) {
+      return 0.68;
+    }
+
+    if (zoom >= 8) {
+      return 0.86;
+    }
+
+    return 1.05;
   }
 
   private getCellStyle(cell: OccurrenceMapCell, isSelected: boolean): Leaflet.PathOptions {

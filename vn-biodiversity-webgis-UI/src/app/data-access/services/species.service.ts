@@ -11,6 +11,7 @@ export interface SpeciesSearchParams {
   page?: number;
   limit?: number;
   sourceTable?: string;
+  kingdom?: string;
   className?: string;
   order?: string;
   family?: string;
@@ -39,7 +40,7 @@ export class SpeciesService {
       httpParams = httpParams.set('limit', params.limit);
     }
 
-    for (const key of ['sourceTable', 'className', 'order', 'family', 'genus', 'taxonId'] as const) {
+    for (const key of ['sourceTable', 'kingdom', 'className', 'order', 'family', 'genus', 'taxonId'] as const) {
       if (params[key]?.trim()) {
         httpParams = httpParams.set(key, params[key].trim());
       }

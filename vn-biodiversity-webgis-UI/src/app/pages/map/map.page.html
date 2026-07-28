@@ -41,6 +41,7 @@
             <span>Vector-style: Light map</span>
             <span>Vector: occurrence grid</span>
             <span>Vector: Vietnam provinces</span>
+            <span>Vector: national parks</span>
             <span>{{ mapData.cells.length }} ô dữ liệu</span>
           </div>
         </div>
@@ -59,6 +60,13 @@
             [isExpanded]="isInsightPanelExpanded()"
             (expandedToggle)="toggleInsightPanel()"
             (selectionReset)="resetSelection()"
+          />
+
+          <app-webgis-national-park-panel
+            [leaflet]="leafletInstance"
+            [map]="mapInstance"
+            [closeToken]="nationalParkCloseToken()"
+            (parkLayerOpenChange)="handleNationalParkLayerOpenChange($event)"
           />
         </div>
 
