@@ -28,9 +28,7 @@
         <p class="park-summary">{{ summaryText(park) }}</p>
 
         <div class="park-actions">
-          @if (park.detailUrl) {
-            <a [href]="park.detailUrl" target="_blank" rel="noopener">Xem chi tiết</a>
-          }
+          <a [routerLink]="['/map/national-park', park.parkId]">Xem chi tiết</a>
 
           <button type="button" class="ghost-button" (click)="clearSelection()">Đóng</button>
         </div>

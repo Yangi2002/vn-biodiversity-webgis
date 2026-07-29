@@ -55,6 +55,11 @@ export interface NationalParkDetail extends NationalParkListItem {
   sourcePayload: unknown;
 }
 
+export interface NationalParkLocalImage {
+  filePath: string;
+  mimeType: string;
+}
+
 export interface NationalParkListResponse {
   items: NationalParkListItem[];
   total: number;

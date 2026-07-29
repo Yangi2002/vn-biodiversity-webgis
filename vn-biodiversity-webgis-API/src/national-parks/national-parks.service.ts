@@ -1,8 +1,16 @@
+import { existsSync } from 'node:fs';
+import { extname, isAbsolute, resolve } from 'node:path';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 import type { NationalParkQueryDto } from './dto/national-park-query.dto';
 import { NationalParksRepository } from './national-parks.repository';
-import type { NationalParkDetail, NationalParkListResponse, NationalParkMapLayer, NationalParkSummary } from './types/national-park.type';
+import type {
+  NationalParkDetail,
+  NationalParkListResponse,
+  NationalParkLocalImage,
+  NationalParkMapLayer,
+  NationalParkSummary,
+} from './types/national-park.type';
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 100;
@@ -14,6 +22,12 @@ export class NationalParksService {
   private readonly summaryCache = new TtlCache<NationalParkSummary>(300_000, 10);
   private readonly detailCache = new TtlCache<NationalParkDetail | null>(600_000, 200);
   private readonly mapLayerCache = new TtlCache<NationalParkMapLayer>(300_000, 10);
+  private readonly imageRoots = [
+    process.cwd(),
+    resolve(process.cwd(), '..'),
+    resolve(process.cwd(), '..', '..'),
+    resolve('D:/Duong/VNCreaturesDatabase'),
+  ];
 
   constructor(private readonly nationalParksRepository: NationalParksRepository) {}
 
@@ -76,6 +90,32 @@ export class NationalParksService {
     return detail;
   }
 
+  async getLocalImage(parkId: string, imageIndexValue: string): Promise<NationalParkLocalImage> {
+    const imageIndex = this.parsePositiveNumber(imageIndexValue, 0);
+
+    if (imageIndex < 1) {
+      throw new BadRequestException('Invalid national park image index.');
+    }
+
+    const detail = await this.getDetail(parkId);
+    const filePath = detail.localImagePaths[imageIndex - 1];
+
+    if (!filePath) {
+      throw new NotFoundException('National park image was not found.');
+    }
+
+    const resolvedPath = this.resolveImagePath(filePath);
+
+    if (!resolvedPath) {
+      throw new NotFoundException('National park image file was not found.');
+    }
+
+    return {
+      filePath: resolvedPath,
+      mimeType: this.detectMimeType(resolvedPath),
+    };
+  }
+
   private parsePositiveNumber(value: string | undefined, fallback: number): number {
     if (!value) {
       return fallback;
@@ -102,5 +142,31 @@ export class NationalParksService {
     }
 
     throw new BadRequestException('Invalid hasImage filter.');
+  }
+
+  private detectMimeType(filePath: string): string {
+    const extension = extname(filePath).toLowerCase();
+
+    if (extension === '.png') {
+      return 'image/png';
+    }
+
+    if (extension === '.webp') {
+      return 'image/webp';
+    }
+
+    if (extension === '.gif') {
+      return 'image/gif';
+    }
+
+    return 'image/jpeg';
+  }
+
+  private resolveImagePath(filePath: string): string | null {
+    const candidates = isAbsolute(filePath)
+      ? [resolve(filePath)]
+      : this.imageRoots.map((root) => resolve(root, filePath));
+
+    return candidates.find((candidate) => existsSync(candidate)) ?? null;
   }
 }

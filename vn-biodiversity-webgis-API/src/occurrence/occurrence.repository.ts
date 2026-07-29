@@ -123,7 +123,7 @@ export class OccurrenceRepository {
 
   async getMapOverview(gridSize: number, filters: OccurrenceOverviewFilters): Promise<OccurrenceMapOverview> {
     const queryFilters = this.buildQueryFilters(filters);
-    const matchedSpeciesCte = this.buildMatchedSpeciesCte();
+    const matchedSpeciesCte = this.buildMatchedSpeciesCte(queryFilters.sourceTableWhereClause);
 
     const summaryQuery = this.prisma.$queryRawUnsafe<OverviewRow[]>(
       `
@@ -140,11 +140,7 @@ export class OccurrenceRepository {
           AND o.latitude IS NOT NULL
           AND o.longitude IS NOT NULL
           AND coalesce(o.has_geospatial_issue, false) = false
-          AND (
-            o.observed_date IS NULL
-            OR o.observed_date !~ '^\\d{4}'
-            OR substring(o.observed_date from 1 for 4)::int BETWEEN $5 AND $6
-          )
+          ${queryFilters.yearWhereClause(5, 6)}
       ),
       ${matchedSpeciesCte},
       filtered_occurrences AS (
@@ -196,11 +192,7 @@ export class OccurrenceRepository {
           AND o.latitude IS NOT NULL
           AND o.longitude IS NOT NULL
           AND coalesce(o.has_geospatial_issue, false) = false
-          AND (
-            o.observed_date IS NULL
-            OR o.observed_date !~ '^\\d{4}'
-            OR substring(o.observed_date from 1 for 4)::int BETWEEN $6 AND $7
-          )
+          ${queryFilters.yearWhereClause(6, 7)}
       ),
       ${matchedSpeciesCte},
       filtered_occurrences AS (
@@ -370,7 +362,7 @@ export class OccurrenceRepository {
     filters: OccurrenceOverviewFilters,
   ): Promise<OccurrenceCellDetail> {
     const queryFilters = this.buildQueryFilters(filters);
-    const matchedSpeciesCte = this.buildMatchedSpeciesCte();
+    const matchedSpeciesCte = this.buildMatchedSpeciesCte(queryFilters.sourceTableWhereClause);
     const speciesUnionCte = this.buildSpeciesUnionCte();
 
     const queryParams = [
@@ -395,11 +387,7 @@ export class OccurrenceRepository {
           AND o.latitude IS NOT NULL
           AND o.longitude IS NOT NULL
           AND coalesce(o.has_geospatial_issue, false) = false
-          AND (
-            o.observed_date IS NULL
-            OR o.observed_date !~ '^\\d{4}'
-            OR substring(o.observed_date from 1 for 4)::int BETWEEN $5 AND $6
-          )
+          ${queryFilters.yearWhereClause(5, 6)}
       ),
       ${matchedSpeciesCte},
       ${speciesUnionCte},
@@ -456,11 +444,7 @@ export class OccurrenceRepository {
           AND o.latitude IS NOT NULL
           AND o.longitude IS NOT NULL
           AND coalesce(o.has_geospatial_issue, false) = false
-          AND (
-            o.observed_date IS NULL
-            OR o.observed_date !~ '^\\d{4}'
-            OR substring(o.observed_date from 1 for 4)::int BETWEEN $5 AND $6
-          )
+          ${queryFilters.yearWhereClause(5, 6)}
       ),
       ${matchedSpeciesCte},
       filtered_occurrences AS (
@@ -512,55 +496,23 @@ export class OccurrenceRepository {
     };
   }
 
-  private buildMatchedSpeciesCte(): string {
+  private buildMatchedSpeciesCte(sourceTableWhereClause = ''): string {
     return `
-      raw_matched_species AS (
+      matched_species AS (
         SELECT
           m.gbif_occurrence_key,
           m.source_table,
-          m.species_id
+          m.species_id,
+          CASE
+            WHEN m.source_table = 'plant_db_vn' THEN 'plant'
+            WHEN m.source_table = 'insect_db_vn' THEN 'insect'
+            WHEN m.source_table = 'animal_db_vn' THEN 'animal'
+            ELSE 'unknown'
+          END AS source_group
         FROM valid_occurrences
         JOIN species_gbif_occurrence_matches m
           ON m.gbif_occurrence_key = valid_occurrences.gbif_occurrence_key
-      ),
-      species_source_groups AS (
-        SELECT
-          species_pairs.source_table,
-          species_pairs.species_id,
-          CASE
-            WHEN bool_or(parent.rank = 'kingdom' AND parent.canonical_name = 'Plantae') THEN 'plant'
-            WHEN bool_or(parent.rank = 'class' AND parent.canonical_name = 'Insecta') THEN 'insect'
-            WHEN bool_or(parent.rank = 'kingdom' AND parent.canonical_name = 'Animalia') THEN 'animal'
-            WHEN species_pairs.source_table = 'plant_db_vn' THEN 'plant'
-            WHEN species_pairs.source_table = 'insect_db_vn' THEN 'insect'
-            WHEN species_pairs.source_table = 'animal_db_vn' THEN 'animal'
-            ELSE 'unknown'
-          END AS source_group
-        FROM (
-          SELECT DISTINCT source_table, species_id
-          FROM raw_matched_species
-        ) species_pairs
-        LEFT JOIN species_taxonomy st
-          ON st.source_table = species_pairs.source_table
-         AND st.species_id = species_pairs.species_id
-        LEFT JOIN taxon_closure tc
-          ON tc.descendant_taxon_id = st.taxon_id
-        LEFT JOIN taxa parent
-          ON parent.taxon_id = tc.ancestor_taxon_id
-        GROUP BY
-          species_pairs.source_table,
-          species_pairs.species_id
-      ),
-      matched_species AS (
-        SELECT
-          raw_matched_species.gbif_occurrence_key,
-          raw_matched_species.source_table,
-          raw_matched_species.species_id,
-          species_source_groups.source_group
-        FROM raw_matched_species
-        JOIN species_source_groups
-          ON species_source_groups.source_table = raw_matched_species.source_table
-         AND species_source_groups.species_id = raw_matched_species.species_id
+        ${sourceTableWhereClause}
       )
     `;
   }
@@ -694,9 +646,29 @@ export class OccurrenceRepository {
   }
 
   private buildQueryFilters(filters: OccurrenceOverviewFilters) {
+    const sourceTableByGroup: Record<Exclude<OccurrenceOverviewFilters['sourceGroup'], 'all'>, string> = {
+      animal: 'animal_db_vn',
+      plant: 'plant_db_vn',
+      insect: 'insect_db_vn',
+    };
     return {
-      yearFrom: filters.yearFrom ?? 1500,
-      yearTo: filters.yearTo ?? 2100,
+      yearFrom: filters.yearFrom ?? null,
+      yearTo: filters.yearTo ?? null,
+      yearWhereClause: (fromParam: number, toParam: number) =>
+        `
+          AND (
+            ($${fromParam}::int IS NULL AND $${toParam}::int IS NULL)
+            OR (
+              o.observed_date IS NOT NULL
+              AND o.observed_date ~ '^\\d{4}'
+              AND substring(o.observed_date from 1 for 4)::int
+                BETWEEN coalesce($${fromParam}::int, 1500)
+                    AND coalesce($${toParam}::int, 2100)
+            )
+          )
+        `,
+      sourceTableWhereClause:
+        filters.sourceGroup === 'all' ? '' : `WHERE m.source_table = '${sourceTableByGroup[filters.sourceGroup]}'`,
       sourceGroupWhereClause:
         filters.sourceGroup === 'all' ? '' : `WHERE matched_species.source_group = '${filters.sourceGroup}'`,
     };

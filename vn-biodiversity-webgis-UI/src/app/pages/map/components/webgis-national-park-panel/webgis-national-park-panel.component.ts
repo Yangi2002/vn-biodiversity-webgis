@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type * as Leaflet from 'leaflet';
 
 import type { NationalParkListItem } from '../../../../data-access/models/national-park.model';
@@ -12,7 +13,7 @@ interface NationalParkMapItem extends NationalParkListItem {
 
 @Component({
   selector: 'app-webgis-national-park-panel',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, RouterLink],
   templateUrl: './webgis-national-park-panel.component.html',
   styleUrl: './webgis-national-park-panel.component.css',
 })

@@ -14,6 +14,8 @@ export const API_ENDPOINTS = {
   nationalParksSummary: '/national-parks/summary',
   nationalParksMapLayer: '/national-parks/map-layer',
   nationalParkDetail: (parkId: string) => `/national-parks/${encodeURIComponent(parkId)}`,
+  nationalParkImage: (parkId: string, imageIndex: number) =>
+    `/national-parks/${encodeURIComponent(parkId)}/images/${imageIndex}`,
   occurrenceMapOverview: '/occurrences/map/overview',
   occurrenceCellDetail: '/occurrences/map/cell-detail',
   speciesOccurrences: (sourceTable: string, speciesId: string) =>

@@ -7,6 +7,7 @@ import { HttpApiService } from '../../core/api/http-api.service';
 import type { NationalParkQueryDto } from '../dto/national-park-query.dto';
 import type {
   NationalParkDetail,
+  NationalParkImageMetadata,
   NationalParkListItem,
   NationalParkListResponse,
   NationalParkMapLayer,
@@ -79,10 +80,29 @@ export class NationalParkService {
   }
 
   private withAbsoluteDetailImageUrls(detail: NationalParkDetail): NationalParkDetail {
+    const metadataUrls = this.extractMetadataImageUrls(detail.imageMetadata);
+    const localUrls = detail.localImagePaths.map((_, index) =>
+      this.api.buildUrl(API_ENDPOINTS.nationalParkImage(detail.parkId, index + 1)),
+    );
+    const imageUrls = [...detail.imageUrls, ...metadataUrls, ...localUrls]
+      .map((imageUrl) => this.toAbsoluteUrl(imageUrl) ?? imageUrl)
+      .filter((imageUrl, index, list) => imageUrl.length > 0 && list.indexOf(imageUrl) === index);
+
     return {
       ...this.withAbsoluteImageUrls(detail),
-      imageUrls: detail.imageUrls.map((imageUrl) => this.toAbsoluteUrl(imageUrl) ?? imageUrl),
+      imageUrls,
     };
+  }
+
+  private extractMetadataImageUrls(metadata: unknown): string[] {
+    const items = Array.isArray(metadata) ? metadata : metadata && typeof metadata === 'object' ? [metadata] : [];
+
+    return items
+      .map((item) => {
+        const image = item as NationalParkImageMetadata;
+        return image.sourceImageUrl ?? image.source_image_url ?? image.imageUrl ?? image.image_url ?? '';
+      })
+      .filter(Boolean);
   }
 
   private toAbsoluteUrl(value: string | null): string | null {

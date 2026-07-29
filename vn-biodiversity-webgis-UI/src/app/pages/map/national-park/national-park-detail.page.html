@@ -1,0 +1,99 @@
+<main class="national-park-page">
+  <app-site-header sectionLabel="Vườn quốc gia" />
+
+  @if (isLoading()) {
+    <section class="state-panel">Đang tải hồ sơ vườn quốc gia...</section>
+  } @else if (errorMessage()) {
+    <section class="state-panel is-error">{{ errorMessage() }}</section>
+  } @else if (park(); as detail) {
+    <article class="park-layout">
+      <section class="park-article">
+        <a class="back-link" routerLink="/map">&lt; Quay lại bản đồ</a>
+
+        <header class="article-header">
+          <p class="eyebrow">Hồ sơ vườn quốc gia</p>
+          <h1>{{ displayTitle(detail) }}</h1>
+
+          <div class="article-meta" aria-label="Thông tin bài viết">
+            <span>Tác giả: {{ authorText(detail) }}</span>
+            <span>{{ publishedText(detail) }}</span>
+          </div>
+        </header>
+
+        @if (heroImage(detail)) {
+          <figure class="hero-media">
+            <img [src]="heroImage(detail)" [alt]="displayTitle(detail)" />
+            <figcaption>{{ displayTitle(detail) }}</figcaption>
+          </figure>
+        }
+
+        @if (introText(detail)) {
+          <p class="lead">{{ introText(detail) }}</p>
+        }
+
+        @if (contentParagraphs(detail).length) {
+          <section class="article-section article-body">
+            <h2>Nội dung tổng quan</h2>
+            @for (paragraph of contentParagraphs(detail); track paragraph) {
+              <p>{{ paragraph }}</p>
+            }
+          </section>
+        }
+
+        @if (articleSections(detail).length) {
+          <section class="article-section-list">
+            <p class="eyebrow">Thông tin chuyên đề</p>
+            @for (section of articleSections(detail); track section.title) {
+              <section class="article-section">
+                <h2>{{ section.title }}</h2>
+                @for (paragraph of paragraphs(section.content); track paragraph) {
+                  <p>{{ paragraph }}</p>
+                }
+              </section>
+            }
+          </section>
+        }
+      </section>
+
+      <aside class="park-sidebar" aria-label="Thông tin nhanh">
+        <section class="info-card">
+          <p class="eyebrow"></p>
+          <h2>{{ displayTitle(detail) }}</h2>
+
+          <dl>
+            @for (row of quickInfoRows(detail); track row.label) {
+              <div>
+                <dt>{{ row.label }}</dt>
+                <dd>{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (detail.detailUrl || detail.mapUrl) {
+            <a class="source-link" [href]="externalUrl(detail)" target="_blank" rel="noopener">
+              Mở nguồn tham chiếu
+            </a>
+          }
+        </section>
+
+        @if (imageGallery(detail).length) {
+          <section class="gallery-card">
+            <div class="gallery-heading">
+              <p class="eyebrow">Thư viện ảnh</p>
+              <strong>{{ imageGallery(detail).length | number }} ảnh</strong>
+            </div>
+
+            <div class="gallery-grid">
+              @for (image of imageGallery(detail); track image.url; let index = $index) {
+                <figure>
+                  <img [src]="image.url" [alt]="image.caption" />
+                  <figcaption>{{ image.caption }}</figcaption>
+                </figure>
+              }
+            </div>
+          </section>
+        }
+      </aside>
+    </article>
+  }
+</main>

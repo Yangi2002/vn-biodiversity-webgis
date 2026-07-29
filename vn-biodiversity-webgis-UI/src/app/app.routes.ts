@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomePage } from './pages/home/home.page';
 import { MapPage } from './pages/map/map.page';
+import { NationalParkDetailPage } from './pages/map/national-park/national-park-detail.page';
 import { SpeciesDetailPage } from './pages/species-detail/species-detail.page';
 import { SpeciesListPage } from './pages/species-list/species-list.page';
 import { StatisticsPage } from './pages/statistics/statistics.page';
@@ -45,6 +46,11 @@ export const routes: Routes = [
     path: 'map',
     component: MapPage,
     title: 'Bản đồ WebGIS',
+  },
+  {
+    path: 'map/national-park/:parkId',
+    component: NationalParkDetailPage,
+    title: 'Chi tiết vườn quốc gia',
   },
   {
     path: 'statistics',

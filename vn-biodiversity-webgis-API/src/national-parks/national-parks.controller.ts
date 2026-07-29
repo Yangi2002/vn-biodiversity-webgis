@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import type { NationalParkQueryDto } from './dto/national-park-query.dto';
 import { NationalParksService } from './national-parks.service';
 
@@ -19,6 +20,18 @@ export class NationalParksController {
   @Get('map-layer')
   mapLayer() {
     return this.nationalParksService.mapLayer();
+  }
+
+  @Get(':parkId/images/:imageIndex')
+  @Header('Cache-Control', 'public, max-age=86400')
+  async getLocalImage(
+    @Param('parkId') parkId: string,
+    @Param('imageIndex') imageIndex: string,
+    @Res() response: Response,
+  ) {
+    const image = await this.nationalParksService.getLocalImage(parkId, imageIndex);
+
+    return response.type(image.mimeType).sendFile(image.filePath);
   }
 
   @Get(':parkId')

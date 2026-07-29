@@ -55,6 +55,24 @@ export interface NationalParkDetail extends NationalParkListItem {
   sourcePayload: unknown;
 }
 
+export interface NationalParkImageMetadata {
+  imageId?: string;
+  imageGroupId?: string;
+  imageOrder?: number | string;
+  isPrimary?: boolean | string;
+  sourceImageUrl?: string;
+  source_image_url?: string;
+  imageUrl?: string;
+  image_url?: string;
+  localPath?: string;
+  local_path?: string;
+  caption?: string;
+  width?: number | string;
+  height?: number | string;
+  mimeType?: string;
+  mime_type?: string;
+}
+
 export interface NationalParkListResponse {
   items: NationalParkListItem[];
   total: number;

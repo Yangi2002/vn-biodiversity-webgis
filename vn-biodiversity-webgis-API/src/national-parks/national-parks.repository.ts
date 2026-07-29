@@ -403,11 +403,22 @@ export class NationalParksRepository {
       return null;
     }
 
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
+    const trimmed = value.trim();
+    const candidates = [trimmed];
+
+    if (trimmed.includes(`'"`) || trimmed.includes(`"'`) || trimmed.includes("':")) {
+      candidates.push(trimmed.replace(/'/g, '"'));
     }
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate);
+      } catch {
+        // Try the next normalized candidate.
+      }
+    }
+
+    return null;
   }
 
   private parseNumberText(value: string | null): number {
