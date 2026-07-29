@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:18
+    container_name: vn-biodiversity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./vn-biodiversity-webgis-DB/docker-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./vn-biodiversity-webgis-API
+    container_name: vn-biodiversity-api
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:4200}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_DISPLAY_NAME: ${ADMIN_DISPLAY_NAME}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./vn-biodiversity-webgis-UI
+      args:
+        NG_APP_API_URL: ${NG_APP_API_URL:-/api}
+    container_name: vn-biodiversity-ui
+    restart: unless-stopped
+    ports:
+      - "${UI_PORT:-4200}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

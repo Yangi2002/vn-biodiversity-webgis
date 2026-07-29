@@ -256,3 +256,9 @@ http://localhost:4200
 - API WebGIS, statistics và species detail map đã có cache/tối ưu cơ bản.
 - Nếu dữ liệu occurrence tăng lớn hơn, có thể nâng cấp bằng materialized view hoặc precomputed grid table.
 - VN Red List hiện dùng dữ liệu đã có trong hệ thống; IUCN hoặc nguồn bảo tồn khác sẽ để cho Sprint 4/giai đoạn sau.
+
+## Chạy docker trên máy local khác
+
+Copy-Item .env.docker.example .env.docker
+.\docker-load.ps1
+docker compose --env-file .env.docker up
