@@ -318,7 +318,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.leaflet = await import('leaflet');
+    this.leaflet = this.resolveLeafletModule(await import('leaflet'));
 
     if (this.map) {
       return;
@@ -437,6 +437,20 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     delete (mapElement as HTMLElement & { _leaflet_id?: number })._leaflet_id;
+  }
+
+  private resolveLeafletModule(module: typeof Leaflet | { default?: typeof Leaflet }): typeof Leaflet {
+    if ('map' in module && typeof module.map === 'function') {
+      return module;
+    }
+
+    const defaultModule = (module as { default?: typeof Leaflet }).default;
+
+    if (defaultModule && typeof defaultModule.map === 'function') {
+      return defaultModule;
+    }
+
+    throw new Error('Leaflet module could not be loaded.');
   }
 
   private async renderOverview(retryCount = 0): Promise<void> {

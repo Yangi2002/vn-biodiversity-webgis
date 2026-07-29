@@ -59,6 +59,7 @@ export interface NationalParkImageMetadata {
   imageId?: string;
   imageGroupId?: string;
   imageOrder?: number | string;
+  image_order?: number | string;
   isPrimary?: boolean | string;
   sourceImageUrl?: string;
   source_image_url?: string;

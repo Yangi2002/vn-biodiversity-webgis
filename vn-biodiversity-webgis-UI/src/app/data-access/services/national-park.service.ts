@@ -80,29 +80,80 @@ export class NationalParkService {
   }
 
   private withAbsoluteDetailImageUrls(detail: NationalParkDetail): NationalParkDetail {
-    const metadataUrls = this.extractMetadataImageUrls(detail.imageMetadata);
-    const localUrls = detail.localImagePaths.map((_, index) =>
-      this.api.buildUrl(API_ENDPOINTS.nationalParkImage(detail.parkId, index + 1)),
-    );
-    const imageUrls = [...detail.imageUrls, ...metadataUrls, ...localUrls]
+    const metadataUrls = this.extractDisplayableMetadataImageUrls(detail);
+    const fallbackUrls = [detail.primaryImageUrl, ...detail.imageUrls, detail.thumbnailUrl]
+      .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
+      .filter((imageUrl) => this.isDisplayableNationalParkImageUrl(imageUrl));
+    const imageUrls = [...metadataUrls, ...fallbackUrls]
       .map((imageUrl) => this.toAbsoluteUrl(imageUrl) ?? imageUrl)
       .filter((imageUrl, index, list) => imageUrl.length > 0 && list.indexOf(imageUrl) === index);
 
     return {
       ...this.withAbsoluteImageUrls(detail),
+      primaryImageUrl: imageUrls[0] ?? this.toAbsoluteUrl(detail.primaryImageUrl),
       imageUrls,
     };
   }
 
-  private extractMetadataImageUrls(metadata: unknown): string[] {
-    const items = Array.isArray(metadata) ? metadata : metadata && typeof metadata === 'object' ? [metadata] : [];
+  private extractDisplayableMetadataImageUrls(detail: NationalParkDetail): string[] {
+    const items = Array.isArray(detail.imageMetadata)
+      ? detail.imageMetadata
+      : detail.imageMetadata && typeof detail.imageMetadata === 'object'
+        ? [detail.imageMetadata]
+        : [];
 
     return items
-      .map((item) => {
+      .map((item): string => {
         const image = item as NationalParkImageMetadata;
+
+        if (!this.isDisplayableNationalParkImage(image)) {
+          return '';
+        }
+
+        const imageOrder = Number(image.imageOrder ?? image.image_order);
+        const localPath = image.localPath ?? image.local_path;
+
+        if (localPath && Number.isFinite(imageOrder) && imageOrder > 0) {
+          return this.api.buildUrl(API_ENDPOINTS.nationalParkImage(detail.parkId, imageOrder));
+        }
+
         return image.sourceImageUrl ?? image.source_image_url ?? image.imageUrl ?? image.image_url ?? '';
       })
       .filter(Boolean);
+  }
+
+  private isDisplayableNationalParkImage(image: NationalParkImageMetadata): boolean {
+    const url = image.sourceImageUrl ?? image.source_image_url ?? image.imageUrl ?? image.image_url ?? '';
+    const width = Number(image.width);
+    const height = Number(image.height);
+
+    if (!this.isDisplayableNationalParkImageUrl(url)) {
+      return false;
+    }
+
+    if (Number.isFinite(width) && Number.isFinite(height)) {
+      return width >= 250 && height >= 180;
+    }
+
+    return true;
+  }
+
+  private isDisplayableNationalParkImageUrl(value: string): boolean {
+    const url = value.toLowerCase();
+
+    if (!url) {
+      return false;
+    }
+
+    if (url.includes('/flags/') || url.includes('gtranslate') || url.includes('avatar')) {
+      return false;
+    }
+
+    if (/-90x90\./i.test(value) || /\/\d+[^/]*s-90x90\./i.test(value)) {
+      return false;
+    }
+
+    return /\.(jpe?g|png|webp)(\?|$)/i.test(value) || value.startsWith('/api/');
   }
 
   private toAbsoluteUrl(value: string | null): string | null {

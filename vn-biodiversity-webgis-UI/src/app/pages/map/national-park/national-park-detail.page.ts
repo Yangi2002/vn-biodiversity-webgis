@@ -118,6 +118,8 @@ export class NationalParkDetailPage {
   }
 
   protected articleSections(park: NationalParkDetail): NationalParkSection[] {
+    return this.articleSectionsFromFields(park);
+
     const contentSections = this.sectionsFromContentText(park.contentText);
     const sections: NationalParkSection[] = [
       ...contentSections,
@@ -167,7 +169,7 @@ export class NationalParkDetailPage {
   }
 
   protected contentParagraphs(park: NationalParkDetail): string[] {
-    if (this.sectionsFromContentText(park.contentText).length) {
+    if (this.articleSections(park).length) {
       return [];
     }
 
@@ -188,6 +190,15 @@ export class NationalParkDetailPage {
   }
 
   protected quickInfoRows(park: NationalParkDetail): NationalParkInfoRow[] {
+    return [
+      { label: 'Diện tích', value: this.shortText(park.areaText, 140) },
+      { label: 'Tọa độ', value: this.shortText(this.cleanCoordinateText(park.coordinateText), 140) },
+      { label: 'Tỉnh/vùng', value: this.shortText(park.geographicLocation, 170) },
+      { label: 'Cơ quan quản lý', value: this.shortText(park.managementAgency ?? park.parentAgency, 150) },
+    ]
+      .map((row) => ({ ...row, value: this.cleanText(row.value) }))
+      .filter((row) => row.value.length > 0);
+
     return [
       { label: 'Diện tích', value: park.areaText ?? '' },
       { label: 'Tọa độ', value: this.cleanCoordinateText(park.coordinateText) },
@@ -220,6 +231,74 @@ export class NationalParkDetailPage {
           this.errorMessage.set('Chưa tải được hồ sơ vườn quốc gia.');
           this.isLoading.set(false);
         },
+      });
+  }
+
+  private articleSectionsFromFields(park: NationalParkDetail): NationalParkSection[] {
+    const fieldSections = this.cleanAndDedupeSections([
+      { title: 'Giới thiệu', content: this.introText(park) },
+      { title: 'Vị trí địa lý', content: park.geographicLocation ?? '' },
+      { title: 'Tọa độ địa lý', content: this.cleanCoordinateText(park.coordinateText) },
+      ...this.areaSections(park.areaText),
+      { title: 'Quyết định thành lập', content: park.establishmentDecision ?? '' },
+      { title: 'Mục tiêu, nhiệm vụ', content: park.objectiveMission ?? '' },
+      { title: 'Cơ quan quản lý', content: park.parentAgency ?? '' },
+      { title: 'Ban quản lý', content: park.managementBoard ?? '' },
+      { title: 'Đa dạng sinh học', content: park.biodiversity ?? '' },
+      { title: 'Hệ thực vật', content: park.flora ?? '' },
+      { title: 'Hệ động vật', content: park.fauna ?? '' },
+      { title: 'Du lịch', content: park.tourismActivities ?? '' },
+      { title: 'Dự án liên quan', content: park.relatedProjects ?? '' },
+      { title: 'Dân số trong vùng', content: park.populationInArea ?? '' },
+      { title: 'Nguồn tham khảo', content: park.references ?? '' },
+      ...this.sectionsFromDetailJson(park.detailSections),
+    ]);
+
+    return fieldSections.length ? fieldSections : this.cleanAndDedupeSections(this.sectionsFromContentText(park.contentText));
+  }
+
+  private areaSections(value: string | null): NationalParkSection[] {
+    const text = this.cleanText(value);
+
+    if (!text) {
+      return [];
+    }
+
+    const coreMatch = text.match(/\bVùng lõi\s*:\s*([\s\S]*?)(?=\bVùng đệm\s*:|$)/i);
+    const bufferMatch = text.match(/\bVùng đệm\s*:\s*([\s\S]*)$/i);
+    const areaOnly = text
+      .replace(/\bVùng lõi\s*:\s*[\s\S]*?(?=\bVùng đệm\s*:|$)/i, '')
+      .replace(/\bVùng đệm\s*:\s*[\s\S]*$/i, '')
+      .trim();
+
+    return [
+      { title: 'Quy mô và diện tích', content: areaOnly || text },
+      { title: 'Vùng lõi', content: coreMatch?.[1] ?? '' },
+      { title: 'Vùng đệm', content: bufferMatch?.[1] ?? '' },
+    ];
+  }
+
+  private cleanAndDedupeSections(sections: NationalParkSection[]): NationalParkSection[] {
+    const seenTitles = new Set<string>();
+    const seenContent = new Set<string>();
+
+    return sections
+      .map((section) => ({
+        title: this.cleanSectionTitle(section.title),
+        content: this.cleanSectionContent(section.title, section.content),
+      }))
+      .filter((section) => section.title.length > 0 && section.content.length > 0)
+      .filter((section) => {
+        const titleKey = this.sectionDedupeKey(section.title);
+        const contentKey = this.normalizeContent(section.content);
+
+        if (seenTitles.has(titleKey) || seenContent.has(contentKey)) {
+          return false;
+        }
+
+        seenTitles.add(titleKey);
+        seenContent.add(contentKey);
+        return true;
       });
   }
 
@@ -397,6 +476,16 @@ export class NationalParkDetailPage {
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
+  }
+
+  private shortText(value: unknown, maxLength: number): string {
+    const text = this.cleanText(value);
+
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    return `${text.slice(0, maxLength).replace(/\s+\S*$/, '')}...`;
   }
 
   private findPayloadText(payload: unknown, keys: string[]): string {
