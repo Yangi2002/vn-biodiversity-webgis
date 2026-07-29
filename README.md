@@ -262,3 +262,4 @@ http://localhost:4200
 Copy-Item .env.docker.example .env.docker
 .\docker-load.ps1
 docker compose --env-file .env.docker up
+Lưu ý nhỏ: nếu đổi POSTGRES_PASSWORD trong .env.docker, phải đổi cùng password trong DATABASE_URL.
