@@ -1,3 +1,5 @@
+name: vn-biodiversity-webgis
+
 services:
   db:
     image: postgres:18

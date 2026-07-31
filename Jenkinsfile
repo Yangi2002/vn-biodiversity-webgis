@@ -72,14 +72,18 @@ pipeline {
       steps {
         bat 'docker compose --env-file "%DOCKER_ENV_FILE%" down --remove-orphans'
         bat 'docker rm -f vn-biodiversity-api vn-biodiversity-ui vn-biodiversity-db 2>NUL || ver >NUL'
-        bat 'docker compose --env-file "%DOCKER_ENV_FILE%" up -d'
+        bat 'docker compose --env-file "%DOCKER_ENV_FILE%" up -d --force-recreate --remove-orphans'
       }
     }
 
     stage('Health Check') {
       steps {
-        bat 'powershell -NoProfile -Command "Start-Sleep -Seconds 10; Invoke-RestMethod http://localhost:3000/health | ConvertTo-Json"'
-        bat 'powershell -NoProfile -Command "Invoke-RestMethod http://localhost:4200/api/health | ConvertTo-Json"'
+        bat '''
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; for ($i = 1; $i -le 40; $i++) { try { Write-Host ('API health attempt ' + $i); Invoke-RestMethod http://localhost:3000/health | ConvertTo-Json; exit 0 } catch { Write-Host ('API not ready: ' + $_.Exception.Message); Start-Sleep -Seconds 3 } }; docker ps -a --filter name=vn-biodiversity; docker logs --tail 120 vn-biodiversity-api; exit 1"
+        '''
+        bat '''
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; for ($i = 1; $i -le 40; $i++) { try { Write-Host ('UI health attempt ' + $i); Invoke-RestMethod http://localhost:4200/api/health | ConvertTo-Json; exit 0 } catch { Write-Host ('UI not ready: ' + $_.Exception.Message); Start-Sleep -Seconds 3 } }; docker ps -a --filter name=vn-biodiversity; docker logs --tail 120 vn-biodiversity-ui; exit 1"
+        '''
       }
     }
   }
