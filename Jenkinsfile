@@ -70,6 +70,8 @@ pipeline {
 
     stage('Deploy') {
       steps {
+        bat 'docker compose --env-file "%DOCKER_ENV_FILE%" down --remove-orphans'
+        bat 'docker rm -f vn-biodiversity-api vn-biodiversity-ui vn-biodiversity-db 2>NUL || ver >NUL'
         bat 'docker compose --env-file "%DOCKER_ENV_FILE%" up -d'
       }
     }
