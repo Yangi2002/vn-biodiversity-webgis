@@ -20,20 +20,21 @@ pipeline {
       }
     }
 
-    stage('Prepare Docker Env') {
-      steps {
-        script {
-          if (fileExists(env.DOCKER_ENV_FILE)) {
-            echo "${env.DOCKER_ENV_FILE} already exists in workspace."
-          } else {
-            withCredentials([file(credentialsId: 'vn-biodiversity-env-docker', variable: 'ENV_DOCKER_FILE')]) {
-              bat 'copy /Y "%ENV_DOCKER_FILE%" "%DOCKER_ENV_FILE%"'
-            }
-          }
+  stage('Prepare Docker Env') {
+  steps {
+    script {
+      if (fileExists(env.DOCKER_ENV_FILE)) {
+        echo "${env.DOCKER_ENV_FILE} already exists in workspace."
+      } else {
+        withCredentials([file(credentialsId: 'vn-biodiversity-env-docker', variable: 'ENV_DOCKER_FILE')]) {
+          bat 'copy /Y "%ENV_DOCKER_FILE%" "%DOCKER_ENV_FILE%"'
         }
       }
-    }
 
+      bat 'copy /Y "%DOCKER_ENV_FILE%" "%API_DIR%\\.env"'
+    }
+  }
+}
     stage('Frontend Build') {
       steps {
         dir("${UI_DIR}") {
