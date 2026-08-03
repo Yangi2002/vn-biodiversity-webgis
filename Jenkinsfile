@@ -34,19 +34,24 @@ pipeline {
             def trimmed = line.trim()
             if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
               def separatorIndex = trimmed.indexOf('=')
-              def key = trimmed.substring(0, separatorIndex)
-              def value = trimmed.substring(separatorIndex + 1)
+              def key = trimmed.substring(0, separatorIndex).replace('\uFEFF', '').trim()
+              def value = trimmed.substring(separatorIndex + 1).trim()
               dockerEnvMap[key] = value
             }
           }
 
-          env.PROD_HOST = dockerEnvMap['PROD_HOST']
-          env.PROD_USER = dockerEnvMap['PROD_USER']
-          env.PROD_APP_DIR = dockerEnvMap['PROD_APP_DIR']
-
-          if (!env.PROD_HOST || !env.PROD_USER || !env.PROD_APP_DIR) {
-            error 'PROD_HOST, PROD_USER, or PROD_APP_DIR is missing in .env.docker Jenkins credential.'
+          def requireDockerEnv = { key ->
+            def value = dockerEnvMap[key]?.trim()
+            if (!value || value.equalsIgnoreCase('null')) {
+              error "${key} is missing or empty in ${env.DOCKER_ENV_FILE}. Update Jenkins credential vn-biodiversity-env-docker."
+            }
+            return value
           }
+
+          requireDockerEnv('DATABASE_URL')
+          env.PROD_HOST = requireDockerEnv('PROD_HOST')
+          env.PROD_USER = requireDockerEnv('PROD_USER')
+          env.PROD_APP_DIR = requireDockerEnv('PROD_APP_DIR')
 
           echo "Production target: ${env.PROD_USER}@${env.PROD_HOST}:${env.PROD_APP_DIR}"
 
