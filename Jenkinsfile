@@ -23,15 +23,14 @@ pipeline {
   stage('Prepare Docker Env') {
   steps {
     script {
-      if (fileExists(env.DOCKER_ENV_FILE)) {
-        echo "${env.DOCKER_ENV_FILE} already exists in workspace."
-      } else {
-        withCredentials([file(credentialsId: 'vn-biodiversity-env-docker', variable: 'ENV_DOCKER_FILE')]) {
-          bat 'copy /Y "%ENV_DOCKER_FILE%" "%DOCKER_ENV_FILE%"'
-        }
+      withCredentials([file(credentialsId: 'vn-biodiversity-env-docker', variable: 'ENV_DOCKER_FILE')]) {
+        bat 'copy /Y "%ENV_DOCKER_FILE%" "%DOCKER_ENV_FILE%"'
       }
 
       bat 'copy /Y "%DOCKER_ENV_FILE%" "%API_DIR%\\.env"'
+      bat '''
+      powershell -NoProfile -ExecutionPolicy Bypass -Command "$envLine = Get-Content $env:DOCKER_ENV_FILE | Where-Object { $_ -like 'DATABASE_URL=*' } | Select-Object -First 1; if (-not $envLine) { throw 'DATABASE_URL is missing in .env.docker' }; $safe = $envLine -replace '://([^:]+):([^@]+)@', '://$1:***@'; Write-Host $safe"
+      '''
     }
   }
 }
