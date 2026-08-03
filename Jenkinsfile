@@ -104,7 +104,13 @@ pipeline {
     stage('Deploy Production Server') {
       steps {
         withCredentials([sshUserPrivateKey(credentialsId: 'vn-biodiversity-prod-ssh', keyFileVariable: 'PROD_SSH_KEY', usernameVariable: 'PROD_SSH_USER')]) {
-          bat 'ssh -i "%PROD_SSH_KEY%" -o StrictHostKeyChecking=no %PROD_SSH_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"'
+          bat '''
+          copy /Y "%PROD_SSH_KEY%" "%WORKSPACE%\\.jenkins-prod-key"
+          icacls "%WORKSPACE%\\.jenkins-prod-key" /inheritance:r
+          icacls "%WORKSPACE%\\.jenkins-prod-key" /grant:r "%USERNAME%:R"
+          ssh -i "%WORKSPACE%\\.jenkins-prod-key" -o StrictHostKeyChecking=no %PROD_SSH_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"
+          del /F /Q "%WORKSPACE%\\.jenkins-prod-key"
+          '''
         }
       }
     }
