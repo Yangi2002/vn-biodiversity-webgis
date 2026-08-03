@@ -98,8 +98,8 @@ pipeline {
 
     stage('Deploy Production Server') {
       steps {
-        sshagent(credentials: ['vn-biodiversity-prod-ssh']) {
-          bat 'ssh -o StrictHostKeyChecking=no %PROD_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"'
+        withCredentials([sshUserPrivateKey(credentialsId: 'vn-biodiversity-prod-ssh', keyFileVariable: 'PROD_SSH_KEY', usernameVariable: 'PROD_SSH_USER')]) {
+          bat 'ssh -i "%PROD_SSH_KEY%" -o StrictHostKeyChecking=no %PROD_SSH_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"'
         }
       }
     }
