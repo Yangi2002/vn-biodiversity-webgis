@@ -103,13 +103,13 @@ pipeline {
 
     stage('Deploy Production Server') {
       steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'vn-biodiversity-prod-ssh', keyFileVariable: 'PROD_SSH_KEY', usernameVariable: 'PROD_SSH_USER')]) {
+        withCredentials([string(credentialsId: 'vn-biodiversity-prod-ssh-key-b64', variable: 'PROD_SSH_KEY_B64')]) {
           bat '''
-          copy /Y "%PROD_SSH_KEY%" "%WORKSPACE%\\.jenkins-prod-key"
+          powershell -NoProfile -ExecutionPolicy Bypass -Command "[IO.File]::WriteAllBytes('%WORKSPACE%\\.jenkins-prod-key', [Convert]::FromBase64String($env:PROD_SSH_KEY_B64))"
           icacls "%WORKSPACE%\\.jenkins-prod-key" /inheritance:r
           icacls "%WORKSPACE%\\.jenkins-prod-key" /grant:r "%USERNAME%:R"
           ssh-keygen -y -f "%WORKSPACE%\\.jenkins-prod-key" >NUL
-          ssh -i "%WORKSPACE%\\.jenkins-prod-key" -o StrictHostKeyChecking=no %PROD_SSH_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"
+          ssh -i "%WORKSPACE%\\.jenkins-prod-key" -o StrictHostKeyChecking=no %PROD_USER%@%PROD_HOST% "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"
           del /F /Q "%WORKSPACE%\\.jenkins-prod-key"
           '''
         }
