@@ -353,10 +353,6 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       occurrencePane.style.zIndex = '430';
     }
 
-    const rasterLayer = this.leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors',
-    });
     const satelliteLayer = this.leaflet.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
@@ -379,7 +375,6 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       .layers(
         {
           'Vector-style - Light map': vectorLikeLayer,
-          'Raster - OpenStreetMap': rasterLayer,
           'Raster - Satellite': satelliteLayer,
         },
         {
