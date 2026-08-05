@@ -44,6 +44,8 @@ interface VietnamProvinceFeature {
 }
 
 const DEFAULT_GRID_SIZE = 0.25;
+const MIN_ZOOM_GRID_SIZE = 0.03125;
+const HEX_PARENT_MIN_ZOOM = 8;
 const VIETNAM_CENTER: Leaflet.LatLngExpression = [16.1, 106.6];
 const INITIAL_MAP_ZOOM = 6.75;
 const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
@@ -126,6 +128,9 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   private layerControl?: Leaflet.Control.Layers;
   private readonly cellLayers = new Map<string, Leaflet.Polygon>();
   private readonly cellDetailCache = new Map<string, OccurrenceCellDetail>();
+  private activeOverviewGridSize = DEFAULT_GRID_SIZE;
+  private pendingOverviewGridSize?: number;
+  private zoomGridReloadTimer?: number;
   readonly nationalParkCloseToken = signal(0);
 
   get leafletInstance(): typeof Leaflet | null {
@@ -156,24 +161,34 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.destroyMapInstance();
   }
 
-  loadOverview(): void {
+  loadOverview(options: { preserveView?: boolean; clearSelection?: boolean } = {}): void {
     if (!this.isBrowser) {
       return;
     }
 
+    const shouldClearSelection = options.clearSelection ?? true;
     this.isLoading.set(true);
     this.errorMessage.set('');
 
     this.occurrenceService.getMapOverview(this.currentQuery()).subscribe({
       next: (overview) => {
+        this.activeOverviewGridSize = overview.gridSize;
+        this.pendingOverviewGridSize = undefined;
         this.overview.set(overview);
-        this.selectedCell.set(null);
-        this.selectedCellDetail.set(null);
-        this.cellDetailError.set('');
+
+        if (shouldClearSelection) {
+          this.selectedCell.set(null);
+          this.selectedRegionName.set('');
+          this.selectedCellDetail.set(null);
+          this.cellDetailError.set('');
+          this.isCellDetailLoading.set(false);
+        }
+
         this.isLoading.set(false);
-        this.queueRenderOverview();
+        this.queueRenderOverview(options.preserveView);
       },
       error: () => {
+        this.pendingOverviewGridSize = undefined;
         this.errorMessage.set('Ch\u01b0a t\u1ea3i \u0111\u01b0\u1ee3c d\u1eef li\u1ec7u b\u1ea3n \u0111\u1ed3. H\u00e3y ki\u1ec3m tra backend v\u00e0 database.');
         this.isLoading.set(false);
       },
@@ -288,8 +303,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     ].join('|');
   }
 
-  private queueRenderOverview(): void {
-    window.requestAnimationFrame(() => void this.renderOverview());
+  private queueRenderOverview(preserveView = false): void {
+    window.requestAnimationFrame(() => void this.renderOverview(0, preserveView));
   }
 
   private async initializeMap(): Promise<void> {
@@ -398,7 +413,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       .addTo(this.map);
 
     this.map.on('click', () => this.resetSelection());
-    this.map.on('zoomend', () => this.refreshHexagonShapes());
+    this.map.on('zoomend', () => this.handleOccurrenceZoomChange());
 
     void this.loadVietnamBoundary();
   }
@@ -412,6 +427,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.vietnamBoundaryLayer = undefined;
     this.layerControl = undefined;
     this.cellLayers.clear();
+    this.clearZoomGridReloadTimer();
   }
 
   private bindOccurrenceLayerEvents(): void {
@@ -448,7 +464,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     throw new Error('Leaflet module could not be loaded.');
   }
 
-  private async renderOverview(retryCount = 0): Promise<void> {
+  private async renderOverview(retryCount = 0, preserveView = false): Promise<void> {
     if (!this.isBrowser || !this.overview()) {
       return;
     }
@@ -459,7 +475,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
 
     if (!this.map || !this.leaflet) {
       if (retryCount < 10) {
-        window.setTimeout(() => void this.renderOverview(retryCount + 1), 50);
+        window.setTimeout(() => void this.renderOverview(retryCount + 1, preserveView), 50);
       }
 
       return;
@@ -476,7 +492,12 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     );
 
     this.map.setMaxBounds(this.vietnamBounds.pad(0.08));
-    this.focusVietnam();
+
+    if (!preserveView) {
+      this.focusVietnam();
+    }
+
+    this.renderParentHexagonLayer(overview);
 
     overview.cells.forEach((cell) => {
       const hexagon = this.leaflet!.polygon(
@@ -696,13 +717,137 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  private handleOccurrenceZoomChange(): void {
+    this.refreshHexagonShapes();
+
+    if (!this.isOccurrenceGridVisible()) {
+      return;
+    }
+
+    const nextGridSize = this.getAdaptiveGridSize();
+
+    if (nextGridSize === this.activeOverviewGridSize || nextGridSize === this.pendingOverviewGridSize) {
+      return;
+    }
+
+    this.clearZoomGridReloadTimer();
+    this.zoomGridReloadTimer = window.setTimeout(() => {
+      this.pendingOverviewGridSize = nextGridSize;
+      this.loadOverview({ preserveView: true, clearSelection: true });
+    }, 180);
+  }
+
+  private clearZoomGridReloadTimer(): void {
+    if (this.zoomGridReloadTimer === undefined) {
+      return;
+    }
+
+    window.clearTimeout(this.zoomGridReloadTimer);
+    this.zoomGridReloadTimer = undefined;
+  }
+
+  private isOccurrenceGridVisible(): boolean {
+    return !!this.map && !!this.occurrenceLayer && this.map.hasLayer(this.occurrenceLayer);
+  }
+
   private getHexagonLatLngs(cell: OccurrenceMapCell): Leaflet.LatLngExpression[] {
     const gridSize = this.overview()?.gridSize ?? this.gridSize();
-    const centerLatitude = cell.latitude + gridSize / 2;
-    const centerLongitude = cell.longitude + gridSize / 2;
-    const zoomFactor = this.getHexagonZoomFactor();
-    const latitudeRadius = gridSize * 0.52 * zoomFactor;
-    const longitudeRadius = gridSize * 0.61 * zoomFactor;
+    const isRefinedGrid = gridSize < this.gridSize();
+
+    return this.buildHexagonLatLngs(cell.latitude, cell.longitude, gridSize, {
+      radius: isRefinedGrid ? 'child' : 'base',
+      stagger: isRefinedGrid,
+    });
+  }
+
+  private renderParentHexagonLayer(overview: OccurrenceMapOverview): void {
+    if (!this.leaflet || !this.occurrenceLayer || !this.shouldRenderParentHexagons(overview)) {
+      return;
+    }
+
+    const parentGridSize = this.gridSize();
+    const parentCells = this.buildParentHexagonCells(overview.cells, parentGridSize);
+
+    parentCells.forEach((cell) => {
+      this.leaflet!
+        .polygon(
+          this.buildHexagonLatLngs(cell.latitude, cell.longitude, parentGridSize, {
+            radius: 'parent',
+            stagger: false,
+          }),
+          {
+            color: '#1f7a4d',
+            fillColor: '#65b982',
+            fillOpacity: 0.1,
+            opacity: 0.24,
+            pane: 'occurrenceGridPane',
+            interactive: false,
+            weight: 1.2,
+          },
+        )
+        .addTo(this.occurrenceLayer!);
+    });
+  }
+
+  private shouldRenderParentHexagons(overview: OccurrenceMapOverview): boolean {
+    const zoom = this.map?.getZoom() ?? INITIAL_MAP_ZOOM;
+
+    return zoom >= HEX_PARENT_MIN_ZOOM && zoom < 8.25 && overview.gridSize < this.gridSize();
+  }
+
+  private buildParentHexagonCells(cells: OccurrenceMapCell[], parentGridSize: number): OccurrenceMapCell[] {
+    const groups = new Map<string, OccurrenceMapCell>();
+
+    cells.forEach((cell) => {
+      const parentLatitude = Math.floor(cell.latitude / parentGridSize) * parentGridSize;
+      const parentLongitude = Math.floor(cell.longitude / parentGridSize) * parentGridSize;
+      const cellId = `${parentLatitude.toFixed(4)}:${parentLongitude.toFixed(4)}`;
+      const existing = groups.get(cellId);
+
+      if (existing) {
+        existing.occurrenceCount += cell.occurrenceCount;
+        existing.speciesCount += cell.speciesCount;
+        existing.animalSpecies += cell.animalSpecies;
+        existing.plantSpecies += cell.plantSpecies;
+        existing.insectSpecies += cell.insectSpecies;
+        existing.unknownSpecies += cell.unknownSpecies;
+        return;
+      }
+
+      groups.set(cellId, {
+        ...cell,
+        cellId,
+        latitude: parentLatitude,
+        longitude: parentLongitude,
+      });
+    });
+
+    const parentCells = Array.from(groups.values());
+    const maxOccurrence = Math.max(...parentCells.map((cell) => cell.occurrenceCount), 1);
+
+    return parentCells.map((cell) => ({
+      ...cell,
+      intensity: Math.min(cell.occurrenceCount / maxOccurrence, 1),
+    }));
+  }
+
+  private buildHexagonLatLngs(
+    latitude: number,
+    longitude: number,
+    gridSize: number,
+    options: { radius: 'base' | 'parent' | 'child'; stagger: boolean },
+  ): Leaflet.LatLngExpression[] {
+    const rowIndex = Math.floor(latitude / gridSize);
+    const centerLatitude = latitude + gridSize / 2;
+    const centerLongitude =
+      longitude + gridSize / 2 + (options.stagger && rowIndex % 2 !== 0 ? gridSize / 2 : 0);
+    const radiusScale = {
+      base: { latitude: 0.66, longitude: 0.58 },
+      parent: { latitude: 0.66, longitude: 0.58 },
+      child: { latitude: 0.66, longitude: 0.58 },
+    }[options.radius];
+    const latitudeRadius = gridSize * radiusScale.latitude;
+    const longitudeRadius = gridSize * radiusScale.longitude;
 
     return Array.from({ length: 6 }, (_, index) => {
       const angle = (Math.PI / 180) * (60 * index + 30);
@@ -712,28 +857,6 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
         centerLongitude + longitudeRadius * Math.cos(angle),
       ];
     });
-  }
-
-  private getHexagonZoomFactor(): number {
-    const zoom = this.map?.getZoom() ?? INITIAL_MAP_ZOOM;
-
-    if (zoom >= 11) {
-      return 0.36;
-    }
-
-    if (zoom >= 10) {
-      return 0.5;
-    }
-
-    if (zoom >= 9) {
-      return 0.68;
-    }
-
-    if (zoom >= 8) {
-      return 0.86;
-    }
-
-    return 1.05;
   }
 
   private getCellStyle(cell: OccurrenceMapCell, isSelected: boolean): Leaflet.PathOptions {
@@ -788,11 +911,34 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
 
   private currentQuery(): OccurrenceOverviewQueryDto {
     return {
-      gridSize: this.gridSize(),
+      gridSize: this.getAdaptiveGridSize(),
       sourceGroup: this.sourceGroup(),
       yearFrom: this.parseYearFilter(this.yearFrom()),
       yearTo: this.parseYearFilter(this.yearTo()),
     };
+  }
+
+  private getAdaptiveGridSize(): number {
+    const baseGridSize = this.gridSize();
+    const zoom = this.map?.getZoom() ?? INITIAL_MAP_ZOOM;
+
+    if (zoom >= 11.25) {
+      return this.roundGridSize(Math.max(baseGridSize / 8, MIN_ZOOM_GRID_SIZE));
+    }
+
+    if (zoom >= 9.5) {
+      return this.roundGridSize(Math.max(baseGridSize / 4, MIN_ZOOM_GRID_SIZE));
+    }
+
+    if (zoom >= 8.25) {
+      return this.roundGridSize(Math.max(baseGridSize / 2, MIN_ZOOM_GRID_SIZE));
+    }
+
+    return this.roundGridSize(baseGridSize);
+  }
+
+  private roundGridSize(value: number): number {
+    return Number(value.toFixed(4));
   }
 
   private parseYearFilter(value: string): number | undefined {
