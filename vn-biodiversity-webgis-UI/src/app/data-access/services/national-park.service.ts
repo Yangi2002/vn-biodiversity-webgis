@@ -84,9 +84,11 @@ export class NationalParkService {
     const fallbackUrls = [detail.primaryImageUrl, ...detail.imageUrls, detail.thumbnailUrl]
       .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
       .filter((imageUrl) => this.isDisplayableNationalParkImageUrl(imageUrl));
-    const imageUrls = [...metadataUrls, ...fallbackUrls]
-      .map((imageUrl) => this.toAbsoluteUrl(imageUrl) ?? imageUrl)
-      .filter((imageUrl, index, list) => imageUrl.length > 0 && list.indexOf(imageUrl) === index);
+    const imageUrls = this.uniqueImageUrls(
+      [...metadataUrls, ...fallbackUrls]
+        .map((imageUrl) => this.toAbsoluteUrl(imageUrl) ?? imageUrl)
+        .filter((imageUrl): imageUrl is string => Boolean(imageUrl)),
+    );
 
     return {
       ...this.withAbsoluteImageUrls(detail),
@@ -114,7 +116,7 @@ export class NationalParkService {
         const localPath = image.localPath ?? image.local_path;
 
         if (localPath && Number.isFinite(imageOrder) && imageOrder > 0) {
-          return this.api.buildUrl(API_ENDPOINTS.nationalParkImage(detail.parkId, imageOrder));
+          return API_ENDPOINTS.nationalParkImage(detail.parkId, imageOrder);
         }
 
         return image.sourceImageUrl ?? image.source_image_url ?? image.imageUrl ?? image.image_url ?? '';
@@ -139,7 +141,9 @@ export class NationalParkService {
   }
 
   private isDisplayableNationalParkImageUrl(value: string): boolean {
-    const url = value.toLowerCase();
+    const trimmedValue = value.trim();
+    const url = trimmedValue.toLowerCase();
+    const normalizedUrl = url.replace(/^(\/api)+(?=\/)/, '');
 
     if (!url) {
       return false;
@@ -149,11 +153,11 @@ export class NationalParkService {
       return false;
     }
 
-    if (/-90x90\./i.test(value) || /\/\d+[^/]*s-90x90\./i.test(value)) {
+    if (/-90x90\./i.test(trimmedValue) || /\/\d+[^/]*s-90x90\./i.test(trimmedValue)) {
       return false;
     }
 
-    return /\.(jpe?g|png|webp)(\?|$)/i.test(value) || value.startsWith('/api/');
+    return /\.(jpe?g|png|webp)(\?|$)/i.test(trimmedValue) || normalizedUrl.startsWith('/national-parks/');
   }
 
   private toAbsoluteUrl(value: string | null): string | null {
@@ -161,10 +165,40 @@ export class NationalParkService {
       return null;
     }
 
-    if (/^(https?:)?\/\//i.test(value) || value.startsWith('data:')) {
-      return value;
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return null;
     }
 
-    return this.api.buildUrl(value);
+    if (/^(https?:)?\/\//i.test(trimmedValue) || trimmedValue.startsWith('data:')) {
+      return trimmedValue;
+    }
+
+    return this.api.buildUrl(trimmedValue.replace(/^(\/api)+(?=\/)/, ''));
+  }
+
+  private uniqueImageUrls(imageUrls: string[]): string[] {
+    const seen = new Set<string>();
+
+    return imageUrls.filter((imageUrl) => {
+      const key = this.imageUrlKey(imageUrl);
+
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private imageUrlKey(value: string): string {
+    return value
+      .trim()
+      .replace(/^https?:\/\/localhost:3000/i, '')
+      .replace(/^https?:\/\/[^/]+\/api(?=\/)/i, '')
+      .replace(/^(\/api)+(?=\/)/, '')
+      .replace(/\/+$/, '');
   }
 }

@@ -94,7 +94,7 @@ export class NationalParkDetailPage {
     const images = [...park.imageUrls, park.primaryImageUrl, park.thumbnailUrl].filter(
       (imageUrl): imageUrl is string => Boolean(imageUrl),
     );
-    const uniqueImages = Array.from(new Set(images));
+    const uniqueImages = this.uniqueImageUrls(images);
 
     return uniqueImages.map((url, index) => ({
       url,
@@ -104,6 +104,30 @@ export class NationalParkDetailPage {
 
   protected authorText(park: NationalParkDetail): string {
     return this.cleanText(park.author) || 'Nguồn dữ liệu vườn quốc gia';
+  }
+
+  private uniqueImageUrls(imageUrls: string[]): string[] {
+    const seen = new Set<string>();
+
+    return imageUrls.filter((imageUrl) => {
+      const key = this.imageUrlKey(imageUrl);
+
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private imageUrlKey(value: string): string {
+    return value
+      .trim()
+      .replace(/^https?:\/\/localhost:3000/i, '')
+      .replace(/^https?:\/\/[^/]+\/api(?=\/)/i, '')
+      .replace(/^(\/api)+(?=\/)/, '')
+      .replace(/\/+$/, '');
   }
 
   protected publishedText(park: NationalParkDetail): string {

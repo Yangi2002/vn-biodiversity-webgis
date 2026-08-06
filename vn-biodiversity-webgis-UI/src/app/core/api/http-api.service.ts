@@ -45,6 +45,18 @@ export class HttpApiService {
   }
 
   private url(path: string) {
-    return `${this.apiUrl}${path.startsWith('/') ? path : `/${path}`}`;
+    const normalizedPath = this.normalizePath(path);
+
+    return `${this.apiUrl}${normalizedPath}`;
+  }
+
+  private normalizePath(path: string): string {
+    const value = path.startsWith('/') ? path : `/${path}`;
+
+    if (this.apiUrl.endsWith('/api') && value.startsWith('/api/')) {
+      return value.replace(/^\/api(?=\/)/, '');
+    }
+
+    return value;
   }
 }
