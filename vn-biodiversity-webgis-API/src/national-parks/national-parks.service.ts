@@ -74,21 +74,83 @@ export class NationalParksService {
   }
 
   async getDetail(parkId: string): Promise<NationalParkDetail> {
-    const parsedParkId = parkId.trim();
+  const parsedParkId = parkId.trim();
 
-    if (!parsedParkId) {
-      throw new BadRequestException('Invalid national park id.');
-    }
-
-    const cacheKey = stableCacheKey('national-parks:detail', { parkId: parsedParkId });
-    const detail = await this.detailCache.getOrSet(cacheKey, () => this.nationalParksRepository.findById(parsedParkId));
-
-    if (!detail) {
-      throw new NotFoundException('National park was not found.');
-    }
-
-    return detail;
+  if (!parsedParkId) {
+    throw new BadRequestException('Invalid national park id.');
   }
+
+  const cacheKey = stableCacheKey('national-parks:detail', {
+    parkId: parsedParkId,
+  });
+
+  const detail = await this.detailCache.getOrSet(cacheKey, async () => {
+    const result =
+      await this.nationalParksRepository.findById(parsedParkId);
+
+    if (!result) {
+      return null;
+    }
+
+    return this.normalizeDetailImages(result);
+  });
+
+  if (!detail) {
+    throw new NotFoundException('National park was not found.');
+  }
+
+  return detail;
+}
+
+private normalizeDetailImages(
+  detail: NationalParkDetail,
+): NationalParkDetail {
+  const remoteImageUrls = this.uniqueImageUrls(
+    detail.imageUrls ?? [],
+  );
+
+  const validLocalImagePaths = (detail.localImagePaths ?? [])
+    .filter((filePath) => Boolean(this.resolveImagePath(filePath)));
+
+  return {
+    ...detail,
+    imageUrls: remoteImageUrls,
+    localImagePaths: validLocalImagePaths,
+  };
+}
+
+private uniqueImageUrls(
+  imageUrls: Array<string | null | undefined>,
+): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const rawUrl of imageUrls) {
+    const url = rawUrl?.trim();
+
+    if (!url || !this.isRemoteImageUrl(url)) {
+      continue;
+    }
+
+    const key = url
+      .replace(/[?#].*$/, '')
+      .replace(/\/+$/, '')
+      .toLowerCase();
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(url);
+  }
+
+  return result;
+}
+
+private isRemoteImageUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
 
   async getLocalImage(parkId: string, imageIndexValue: string): Promise<NationalParkLocalImage> {
     const imageIndex = this.parsePositiveNumber(imageIndexValue, 0);
