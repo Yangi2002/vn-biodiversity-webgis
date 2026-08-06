@@ -165,17 +165,36 @@ export class NationalParkService {
       return null;
     }
 
-    const trimmedValue = value.trim();
+    const imageUrl = value.trim();
 
-    if (!trimmedValue) {
+    if (!imageUrl) {
       return null;
     }
 
-    if (/^(https?:)?\/\//i.test(trimmedValue) || trimmedValue.startsWith('data:')) {
-      return trimmedValue;
+    if (/^(data:|blob:)/i.test(imageUrl)) {
+      return imageUrl;
     }
 
-    return this.api.buildUrl(trimmedValue.replace(/^(\/api)+(?=\/)/, ''));
+    if (/^https?:\/\//i.test(imageUrl)) {
+      try {
+        const parsedUrl = new URL(imageUrl);
+        const pathWithQuery = `${parsedUrl.pathname}${parsedUrl.search}`;
+
+        if (
+          parsedUrl.hostname === 'localhost' ||
+          pathWithQuery.startsWith('/api/') ||
+          pathWithQuery.startsWith('/national-parks/')
+        ) {
+          return this.api.buildUrl(pathWithQuery);
+        }
+
+        return imageUrl;
+      } catch {
+        return imageUrl;
+      }
+    }
+
+    return this.api.buildUrl(imageUrl.replace(/^(\/api)+(?=\/)/i, '/api'));
   }
 
   private uniqueImageUrls(imageUrls: string[]): string[] {
@@ -194,11 +213,18 @@ export class NationalParkService {
   }
 
   private imageUrlKey(value: string): string {
-    return value
+    const normalizedValue = value
       .trim()
-      .replace(/^https?:\/\/localhost:3000/i, '')
-      .replace(/^https?:\/\/[^/]+\/api(?=\/)/i, '')
-      .replace(/^(\/api)+(?=\/)/, '')
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^(\/api)+(?=\/)/i, '/api')
       .replace(/\/+$/, '');
+
+    const nationalParkImageMatch = normalizedValue.match(/\/national-parks\/([^/]+)\/images\/(\d+)/i);
+
+    if (nationalParkImageMatch) {
+      return `national-park:${decodeURIComponent(nationalParkImageMatch[1])}:image:${nationalParkImageMatch[2]}`;
+    }
+
+    return normalizedValue.toLowerCase();
   }
 }

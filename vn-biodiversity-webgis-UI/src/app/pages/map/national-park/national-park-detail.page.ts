@@ -122,12 +122,19 @@ export class NationalParkDetailPage {
   }
 
   private imageUrlKey(value: string): string {
-    return value
+    const normalizedValue = value
       .trim()
-      .replace(/^https?:\/\/localhost:3000/i, '')
-      .replace(/^https?:\/\/[^/]+\/api(?=\/)/i, '')
-      .replace(/^(\/api)+(?=\/)/, '')
+      .replace(/^https?:\/\/[^/]+/i, '')
+      .replace(/^(\/api)+(?=\/)/i, '/api')
       .replace(/\/+$/, '');
+
+    const nationalParkImageMatch = normalizedValue.match(/\/national-parks\/([^/]+)\/images\/(\d+)/i);
+
+    if (nationalParkImageMatch) {
+      return `national-park:${decodeURIComponent(nationalParkImageMatch[1])}:image:${nationalParkImageMatch[2]}`;
+    }
+
+    return normalizedValue.toLowerCase();
   }
 
   protected publishedText(park: NationalParkDetail): string {

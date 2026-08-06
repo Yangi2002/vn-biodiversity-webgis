@@ -52,11 +52,12 @@ export class HttpApiService {
 
   private normalizePath(path: string): string {
     const value = path.startsWith('/') ? path : `/${path}`;
+    const collapsedValue = value.replace(/^(\/api)+(?=\/)/i, '/api');
 
-    if (this.apiUrl.endsWith('/api') && value.startsWith('/api/')) {
-      return value.replace(/^\/api(?=\/)/, '');
+    if (this.apiUrl.endsWith('/api') && collapsedValue.startsWith('/api/')) {
+      return collapsedValue.replace(/^\/api(?=\/)/i, '');
     }
 
-    return value;
+    return collapsedValue;
   }
 }
