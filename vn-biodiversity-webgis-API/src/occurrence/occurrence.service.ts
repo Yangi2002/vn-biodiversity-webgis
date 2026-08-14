@@ -28,7 +28,7 @@ export interface OccurrenceOverviewFilters {
 export class OccurrenceService {
   private readonly overviewCache = new TtlCache<OccurrenceMapOverview>(120_000, 60);
   private readonly cellDetailCache = new TtlCache<OccurrenceCellDetail>(300_000, 300);
-  private readonly speciesOccurrenceCache = new TtlCache<SpeciesOccurrenceMap>(300_000, 300);
+  private readonly speciesOccurrenceCache = new TtlCache<SpeciesOccurrenceMap>(30_000, 300);
 
   constructor(private readonly occurrenceRepository: OccurrenceRepository) {}
 
@@ -82,6 +82,7 @@ export class OccurrenceService {
 
     const limit = this.parseLimit(query.limit);
     const cacheKey = stableCacheKey('occurrence:species', {
+      aliasVersion: 1,
       basisOfRecord,
       imageMode,
       limit,

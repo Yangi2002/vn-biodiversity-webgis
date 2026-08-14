@@ -521,6 +521,48 @@ export class OccurrenceRepository {
     const includeOptionalFilters = options.includeOptionalFilters ?? true;
 
     return `
+      species_aliases AS (
+        SELECT $1::text AS source_table, $2::text AS species_id
+        UNION
+        SELECT duplicate_species.source_table, duplicate_species.species_id
+        FROM fungi_db_vn fungi_species
+        JOIN (
+          SELECT
+            'animal_db_vn'::text AS source_table,
+            species_id,
+            ten_viet_nam AS vietnamese_name,
+            ten_latin AS scientific_name
+          FROM animal_db_vn
+          UNION ALL
+          SELECT
+            'plant_db_vn'::text AS source_table,
+            species_id,
+            ten_viet_nam AS vietnamese_name,
+            ten_latin AS scientific_name
+          FROM plant_db_vn
+          UNION ALL
+          SELECT
+            'insect_db_vn'::text AS source_table,
+            species_id,
+            ten_viet_nam AS vietnamese_name,
+            ten_latin AS scientific_name
+          FROM insect_db_vn
+        ) duplicate_species
+          ON (
+            nullif(regexp_replace(lower(coalesce(fungi_species.ten_viet_nam, '')), '\\s+', '', 'g'), '')
+              = nullif(regexp_replace(lower(coalesce(duplicate_species.vietnamese_name, '')), '\\s+', '', 'g'), '')
+            OR nullif(regexp_replace(lower(coalesce(fungi_species.ten_latin, '')), '[^a-z0-9]+', '', 'g'), '')
+              = nullif(regexp_replace(lower(coalesce(duplicate_species.scientific_name, '')), '[^a-z0-9]+', '', 'g'), '')
+          )
+        WHERE (
+            $1::text = 'fungi_db_vn'
+            AND fungi_species.species_id = $2::text
+          )
+          OR (
+            duplicate_species.source_table = $1::text
+            AND duplicate_species.species_id = $2::text
+          )
+      ),
       species_occurrences AS (
         SELECT DISTINCT ON (o.gbif_occurrence_key)
           o.gbif_occurrence_key AS occurrence_key,
@@ -569,8 +611,12 @@ export class OccurrenceRepository {
         FROM species_gbif_occurrence_matches m
         JOIN gbif_occurrences o
           ON o.gbif_occurrence_key = m.gbif_occurrence_key
-        WHERE m.source_table = $1
-          AND m.species_id = $2
+        WHERE EXISTS (
+            SELECT 1
+            FROM species_aliases alias_species
+            WHERE alias_species.source_table = m.source_table
+              AND alias_species.species_id = m.species_id
+          )
           AND o.latitude BETWEEN $3 AND $4
           AND o.longitude BETWEEN $5 AND $6
           AND o.latitude IS NOT NULL

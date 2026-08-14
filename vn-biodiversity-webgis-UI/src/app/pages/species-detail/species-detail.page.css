@@ -262,6 +262,11 @@ h1 {
   padding: 18px 0 72px;
 }
 
+.species-detail-page.has-keyword-dialog app-species-occurrence-map {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .content-column {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

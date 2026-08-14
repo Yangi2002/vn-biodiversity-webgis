@@ -1,3 +1,13 @@
+:host {
+  display: block;
+}
+
+:host(.is-dialog-open) {
+  position: relative;
+  z-index: 2147482999;
+  isolation: isolate;
+}
+
 .keyword-panel {
   padding: 16px;
   border: 1px solid #d9e3dc;
@@ -91,17 +101,18 @@
 .keyword-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30000;
+  z-index: 2147483000;
   display: grid;
   place-items: center;
   padding: 28px;
   background: rgba(13, 24, 19, 0.34);
   backdrop-filter: blur(3px);
+  transform: translateZ(0);
 }
 
 .keyword-dialog {
   position: relative;
-  z-index: 30001;
+  z-index: 2147483001;
   width: min(1040px, 100%);
   max-height: min(820px, calc(100dvh - 56px));
   overflow: hidden;
@@ -295,16 +306,17 @@
 .keyword-image-preview-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30010;
+  z-index: 2147483010;
   display: grid;
   place-items: center;
   padding: 28px;
   background: rgba(13, 24, 19, 0.62);
+  transform: translateZ(0);
 }
 
 .keyword-image-preview {
   position: relative;
-  z-index: 30011;
+  z-index: 2147483011;
   width: min(1120px, 100%);
   height: min(780px, calc(100dvh - 56px));
   display: grid;

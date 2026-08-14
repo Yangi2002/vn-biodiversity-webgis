@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostBinding, computed, input, output, signal } from '@angular/core';
 
 import type { SpeciesKeywordImage, SpeciesKeywordReference } from '../../../data-access/models/species.model';
 
@@ -15,6 +15,11 @@ export class KeywordReferencePanelComponent {
   readonly keywordSelected = output<SpeciesKeywordReference>();
   readonly expandedChange = output<boolean>();
   protected readonly previewImage = signal<SpeciesKeywordImage | null>(null);
+
+  @HostBinding('class.is-dialog-open')
+  protected get isDialogOpen(): boolean {
+    return this.isExpanded();
+  }
 
   protected readonly activeKeyword = computed(() => {
     const keywords = this.keywords();

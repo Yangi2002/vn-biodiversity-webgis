@@ -25,6 +25,7 @@ export class SpeciesController {
   }
 
   @Get(':sourceTable/:speciesId')
+  @Header('Cache-Control', 'no-store')
   getDetail(@Param('sourceTable') sourceTable: string, @Param('speciesId') speciesId: string) {
     return this.speciesService.getDetail(sourceTable, speciesId);
   }
@@ -42,7 +43,7 @@ export class SpeciesController {
   }
 
   @Get(':sourceTable/:speciesId/showpic-images/:imageOrder')
-  @Header('Cache-Control', 'public, max-age=86400')
+  @Header('Cache-Control', 'no-cache')
   async getShowpicImageByOrder(
     @Param('sourceTable') sourceTable: string,
     @Param('speciesId') speciesId: string,

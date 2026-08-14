@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
-import { map } from 'rxjs';
+import { finalize, map, Observable, of, shareReplay, take, tap } from 'rxjs';
 
 import { API_ENDPOINTS } from '../../core/api/api-endpoints';
 import { HttpApiService } from '../../core/api/http-api.service';
@@ -23,32 +23,75 @@ export interface SpeciesSearchParams {
   providedIn: 'root',
 })
 export class SpeciesService {
+  private static readonly SEARCH_CACHE_TTL_MS = 60_000;
+
   private readonly api = inject(HttpApiService);
+  private readonly searchCache = new Map<string, { expiresAt: number; response: SpeciesSearchResponse }>();
+  private readonly pendingSearches = new Map<string, Observable<SpeciesSearchResponse>>();
 
   search(params: SpeciesSearchParams = {}) {
+    const normalizedParams = this.normalizeSearchParams(params);
+    const cacheKey = this.searchCacheKey(normalizedParams);
+    const cached = this.searchCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cached && cached.expiresAt > now) {
+      return of(cached.response);
+    }
+
+    if (cached) {
+      this.searchCache.delete(cacheKey);
+    }
+
+    const pending = this.pendingSearches.get(cacheKey);
+
+    if (pending) {
+      return pending;
+    }
+
     let httpParams = new HttpParams();
 
-    if (params.q?.trim()) {
-      httpParams = httpParams.set('q', params.q.trim());
+    if (normalizedParams.q) {
+      httpParams = httpParams.set('q', normalizedParams.q);
     }
 
-    if (params.page) {
-      httpParams = httpParams.set('page', params.page);
+    if (normalizedParams.page) {
+      httpParams = httpParams.set('page', normalizedParams.page);
     }
 
-    if (params.limit) {
-      httpParams = httpParams.set('limit', params.limit);
+    if (normalizedParams.limit) {
+      httpParams = httpParams.set('limit', normalizedParams.limit);
     }
 
     for (const key of ['sourceTable', 'kingdom', 'className', 'order', 'family', 'genus', 'taxonId'] as const) {
-      if (params[key]?.trim()) {
-        httpParams = httpParams.set(key, params[key].trim());
+      if (normalizedParams[key]) {
+        httpParams = httpParams.set(key, normalizedParams[key]);
       }
     }
 
-    return this.api
+    const request = this.api
       .get<SpeciesSearchResponse>(API_ENDPOINTS.speciesSearch, httpParams)
-      .pipe(map((response) => ({ ...response, items: response.items.map((item) => this.withAbsoluteImageUrl(item)) })));
+      .pipe(
+        map((response) => ({ ...response, items: response.items.map((item) => this.withAbsoluteImageUrl(item)) })),
+        tap((response) => {
+          this.searchCache.set(cacheKey, {
+            expiresAt: Date.now() + SpeciesService.SEARCH_CACHE_TTL_MS,
+            response,
+          });
+          this.pruneSearchCache();
+        }),
+        finalize(() => this.pendingSearches.delete(cacheKey)),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+
+    this.pendingSearches.set(cacheKey, request);
+    return request;
+  }
+
+  prefetchSearch(params: SpeciesSearchParams = {}): void {
+    this.search(params)
+      .pipe(take(1))
+      .subscribe({ error: () => undefined });
   }
 
   getDetail(sourceTable: string, speciesId: string) {
@@ -74,8 +117,8 @@ export class SpeciesService {
       imageUrl: detail.imageUrl ? this.api.buildUrl(detail.imageUrl) : null,
       images: detail.images.map((image) => ({
         ...image,
-        imageUrl: this.api.buildUrl(image.imageUrl),
-        showpicImageUrl: image.showpicImageUrl ? this.api.buildUrl(image.showpicImageUrl) : null,
+        imageUrl: this.api.buildUrl(this.withImageVersion(image.imageUrl, image)),
+        showpicImageUrl: image.showpicImageUrl ? this.api.buildUrl(this.withImageVersion(image.showpicImageUrl, image)) : null,
       })),
       keywords: (detail.keywords ?? []).map((keyword) => ({
         ...keyword,
@@ -85,5 +128,66 @@ export class SpeciesService {
         })),
       })),
     };
+  }
+
+  private withImageVersion(path: string, image: { showpicMetadata?: { showpicId: string; updatedAt: string | null; imageFileSize: number | null } | null }): string {
+    const metadata = image.showpicMetadata;
+
+    if (!metadata) {
+      return path;
+    }
+
+    const version = encodeURIComponent([
+      metadata.showpicId,
+      metadata.updatedAt ?? '',
+      metadata.imageFileSize ?? '',
+    ].join('-'));
+    const separator = path.includes('?') ? '&' : '?';
+
+    return `${path}${separator}v=${version}`;
+  }
+
+  private normalizeSearchParams(params: SpeciesSearchParams): SpeciesSearchParams {
+    return {
+      q: params.q?.trim() || undefined,
+      page: params.page,
+      limit: params.limit,
+      sourceTable: params.sourceTable?.trim() || undefined,
+      kingdom: params.kingdom?.trim() || undefined,
+      className: params.className?.trim() || undefined,
+      order: params.order?.trim() || undefined,
+      family: params.family?.trim() || undefined,
+      genus: params.genus?.trim() || undefined,
+      taxonId: params.taxonId?.trim() || undefined,
+    };
+  }
+
+  private searchCacheKey(params: SpeciesSearchParams): string {
+    return JSON.stringify([
+      params.q ?? '',
+      params.page ?? 1,
+      params.limit ?? 24,
+      params.sourceTable ?? '',
+      params.kingdom ?? '',
+      params.className ?? '',
+      params.order ?? '',
+      params.family ?? '',
+      params.genus ?? '',
+      params.taxonId ?? '',
+    ]);
+  }
+
+  private pruneSearchCache(): void {
+    if (this.searchCache.size <= 80) {
+      return;
+    }
+
+    const now = Date.now();
+
+    for (const [key, cached] of this.searchCache) {
+      if (cached.expiresAt <= now || this.searchCache.size > 60) {
+        this.searchCache.delete(key);
+      }
+    }
   }
 }

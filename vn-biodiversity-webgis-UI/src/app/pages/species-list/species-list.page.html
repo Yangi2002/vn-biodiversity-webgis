@@ -140,8 +140,8 @@
 
                 <div class="species-body">
                   <div class="title-block">
-                    @for (line of titleBlockLines(item); track $index; let index = $index) {
-                      <span [class]="titleLineClass(line, index)">{{ line }}</span>
+                    @for (line of titleDisplayLines(item); track $index) {
+                      <span [class]="line.className">{{ line.text }}</span>
                     }
                   </div>
                 </div>

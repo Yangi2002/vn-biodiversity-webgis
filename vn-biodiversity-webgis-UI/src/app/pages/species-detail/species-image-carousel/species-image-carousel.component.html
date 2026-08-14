@@ -32,7 +32,7 @@
             [attr.aria-label]="'Hiển thị ảnh ' + image.imageOrder + '. ' + imageResolution(image)"
             (click)="goTo(index); openPreview(index)"
           >
-            <img [src]="image.imageUrl" [alt]="speciesName() + ' - thumbnail ' + image.imageOrder" />
+            <img [src]="displayImageUrl(image)" [alt]="speciesName() + ' - thumbnail ' + image.imageOrder" />
           </button>
         }
       </div>

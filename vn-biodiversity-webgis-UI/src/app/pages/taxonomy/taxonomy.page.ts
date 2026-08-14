@@ -5,7 +5,6 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import type {
-  TaxonomyRepresentativeImage,
   TaxonomySearchItem,
   TaxonomySearchResponse,
   TaxonomyTreeNode,
@@ -48,7 +47,6 @@ export class TaxonomyPage {
   protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly rankControl = new FormControl('', { nonNullable: true });
   protected readonly response = signal<TaxonomySearchResponse | null>(null);
-  protected readonly selectedImage = signal<TaxonomyRepresentativeImage | null>(null);
   protected readonly selectedTreeNode = signal<TaxonomyTreeNode | null>(null);
   protected readonly selectedTreeHistory = signal<TaxonomyTreeNode[]>([]);
   protected readonly activeView = signal<TaxonomyView>('search');
@@ -192,39 +190,6 @@ export class TaxonomyPage {
 
   protected switchView(view: TaxonomyView): void {
     this.activeView.set(view);
-  }
-
-  protected openImage(image: TaxonomyRepresentativeImage): void {
-    this.selectedImage.set(image);
-  }
-
-  protected closeImage(): void {
-    this.selectedImage.set(null);
-  }
-
-  protected displayImageUrl(image: TaxonomyRepresentativeImage): string {
-    return image.metadata?.sourceImageUrl || image.metadata?.thumbnailUrl || image.imageUrl;
-  }
-
-  protected imageResolution(image: TaxonomyRepresentativeImage): string {
-    const width = image.metadata?.imageWidth ?? image.width;
-    const height = image.metadata?.imageHeight ?? image.height;
-
-    return width && height ? `${width} x ${height}px` : 'Chưa có kích thước';
-  }
-
-  protected fileSize(image: TaxonomyRepresentativeImage): string {
-    const size = image.metadata?.imageFileSize ?? image.sizeBytes;
-
-    if (!size) {
-      return 'Chưa có dung lượng';
-    }
-
-    if (size >= 1024 * 1024) {
-      return `${(size / 1024 / 1024).toFixed(2)} MB`;
-    }
-
-    return `${Math.round(size / 1024)} KB`;
   }
 
   private search(state: TaxonomyState): void {

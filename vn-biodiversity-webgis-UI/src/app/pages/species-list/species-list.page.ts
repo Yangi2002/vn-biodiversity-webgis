@@ -31,6 +31,11 @@ interface SpeciesSearchTag {
   query: string;
 }
 
+interface SpeciesTitleLine {
+  text: string;
+  className: string;
+}
+
 @Component({
   selector: 'app-species-list-page',
   imports: [ReactiveFormsModule, RouterLink, CredentialsFooterComponent, PaginationComponent, SiteHeaderComponent],
@@ -222,25 +227,37 @@ export class SpeciesListPage {
     return 'is-extra';
   }
 
+  protected titleDisplayLines(item: SpeciesSearchItem): SpeciesTitleLine[] {
+    const parsedLines = this.parseTitleBlockLines(item.titleBlock);
+
+    if (parsedLines.length) {
+      return this.normalizeTitleBlockLines(parsedLines, item);
+    }
+
+    return this.fallbackTitleLines(item);
+  }
+
   private search(state: SearchState): void {
     const requestId = this.searchRequestId + 1;
+    const searchParams = {
+      q: state.q,
+      page: state.page,
+      limit: 24,
+      sourceTable: state.sourceTable,
+      kingdom: state.kingdom,
+      className: state.className,
+      order: state.order,
+      family: state.family,
+      genus: state.genus,
+      taxonId: state.taxonId,
+    };
+
     this.searchRequestId = requestId;
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
     this.speciesService
-      .search({
-        q: state.q,
-        page: state.page,
-        limit: 24,
-        sourceTable: state.sourceTable,
-        kingdom: state.kingdom,
-        className: state.className,
-        order: state.order,
-        family: state.family,
-        genus: state.genus,
-        taxonId: state.taxonId,
-      })
+      .search(searchParams)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => {
@@ -250,6 +267,7 @@ export class SpeciesListPage {
 
           this.response.set(response);
           this.isLoading.set(false);
+          this.prefetchNextPage(searchParams, response);
         },
         error: () => {
           if (requestId !== this.searchRequestId) {
@@ -261,6 +279,17 @@ export class SpeciesListPage {
           this.isLoading.set(false);
         },
       });
+  }
+
+  private prefetchNextPage(searchParams: SearchState & { limit: number }, response: SpeciesSearchResponse): void {
+    if (!response.hasNextPage) {
+      return;
+    }
+
+    this.speciesService.prefetchSearch({
+      ...searchParams,
+      page: response.page + 1,
+    });
   }
 
   private createStateFromControls(page: number): SearchState {
@@ -287,5 +316,103 @@ export class SpeciesListPage {
     const state = this.router.getCurrentNavigation()?.extras.state as SpeciesListNavigationState | undefined;
 
     return state?.speciesListState ?? null;
+  }
+
+  private parseTitleBlockLines(titleBlock?: string | null): string[] {
+    const normalized = titleBlock?.trim();
+
+    if (!normalized) {
+      return [];
+    }
+
+    return normalized
+      .split('\n')
+      .flatMap((line) =>
+        line
+          .replace(/\s+(Họ:)/g, '\n$1')
+          .replace(/\s+(Bộ:)/g, '\n$1')
+          .replace(/\s+(Tên khoa học khác:)/g, '\n$1')
+          .split('\n'),
+      )
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  private normalizeTitleBlockLines(lines: string[], item: SpeciesSearchItem): SpeciesTitleLine[] {
+    const result: SpeciesTitleLine[] = [];
+    const firstFreeLine = lines.find((line) => !this.isLabeledTitleLine(line));
+    const vietnameseName = item.vietnameseName?.trim();
+    const scientificName = item.scientificName?.trim();
+
+    if (vietnameseName) {
+      result.push({ text: vietnameseName, className: 'is-vietnamese-name' });
+    } else if (firstFreeLine) {
+      result.push({ text: firstFreeLine, className: 'is-vietnamese-name' });
+    } else if (scientificName) {
+      result.push({ text: scientificName, className: 'is-vietnamese-name' });
+    }
+
+    const latinLine = lines.find((line) => line !== firstFreeLine && !this.isLabeledTitleLine(line)) ?? scientificName;
+
+    if (latinLine && latinLine !== result[0]?.text) {
+      result.push({ text: latinLine, className: 'is-scientific-name' });
+    }
+
+    for (const line of lines) {
+      if (this.startsWithAny(line, ['Họ:'])) {
+        result.push({ text: line, className: 'is-family' });
+      } else if (this.startsWithAny(line, ['Bộ:'])) {
+        result.push({ text: line, className: 'is-order' });
+      } else if (this.startsWithAny(line, ['Tên khoa học khác:'])) {
+        result.push({ text: line, className: 'is-scientific-name' });
+      }
+    }
+
+    return result.length ? result : this.fallbackTitleLines(item);
+  }
+
+  private fallbackTitleLines(item: SpeciesSearchItem): SpeciesTitleLine[] {
+    const vietnameseName = item.vietnameseName?.trim();
+    const scientificName = item.scientificName?.trim();
+    const family = item.family?.trim();
+    const order = item.order?.trim();
+    const className = item.className?.trim();
+    const genus = item.genus?.trim();
+
+    if (vietnameseName) {
+      return [
+        { text: vietnameseName, className: 'is-vietnamese-name' },
+        ...(scientificName ? [{ text: scientificName, className: 'is-scientific-name' }] : []),
+        ...(family ? [{ text: `Họ: ${family}`, className: 'is-family' }] : []),
+        ...(order ? [{ text: `Bộ: ${order}`, className: 'is-order' }] : []),
+      ];
+    }
+
+    const taxonomyLines = [
+      family ? `Họ: ${family}` : '',
+      genus ? `Chi: ${genus}` : '',
+      scientificName ? `Loài: ${scientificName}` : '',
+      order ? `Bộ: ${order}` : '',
+      className ? `Lớp / nhóm: ${className}` : '',
+    ].filter(Boolean);
+
+    return taxonomyLines.length
+      ? taxonomyLines.slice(0, 3).map((text, index) => ({
+          text,
+          className: index === 0 ? 'is-vietnamese-name' : 'is-extra',
+        }))
+      : [{ text: 'Thông tin mô tả đang cập nhật', className: 'is-extra' }];
+  }
+
+  private isLabeledTitleLine(line: string): boolean {
+    return this.startsWithAny(line, [
+      'Họ:',
+      'Bộ:',
+      'Tên khoa học khác:',
+    ]);
+  }
+
+  private startsWithAny(value: string, prefixes: string[]): boolean {
+    return prefixes.some((prefix) => value.startsWith(prefix));
   }
 }

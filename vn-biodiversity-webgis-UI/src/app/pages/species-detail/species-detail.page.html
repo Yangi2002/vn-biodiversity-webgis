@@ -1,4 +1,4 @@
-﻿<main class="species-detail-page">
+<main class="species-detail-page" [class.has-keyword-dialog]="isKeywordPanelOpen()">
   <app-site-header
     sectionLabel="Hồ sơ loài"
   />
@@ -93,13 +93,18 @@
       </div>
     </section>
 
-    <app-species-occurrence-map
-      [sourceTable]="species.sourceTable"
-      [speciesId]="species.speciesId"
-      [speciesName]="displayName(species)"
-      [scientificName]="species.scientificName"
-      [isEndangeredSpecies]="isEndangeredSpecies(species)"
-    />
+    @defer (on viewport) {
+      <app-species-occurrence-map
+        [class.is-keyword-dialog-open]="isKeywordPanelOpen()"
+        [sourceTable]="species.sourceTable"
+        [speciesId]="species.speciesId"
+        [speciesName]="displayName(species)"
+        [scientificName]="species.scientificName"
+        [isEndangeredSpecies]="isEndangeredSpecies(species)"
+      />
+    } @placeholder {
+      <section class="state-panel">Bản đồ phân bố sẽ tải khi bạn cuộn tới khu vực này.</section>
+    }
 
     <section class="detail-layout">
       <div class="content-column">

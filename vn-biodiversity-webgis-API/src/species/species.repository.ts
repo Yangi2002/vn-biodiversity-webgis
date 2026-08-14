@@ -1,5 +1,6 @@
 ﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FungiSpeciesRepository } from './sources/fungi-species.repository';
 import type { SpeciesSourceTable } from './types/species-source.type';
 import type {
   SpeciesFacetItem,
@@ -43,10 +44,15 @@ interface ImageRow {
 
 interface SpeciesImageRow {
   image_order: number;
+  image_source: string;
+  image_source_table: SpeciesSourceTable;
+  image_species_id: string;
+  image_source_rank: number;
+  has_species_image_data: boolean | null;
   mime_type: string | null;
   width: number | null;
   height: number | null;
-  size_bytes: bigint | number;
+  size_bytes: bigint | number | null;
   showpic_id: bigint | number | null;
   showpic_has_image_data: boolean | null;
   showpic_vietname: string | null;
@@ -135,12 +141,17 @@ interface FacetRow {
   total: bigint | number;
 }
 
+interface FacetUnionRow extends FacetRow {
+  facet_name: 'sourceTables' | 'kingdoms' | 'classNames' | 'orders' | 'families' | 'genera';
+}
+
 type SpeciesDetailRow = Record<string, string | null>;
 
 const SOURCE_TABLE_LABELS: Record<SpeciesSourceTable, string> = {
   animal_db_vn: 'Động vật',
   plant_db_vn: 'Thực vật',
   insect_db_vn: 'Côn trùng',
+  fungi_db_vn: 'Nấm',
 };
 
 const DETAIL_FIELD_LABELS: Record<string, string> = {
@@ -171,7 +182,28 @@ const DETAIL_FIELD_LABELS: Record<string, string> = {
   ban_do_phan_bo_cua_loai: 'Bản đồ phân bố của loài',
   list_ten_viet_nam: 'Danh sách tên Việt Nam',
   list_ten_latin: 'Danh sách tên khoa học',
+  ten_tieng_anh: 'Tên tiếng Anh',
+  dong_danh: 'Đồng danh',
+  ten_khac: 'Tên khác',
+  gioi: 'Giới',
+  nganh: 'Ngành',
+  lop: 'Lớp',
+  do_cao: 'Độ cao',
+  ma_dinh_danh: 'Mã định danh',
+  xac_dinh_boi: 'Xác định bởi',
+  moi_truong_song: 'Môi trường sống',
+  sinh_thai: 'Sinh thái',
 };
+
+const HIDDEN_DETAIL_FIELD_KEYS = new Set([
+  'detail_url',
+  'hinh',
+  'image_url',
+  'image_mime_type',
+  'source_table',
+  'source_slug',
+  'source_post_url',
+]);
 
 const SPECIES_UNION_SQL = `
   SELECT
@@ -184,7 +216,8 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block
+    title_block,
+    coalesce(title_block, '') AS search_text
   FROM animal_db_vn
   UNION ALL
   SELECT
@@ -197,7 +230,8 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block
+    title_block,
+    coalesce(title_block, '') AS search_text
   FROM plant_db_vn
   UNION ALL
   SELECT
@@ -210,8 +244,23 @@ const SPECIES_UNION_SQL = `
     bo AS order_name,
     lop_nhom AS class_name,
     nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
-    title_block
+    title_block,
+    coalesce(title_block, '') AS search_text
   FROM insect_db_vn
+  UNION ALL
+  SELECT
+    'fungi_db_vn'::text AS source_table,
+    'Nấm'::text AS source_label,
+    species_id,
+    ten_viet_nam AS vietnamese_name,
+    ten_latin AS scientific_name,
+    ho AS family,
+    bo AS order_name,
+    lop_nhom AS class_name,
+    nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
+    title_block,
+    concat_ws(' ', title_block, dong_danh, ten_khac, ten_tieng_anh) AS search_text
+  FROM fungi_db_vn
 `;
 
 const SPECIES_ENRICHED_CTE_SQL = `
@@ -227,12 +276,14 @@ const SPECIES_ENRICHED_CTE_SQL = `
       SELECT
         CASE
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'plant_db_vn'
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'fungi') THEN 'fungi_db_vn'
           WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'insect_db_vn'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'animalia') THEN 'animal_db_vn'
           ELSE NULL
         END AS effective_source_table,
         CASE
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'Thực vật'
+          WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'fungi') THEN 'Nấm'
           WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'Côn trùng'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'animalia') THEN 'Động vật'
           ELSE NULL
@@ -260,6 +311,92 @@ const SEARCH_FILTER_SQL = `
     OR lower(coalesce(order_name, '')) LIKE lower('%' || $1 || '%')
     OR lower(coalesce(class_name, '')) LIKE lower('%' || $1 || '%')
     OR lower(coalesce(genus_name, '')) LIKE lower('%' || $1 || '%')
+    OR lower(coalesce(search_text, '')) LIKE lower('%' || $1 || '%')
+  )
+`;
+
+const FUNGI_DUPLICATE_SUPPRESSION_SQL = `
+  NOT (
+    species_enriched.source_table <> 'fungi_db_vn'
+    AND EXISTS (
+      SELECT 1
+      FROM fungi_db_vn fungi_duplicate
+      WHERE (
+        nullif(regexp_replace(lower(coalesce(fungi_duplicate.ten_viet_nam, '')), '\\s+', '', 'g'), '')
+          = nullif(regexp_replace(lower(coalesce(species_enriched.vietnamese_name, '')), '\\s+', '', 'g'), '')
+        OR nullif(regexp_replace(lower(coalesce(fungi_duplicate.ten_latin, '')), '[^a-z0-9]+', '', 'g'), '')
+          = nullif(regexp_replace(lower(coalesce(species_enriched.scientific_name, '')), '[^a-z0-9]+', '', 'g'), '')
+      )
+    )
+  )
+`;
+
+const DIRECT_SPECIES_DEDUP_CTE_SQL = `
+  direct_species AS (
+    ${SPECIES_UNION_SQL}
+  ),
+  direct_species_normalized AS (
+    SELECT
+      direct_species.*,
+      nullif(regexp_replace(lower(coalesce(vietnamese_name, '')), '\\s+', '', 'g'), '') AS vietnamese_key,
+      nullif(regexp_replace(lower(coalesce(scientific_name, '')), '[^a-z0-9]+', '', 'g'), '') AS scientific_key
+    FROM direct_species
+  ),
+  fungi_duplicate_keys AS MATERIALIZED (
+    SELECT DISTINCT
+      nullif(regexp_replace(lower(coalesce(ten_viet_nam, '')), '\\s+', '', 'g'), '') AS vietnamese_key,
+      nullif(regexp_replace(lower(coalesce(ten_latin, '')), '[^a-z0-9]+', '', 'g'), '') AS scientific_key
+    FROM fungi_db_vn
+  ),
+  deduped_species AS (
+    SELECT direct_species_normalized.*
+    FROM direct_species_normalized
+    LEFT JOIN fungi_duplicate_keys fungi_vietnamese
+      ON direct_species_normalized.source_table <> 'fungi_db_vn'
+     AND direct_species_normalized.vietnamese_key IS NOT NULL
+     AND fungi_vietnamese.vietnamese_key = direct_species_normalized.vietnamese_key
+    LEFT JOIN fungi_duplicate_keys fungi_scientific
+      ON direct_species_normalized.source_table <> 'fungi_db_vn'
+     AND direct_species_normalized.scientific_key IS NOT NULL
+     AND fungi_scientific.scientific_key = direct_species_normalized.scientific_key
+    WHERE direct_species_normalized.source_table = 'fungi_db_vn'
+       OR (
+        fungi_vietnamese.vietnamese_key IS NULL
+        AND fungi_scientific.scientific_key IS NULL
+      )
+  )
+`;
+
+const SPECIES_ALIAS_CTE_SQL = `
+  species_aliases AS (
+    SELECT $1::text AS source_table, $2::text AS species_id, 0 AS match_rank
+    UNION
+    SELECT duplicate_species.source_table, duplicate_species.species_id, 1 AS match_rank
+    FROM fungi_db_vn fungi_species
+    JOIN (
+      SELECT 'animal_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+      FROM animal_db_vn
+      UNION ALL
+      SELECT 'plant_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+      FROM plant_db_vn
+      UNION ALL
+      SELECT 'insect_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+      FROM insect_db_vn
+    ) duplicate_species
+      ON (
+        nullif(regexp_replace(lower(coalesce(fungi_species.ten_viet_nam, '')), '\\s+', '', 'g'), '')
+          = nullif(regexp_replace(lower(coalesce(duplicate_species.vietnamese_name, '')), '\\s+', '', 'g'), '')
+        OR nullif(regexp_replace(lower(coalesce(fungi_species.ten_latin, '')), '[^a-z0-9]+', '', 'g'), '')
+          = nullif(regexp_replace(lower(coalesce(duplicate_species.scientific_name, '')), '[^a-z0-9]+', '', 'g'), '')
+      )
+    WHERE (
+        $1::text = 'fungi_db_vn'
+        AND fungi_species.species_id = $2::text
+      )
+      OR (
+        duplicate_species.source_table = $1::text
+        AND duplicate_species.species_id = $2::text
+      )
   )
 `;
 
@@ -270,7 +407,10 @@ interface FilterSql {
 
 @Injectable()
 export class SpeciesRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fungiSpeciesRepository: FungiSpeciesRepository,
+  ) {}
 
   async search(
     query: string,
@@ -278,10 +418,34 @@ export class SpeciesRepository {
     limit: number,
     offset: number,
   ): Promise<SpeciesSearchResult[]> {
+    if (this.fungiSpeciesRepository.canHandleFastList(filters)) {
+      return this.fungiSpeciesRepository.search(query, filters, limit, offset);
+    }
+
+    if (this.canUseDirectListPath(filters)) {
+      return this.searchDirect(query, filters, limit, offset);
+    }
+
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<SpeciesSearchRow[]>(
       `
-        WITH ${SPECIES_ENRICHED_CTE_SQL}
+        WITH ${SPECIES_ENRICHED_CTE_SQL},
+        filtered_species AS (
+          SELECT *
+          FROM species_enriched
+          WHERE ${SEARCH_FILTER_SQL}
+            AND ${FUNGI_DUPLICATE_SUPPRESSION_SQL}
+            ${filterSql.whereSql}
+        ),
+        paged_species AS (
+          SELECT *
+          FROM filtered_species
+          ORDER BY
+            CASE WHEN vietnamese_name IS NULL OR vietnamese_name = '' THEN 1 ELSE 0 END,
+            vietnamese_name ASC NULLS LAST,
+            scientific_name ASC NULLS LAST
+          LIMIT $${filterSql.values.length + 2} OFFSET $${filterSql.values.length + 3}
+        )
         SELECT
           species_enriched.source_table,
           species_enriched.effective_source_label AS source_label,
@@ -294,29 +458,89 @@ export class SpeciesRepository {
           species_enriched.genus_name,
           species_enriched.title_block,
           CASE
-            WHEN species_image.image_id IS NULL THEN NULL
+            WHEN species_image.image_order IS NULL THEN NULL
+            WHEN species_image.image_source = 'showpic'
+              THEN '/species/' || species_image.image_source_table || '/' || species_image.image_species_id || '/showpic-images/' || species_image.image_order
             ELSE '/species/' || species_enriched.source_table || '/' || species_enriched.species_id || '/image'
           END AS image_url,
           species_image.mime_type AS image_mime_type
-        FROM species_enriched
+        FROM paged_species species_enriched
         LEFT JOIN LATERAL (
-          SELECT image_id, local_path, mime_type, width, height
-          FROM species_images
-          WHERE source_table = species_enriched.source_table
-            AND species_id = species_enriched.species_id
+          WITH species_aliases AS (
+            SELECT species_enriched.source_table, species_enriched.species_id, 0 AS match_rank
+            UNION
+            SELECT duplicate_species.source_table, duplicate_species.species_id, 1 AS match_rank
+            FROM fungi_db_vn fungi_species
+            JOIN (
+              SELECT 'animal_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+              FROM animal_db_vn
+              UNION ALL
+              SELECT 'plant_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+              FROM plant_db_vn
+              UNION ALL
+              SELECT 'insect_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+              FROM insect_db_vn
+            ) duplicate_species
+              ON (
+                nullif(regexp_replace(lower(coalesce(fungi_species.ten_viet_nam, '')), '\\s+', '', 'g'), '')
+                  = nullif(regexp_replace(lower(coalesce(duplicate_species.vietnamese_name, '')), '\\s+', '', 'g'), '')
+                OR nullif(regexp_replace(lower(coalesce(fungi_species.ten_latin, '')), '[^a-z0-9]+', '', 'g'), '')
+                  = nullif(regexp_replace(lower(coalesce(duplicate_species.scientific_name, '')), '[^a-z0-9]+', '', 'g'), '')
+              )
+            WHERE (
+                species_enriched.source_table = 'fungi_db_vn'
+                AND fungi_species.species_id = species_enriched.species_id
+              )
+              OR (
+                duplicate_species.source_table = species_enriched.source_table
+                AND duplicate_species.species_id = species_enriched.species_id
+              )
+          )
+          SELECT image_order, image_source, image_source_table, image_species_id, image_source_rank, match_rank, mime_type, width, height, size_bytes
+          FROM (
+            SELECT
+              species_image.image_order,
+              'species'::text AS image_source,
+              species_image.source_table AS image_source_table,
+              species_image.species_id AS image_species_id,
+              2 AS image_source_rank,
+              species_aliases.match_rank,
+              species_image.mime_type,
+              species_image.width,
+              species_image.height,
+              octet_length(species_image.image_data) AS size_bytes
+            FROM species_images species_image
+            JOIN species_aliases
+              ON species_aliases.source_table = species_image.source_table
+             AND species_aliases.species_id = species_image.species_id
+            UNION ALL
+            SELECT
+              showpic.image_order,
+              'showpic'::text AS image_source,
+              showpic.source_table AS image_source_table,
+              showpic.species_id AS image_species_id,
+              CASE WHEN showpic.source_payload ->> 'source_type' = 'wordpress_species_gallery' THEN 0 ELSE 1 END AS image_source_rank,
+              0 AS match_rank,
+              showpic.image_mime_type AS mime_type,
+              showpic.image_width AS width,
+              showpic.image_height AS height,
+              showpic.image_file_size AS size_bytes
+            FROM species_showpic_metadata showpic
+            JOIN species_aliases
+              ON species_aliases.source_table = showpic.source_table
+             AND species_aliases.species_id = showpic.species_id
+            WHERE showpic.image_data IS NOT NULL
+          ) candidate_image
           ORDER BY
-            (coalesce(width, 0) * coalesce(height, 0)) DESC,
-            octet_length(image_data) DESC,
+            match_rank ASC,
+            image_source_rank ASC,
             image_order ASC
           LIMIT 1
         ) species_image ON true
-        WHERE ${SEARCH_FILTER_SQL}
-          ${filterSql.whereSql}
         ORDER BY
-          CASE WHEN vietnamese_name IS NULL OR vietnamese_name = '' THEN 1 ELSE 0 END,
-          vietnamese_name ASC NULLS LAST,
-          scientific_name ASC NULLS LAST
-        LIMIT $${filterSql.values.length + 2} OFFSET $${filterSql.values.length + 3}
+          CASE WHEN species_enriched.vietnamese_name IS NULL OR species_enriched.vietnamese_name = '' THEN 1 ELSE 0 END,
+          species_enriched.vietnamese_name ASC NULLS LAST,
+          species_enriched.scientific_name ASC NULLS LAST
       `,
       query,
       ...filterSql.values,
@@ -341,6 +565,14 @@ export class SpeciesRepository {
   }
 
   async count(query: string, filters: SpeciesSearchFilters): Promise<number> {
+    if (this.fungiSpeciesRepository.canHandleFastList(filters)) {
+      return this.fungiSpeciesRepository.count(query, filters);
+    }
+
+    if (this.canUseDirectListPath(filters)) {
+      return this.countDirect(query, filters);
+    }
+
     const filterSql = this.buildFilterSql(filters, 2);
     const rows = await this.prisma.$queryRawUnsafe<CountRow[]>(
       `
@@ -348,6 +580,7 @@ export class SpeciesRepository {
         SELECT count(*) AS total
         FROM species_enriched
         WHERE ${SEARCH_FILTER_SQL}
+          AND ${FUNGI_DUPLICATE_SUPPRESSION_SQL}
           ${filterSql.whereSql}
       `,
       query,
@@ -358,16 +591,15 @@ export class SpeciesRepository {
   }
 
   async facets(query: string, filters: SpeciesSearchFilters): Promise<SpeciesSearchFacets> {
-    const [sourceTables, kingdoms, classNames, orders, families, genera] = await Promise.all([
-      this.facet(query, filters, 'effective_source_table', 'effective_source_label'),
-      this.facet(query, filters, 'kingdom_name'),
-      this.facet(query, filters, 'class_name'),
-      this.facet(query, filters, 'order_name'),
-      this.facet(query, filters, 'family'),
-      this.facet(query, filters, 'genus_name'),
-    ]);
+    if (this.fungiSpeciesRepository.canHandleFastList(filters)) {
+      return this.fungiSpeciesRepository.facets(query, filters);
+    }
 
-    return { sourceTables, kingdoms, classNames, orders, families, genera };
+    if (this.canUseDirectListPath(filters)) {
+      return this.facetsDirect(query, filters);
+    }
+
+    return this.facetsUnion(query, filters);
   }
 
   async findDetail(
@@ -379,19 +611,50 @@ export class SpeciesRepository {
         SELECT
           species.*,
           CASE
-            WHEN species_image.image_id IS NULL THEN NULL
+            WHEN species_image.image_order IS NULL THEN NULL
+            WHEN species_image.image_source = 'showpic'
+              THEN '/species/' || species_image.image_source_table || '/' || species_image.image_species_id || '/showpic-images/' || species_image.image_order
             ELSE '/species/' || $1 || '/' || species.species_id || '/image'
           END AS image_url,
           species_image.mime_type AS image_mime_type
         FROM ${sourceTable} species
         LEFT JOIN LATERAL (
-          SELECT image_id, local_path, mime_type, width, height
-          FROM species_images
-          WHERE source_table = $1
-            AND species_id = species.species_id
+          SELECT image_order, image_source, image_source_table, image_species_id, image_source_rank, match_rank, mime_type, width, height, size_bytes
+          FROM (
+            SELECT
+              image_order,
+              'species'::text AS image_source,
+              $1::text AS image_source_table,
+              species.species_id AS image_species_id,
+              2 AS image_source_rank,
+              0 AS match_rank,
+              mime_type,
+              width,
+              height,
+              octet_length(image_data) AS size_bytes
+            FROM species_images
+            WHERE source_table = $1
+              AND species_id = species.species_id
+            UNION ALL
+            SELECT
+              showpic.image_order,
+              'showpic'::text AS image_source,
+              showpic.source_table AS image_source_table,
+              showpic.species_id AS image_species_id,
+              CASE WHEN showpic.source_payload ->> 'source_type' = 'wordpress_species_gallery' THEN 0 ELSE 1 END AS image_source_rank,
+              0 AS match_rank,
+              showpic.image_mime_type AS mime_type,
+              showpic.image_width AS width,
+              showpic.image_height AS height,
+              showpic.image_file_size AS size_bytes
+            FROM species_showpic_metadata showpic
+            WHERE showpic.source_table = $1
+              AND showpic.image_data IS NOT NULL
+              AND showpic.species_id = species.species_id
+          ) candidate_image
           ORDER BY
-            (coalesce(width, 0) * coalesce(height, 0)) DESC,
-            octet_length(image_data) DESC,
+            image_source_rank ASC,
+            match_rank ASC,
             image_order ASC
           LIMIT 1
         ) species_image ON true
@@ -424,9 +687,9 @@ export class SpeciesRepository {
       family: row.ho,
       order: row.bo,
       className: row.lop_nhom,
-      titleBlock: row.title_block,
-      imageUrl: row.image_url,
-      imageMimeType: row.image_mime_type,
+      titleBlock: this.formatTitleBlock(row),
+      imageUrl: images[0]?.imageUrl ?? row.image_url,
+      imageMimeType: images[0]?.mimeType ?? row.image_mime_type,
       images,
       taxonomyPath,
       keywords,
@@ -441,13 +704,43 @@ export class SpeciesRepository {
   ): Promise<SpeciesImageResult | null> {
     const rows = await this.prisma.$queryRawUnsafe<ImageRow[]>(
       `
+        WITH ${SPECIES_ALIAS_CTE_SQL}
         SELECT image_data, mime_type
-        FROM species_images
-        WHERE source_table = $1
-          AND species_id = $2
+        FROM (
+          SELECT
+            species_image.image_data,
+            species_image.mime_type,
+            species_image.width,
+            species_image.height,
+            octet_length(species_image.image_data) AS size_bytes,
+            'species'::text AS image_source,
+            species_image.image_order,
+            2 AS image_source_rank,
+            species_aliases.match_rank
+          FROM species_images species_image
+          JOIN species_aliases
+            ON species_aliases.source_table = species_image.source_table
+           AND species_aliases.species_id = species_image.species_id
+          UNION ALL
+          SELECT
+            showpic.image_data,
+            showpic.image_mime_type AS mime_type,
+            showpic.image_width AS width,
+            showpic.image_height AS height,
+            showpic.image_file_size AS size_bytes,
+            'showpic'::text AS image_source,
+            showpic.image_order,
+            CASE WHEN showpic.source_payload ->> 'source_type' = 'wordpress_species_gallery' THEN 0 ELSE 1 END AS image_source_rank,
+            species_aliases.match_rank
+          FROM species_showpic_metadata showpic
+          JOIN species_aliases
+            ON species_aliases.source_table = showpic.source_table
+           AND species_aliases.species_id = showpic.species_id
+          WHERE showpic.image_data IS NOT NULL
+        ) candidate_image
         ORDER BY
-          (coalesce(width, 0) * coalesce(height, 0)) DESC,
-          octet_length(image_data) DESC,
+          match_rank ASC,
+          image_source_rank ASC,
           image_order ASC
         LIMIT 1
       `,
@@ -555,6 +848,390 @@ export class SpeciesRepository {
     };
   }
 
+  private canUseDirectListPath(filters: SpeciesSearchFilters): boolean {
+    return !filters.kingdom && !filters.taxonId;
+  }
+
+  private async searchDirect(
+    query: string,
+    filters: SpeciesSearchFilters,
+    limit: number,
+    offset: number,
+  ): Promise<SpeciesSearchResult[]> {
+    const filterSql = this.buildDirectFilterSql(filters, 2);
+    const rows = await this.prisma.$queryRawUnsafe<SpeciesSearchRow[]>(
+      `
+        WITH ${DIRECT_SPECIES_DEDUP_CTE_SQL},
+        filtered_species AS (
+          SELECT *
+          FROM deduped_species
+          WHERE ${SEARCH_FILTER_SQL}
+            ${filterSql.whereSql}
+        ),
+        paged_species AS (
+          SELECT *
+          FROM filtered_species
+          ORDER BY
+            CASE WHEN vietnamese_name IS NULL OR vietnamese_name = '' THEN 1 ELSE 0 END,
+            vietnamese_name ASC NULLS LAST,
+            scientific_name ASC NULLS LAST
+          LIMIT $${filterSql.values.length + 2} OFFSET $${filterSql.values.length + 3}
+        ),
+        image_candidates AS (
+          SELECT
+            paged_species.source_table,
+            paged_species.species_id,
+            species_image.image_order,
+            'species'::text AS image_source,
+            species_image.source_table AS image_source_table,
+            species_image.species_id AS image_species_id,
+            2 AS image_source_rank,
+            species_image.mime_type
+          FROM paged_species
+          JOIN species_images species_image
+            ON species_image.source_table = paged_species.source_table
+           AND species_image.species_id = paged_species.species_id
+          UNION ALL
+          SELECT
+            paged_species.source_table,
+            paged_species.species_id,
+            showpic.image_order,
+            'showpic'::text AS image_source,
+            showpic.source_table AS image_source_table,
+            showpic.species_id AS image_species_id,
+            CASE WHEN showpic.source_payload ->> 'source_type' = 'wordpress_species_gallery' THEN 0 ELSE 1 END AS image_source_rank,
+            showpic.image_mime_type AS mime_type
+          FROM paged_species
+          JOIN species_showpic_metadata showpic
+            ON showpic.source_table = paged_species.source_table
+           AND showpic.species_id = paged_species.species_id
+          WHERE showpic.image_data IS NOT NULL
+        ),
+        ranked_images AS (
+          SELECT
+            image_candidates.*,
+            row_number() OVER (
+              PARTITION BY source_table, species_id
+              ORDER BY image_source_rank ASC, image_order ASC
+            ) AS image_rank
+          FROM image_candidates
+        )
+        SELECT
+          species.source_table,
+          species.source_label,
+          species.species_id,
+          species.vietnamese_name,
+          species.scientific_name,
+          species.family,
+          species.order_name,
+          species.class_name,
+          species.genus_name,
+          species.title_block,
+          CASE
+            WHEN species_image.image_order IS NULL THEN NULL
+            WHEN species_image.image_source = 'showpic'
+              THEN '/species/' || species_image.image_source_table || '/' || species_image.image_species_id || '/showpic-images/' || species_image.image_order
+            ELSE '/species/' || species_image.image_source_table || '/' || species_image.image_species_id || '/image'
+          END AS image_url,
+          species_image.mime_type AS image_mime_type
+        FROM paged_species species
+        LEFT JOIN ranked_images species_image
+          ON species_image.source_table = species.source_table
+         AND species_image.species_id = species.species_id
+         AND species_image.image_rank = 1
+        ORDER BY
+          CASE WHEN species.vietnamese_name IS NULL OR species.vietnamese_name = '' THEN 1 ELSE 0 END,
+          species.vietnamese_name ASC NULLS LAST,
+          species.scientific_name ASC NULLS LAST
+      `,
+      query,
+      ...filterSql.values,
+      limit,
+      offset,
+    );
+
+    return rows.map((row) => ({
+      sourceTable: row.source_table,
+      sourceLabel: row.source_label,
+      speciesId: row.species_id,
+      vietnameseName: row.vietnamese_name,
+      scientificName: row.scientific_name,
+      family: row.family,
+      order: row.order_name,
+      className: row.class_name,
+      genus: row.genus_name,
+      titleBlock: row.title_block,
+      imageUrl: row.image_url,
+      imageMimeType: row.image_mime_type,
+    }));
+  }
+
+  private async countDirect(query: string, filters: SpeciesSearchFilters): Promise<number> {
+    const filterSql = this.buildDirectFilterSql(filters, 2);
+    const rows = await this.prisma.$queryRawUnsafe<CountRow[]>(
+      `
+        WITH ${DIRECT_SPECIES_DEDUP_CTE_SQL}
+        SELECT count(*) AS total
+        FROM deduped_species
+        WHERE ${SEARCH_FILTER_SQL}
+          ${filterSql.whereSql}
+      `,
+      query,
+      ...filterSql.values,
+    );
+
+    return Number(rows[0]?.total ?? 0);
+  }
+
+  private async facetsDirect(query: string, filters: SpeciesSearchFilters): Promise<SpeciesSearchFacets> {
+    const filterSql = this.buildDirectFilterSql(filters, 2);
+    const rows = await this.prisma.$queryRawUnsafe<FacetUnionRow[]>(
+      `
+        WITH ${DIRECT_SPECIES_DEDUP_CTE_SQL},
+        filtered_species AS (
+          SELECT *
+          FROM deduped_species
+          WHERE ${SEARCH_FILTER_SQL}
+            ${filterSql.whereSql}
+        ),
+        facet_source_tables AS (
+          SELECT 'sourceTables'::text AS facet_name, source_table AS value, min(source_label) AS label, count(*) AS total
+          FROM filtered_species
+          GROUP BY source_table
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        kingdom_species AS (
+          SELECT
+            filtered_species.source_table,
+            filtered_species.species_id,
+            coalesce(
+              taxonomy_kingdom.kingdom_name,
+              CASE
+                WHEN filtered_species.source_table = 'plant_db_vn' THEN 'Plantae'
+                WHEN filtered_species.source_table = 'fungi_db_vn' THEN 'Fungi'
+                ELSE 'Animalia'
+              END
+            ) AS kingdom_name
+          FROM filtered_species
+          LEFT JOIN LATERAL (
+            SELECT parent.canonical_name AS kingdom_name
+            FROM species_taxonomy st
+            JOIN taxon_closure tc
+              ON tc.descendant_taxon_id = st.taxon_id
+            JOIN taxa parent
+              ON parent.taxon_id = tc.ancestor_taxon_id
+            WHERE st.source_table = filtered_species.source_table
+              AND st.species_id = filtered_species.species_id
+              AND parent.rank = 'kingdom'
+            ORDER BY
+              CASE lower(parent.canonical_name)
+                WHEN 'animalia' THEN 1
+                WHEN 'plantae' THEN 2
+                WHEN 'fungi' THEN 3
+                WHEN 'chromista' THEN 4
+                ELSE 5
+              END
+            LIMIT 1
+          ) taxonomy_kingdom ON true
+        ),
+        facet_kingdoms AS (
+          SELECT
+            'kingdoms'::text AS facet_name,
+            kingdom_name AS value,
+            CASE
+              WHEN lower(kingdom_name) = 'animalia' THEN 'Động vật - Animalia'
+              WHEN lower(kingdom_name) = 'plantae' THEN 'Thực vật - Plantae'
+              WHEN lower(kingdom_name) = 'fungi' THEN 'Nấm - Fungi'
+              WHEN lower(kingdom_name) = 'chromista' THEN 'Sinh vật nguyên sinh - Chromista'
+              ELSE kingdom_name
+            END AS label,
+            count(*) AS total
+          FROM kingdom_species
+          GROUP BY value, label
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_class_names AS (
+          SELECT 'classNames'::text AS facet_name, class_name AS value, min(class_name) AS label, count(*) AS total
+          FROM filtered_species
+          WHERE class_name IS NOT NULL AND class_name <> ''
+          GROUP BY class_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_orders AS (
+          SELECT 'orders'::text AS facet_name, order_name AS value, min(order_name) AS label, count(*) AS total
+          FROM filtered_species
+          WHERE order_name IS NOT NULL AND order_name <> ''
+          GROUP BY order_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_families AS (
+          SELECT 'families'::text AS facet_name, family AS value, min(family) AS label, count(*) AS total
+          FROM filtered_species
+          WHERE family IS NOT NULL AND family <> ''
+          GROUP BY family
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_genera AS (
+          SELECT 'genera'::text AS facet_name, genus_name AS value, min(genus_name) AS label, count(*) AS total
+          FROM filtered_species
+          WHERE genus_name IS NOT NULL AND genus_name <> ''
+          GROUP BY genus_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        )
+        SELECT * FROM facet_source_tables
+        UNION ALL SELECT * FROM facet_kingdoms
+        UNION ALL SELECT * FROM facet_class_names
+        UNION ALL SELECT * FROM facet_orders
+        UNION ALL SELECT * FROM facet_families
+        UNION ALL SELECT * FROM facet_genera
+      `,
+      query,
+      ...filterSql.values,
+    );
+
+    const facets: SpeciesSearchFacets = {
+      sourceTables: [],
+      kingdoms: [],
+      classNames: [],
+      orders: [],
+      families: [],
+      genera: [],
+    };
+
+    for (const row of rows) {
+      const value = row.value ?? '';
+      facets[row.facet_name].push({
+        value,
+        label: row.label ?? value,
+        count: Number(row.total),
+      });
+    }
+
+    return facets;
+  }
+
+  private async facetsUnion(query: string, filters: SpeciesSearchFilters): Promise<SpeciesSearchFacets> {
+    const filterSql = this.buildFilterSql(filters, 2);
+    const rows = await this.prisma.$queryRawUnsafe<FacetUnionRow[]>(
+      `
+        WITH ${SPECIES_ENRICHED_CTE_SQL},
+        filtered_species AS (
+          SELECT *
+          FROM species_enriched
+          WHERE ${SEARCH_FILTER_SQL}
+            AND ${FUNGI_DUPLICATE_SUPPRESSION_SQL}
+            ${filterSql.whereSql}
+        ),
+        facet_source_tables AS (
+          SELECT
+            'sourceTables'::text AS facet_name,
+            effective_source_table AS value,
+            min(effective_source_label) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE effective_source_table IS NOT NULL AND effective_source_table <> ''
+          GROUP BY effective_source_table
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_kingdoms AS (
+          SELECT
+            'kingdoms'::text AS facet_name,
+            kingdom_name AS value,
+            min(kingdom_name) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE kingdom_name IS NOT NULL AND kingdom_name <> ''
+          GROUP BY kingdom_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_class_names AS (
+          SELECT
+            'classNames'::text AS facet_name,
+            class_name AS value,
+            min(class_name) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE class_name IS NOT NULL AND class_name <> ''
+          GROUP BY class_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_orders AS (
+          SELECT
+            'orders'::text AS facet_name,
+            order_name AS value,
+            min(order_name) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE order_name IS NOT NULL AND order_name <> ''
+          GROUP BY order_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_families AS (
+          SELECT
+            'families'::text AS facet_name,
+            family AS value,
+            min(family) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE family IS NOT NULL AND family <> ''
+          GROUP BY family
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        ),
+        facet_genera AS (
+          SELECT
+            'genera'::text AS facet_name,
+            genus_name AS value,
+            min(genus_name) AS label,
+            count(*) AS total
+          FROM filtered_species
+          WHERE genus_name IS NOT NULL AND genus_name <> ''
+          GROUP BY genus_name
+          ORDER BY total DESC, value ASC
+          LIMIT 40
+        )
+        SELECT * FROM facet_source_tables
+        UNION ALL SELECT * FROM facet_kingdoms
+        UNION ALL SELECT * FROM facet_class_names
+        UNION ALL SELECT * FROM facet_orders
+        UNION ALL SELECT * FROM facet_families
+        UNION ALL SELECT * FROM facet_genera
+      `,
+      query,
+      ...filterSql.values,
+    );
+
+    const facets: SpeciesSearchFacets = {
+      sourceTables: [],
+      kingdoms: [],
+      classNames: [],
+      orders: [],
+      families: [],
+      genera: [],
+    };
+
+    for (const row of rows) {
+      const value = row.value ?? '';
+      facets[row.facet_name].push({
+        value,
+        label: row.facet_name === 'kingdoms' ? this.kingdomFacetLabel(value) : (row.label ?? value),
+        count: Number(row.total),
+      });
+    }
+
+    return facets;
+  }
+
   private async facet(
     query: string,
     filters: SpeciesSearchFilters,
@@ -578,6 +1255,7 @@ export class SpeciesRepository {
           count(*) AS total
         FROM species_enriched
         WHERE ${SEARCH_FILTER_SQL}
+          AND ${FUNGI_DUPLICATE_SUPPRESSION_SQL}
           ${filterSql.whereSql}
           AND ${column} IS NOT NULL
           AND ${column} <> ''
@@ -670,14 +1348,65 @@ export class SpeciesRepository {
     };
   }
 
+  private buildDirectFilterSql(filters: SpeciesSearchFilters, startIndex: number): FilterSql {
+    const clauses: string[] = [];
+    const values: unknown[] = [];
+
+    if (filters.sourceTable) {
+      values.push(filters.sourceTable);
+      clauses.push(`AND source_table = $${startIndex + values.length - 1}`);
+    }
+
+    if (filters.className) {
+      values.push(filters.className);
+      clauses.push(`AND class_name = $${startIndex + values.length - 1}`);
+    }
+
+    if (filters.order) {
+      values.push(filters.order);
+      clauses.push(`AND order_name = $${startIndex + values.length - 1}`);
+    }
+
+    if (filters.family) {
+      values.push(filters.family);
+      clauses.push(`AND family = $${startIndex + values.length - 1}`);
+    }
+
+    if (filters.genus) {
+      values.push(filters.genus);
+      clauses.push(`AND genus_name = $${startIndex + values.length - 1}`);
+    }
+
+    return {
+      whereSql: clauses.length ? `\n          ${clauses.join('\n          ')}` : '',
+      values,
+    };
+  }
+
   private mapDetailFields(row: SpeciesDetailRow): SpeciesDetailField[] {
     return Object.entries(row)
-      .filter(([key]) => !['detail_url', 'hinh', 'image_url', 'image_mime_type'].includes(key))
+      .filter(([key]) => !HIDDEN_DETAIL_FIELD_KEYS.has(key))
       .map(([key, value]) => ({
         key,
         label: DETAIL_FIELD_LABELS[key] ?? key,
-        value: this.normalizeDetailValue(key, value),
+        value: key === 'title_block' ? this.formatTitleBlock(row) : this.normalizeDetailValue(key, value),
       }));
+  }
+
+  private formatTitleBlock(row: SpeciesDetailRow): string | null {
+    const vietnameseName = this.normalizeDetailValue('ten_viet_nam', row.ten_viet_nam);
+    const scientificName = this.normalizeDetailValue('ten_latin', row.ten_latin);
+    const family = this.normalizeDetailValue('ho', row.ho);
+    const order = this.normalizeDetailValue('bo', row.bo);
+    const fallback = this.normalizeDetailValue('title_block', row.title_block);
+    const lines = [
+      vietnameseName?.toUpperCase(),
+      scientificName,
+      family ? `Họ: ${family}` : null,
+      order ? `Bộ: ${order}` : null,
+    ].filter((line): line is string => Boolean(line));
+
+    return lines.length ? lines.join('\n') : fallback;
   }
 
   private async findImageList(
@@ -686,12 +1415,59 @@ export class SpeciesRepository {
   ): Promise<SpeciesDetailImage[]> {
     const rows = await this.prisma.$queryRawUnsafe<SpeciesImageRow[]>(
       `
+        WITH ${SPECIES_ALIAS_CTE_SQL},
+        image_candidates AS (
+          SELECT
+            species_image.image_order,
+            'species'::text AS image_source,
+            species_image.source_table AS image_source_table,
+            species_image.species_id AS image_species_id,
+            2 AS image_source_rank,
+            species_aliases.match_rank
+          FROM species_images species_image
+          JOIN species_aliases
+            ON species_aliases.source_table = species_image.source_table
+           AND species_aliases.species_id = species_image.species_id
+          UNION ALL
+          SELECT
+            showpic.image_order,
+            'showpic'::text AS image_source,
+            showpic.source_table AS image_source_table,
+            showpic.species_id AS image_species_id,
+            CASE WHEN showpic.source_payload ->> 'source_type' = 'wordpress_species_gallery' THEN 0 ELSE 1 END AS image_source_rank,
+            species_aliases.match_rank
+          FROM species_showpic_metadata showpic
+          JOIN species_aliases
+            ON species_aliases.source_table = showpic.source_table
+           AND species_aliases.species_id = showpic.species_id
+          WHERE showpic.image_data IS NOT NULL
+        ),
+        ranked_images AS (
+          SELECT
+            image_candidates.*,
+            row_number() OVER (
+              PARTITION BY image_source_table, image_species_id, image_order
+              ORDER BY
+                match_rank ASC,
+                image_source_rank ASC,
+                image_source ASC
+            ) AS image_rank
+          FROM image_candidates
+        )
         SELECT
-          species_image.image_order,
+          ranked_images.image_order,
+          ranked_images.image_source,
+          ranked_images.image_source_table,
+          ranked_images.image_species_id,
+          ranked_images.image_source_rank,
+          (species_image.image_data IS NOT NULL) AS has_species_image_data,
           species_image.mime_type,
           species_image.width,
           species_image.height,
-          octet_length(species_image.image_data) AS size_bytes,
+          CASE
+            WHEN species_image.image_data IS NULL THEN NULL
+            ELSE octet_length(species_image.image_data)
+          END AS size_bytes,
           showpic.showpic_id,
           (showpic.image_data IS NOT NULL) AS showpic_has_image_data,
           showpic.vietname AS showpic_vietname,
@@ -711,18 +1487,22 @@ export class SpeciesRepository {
           showpic.fetched_at AS showpic_fetched_at,
           showpic.created_at AS showpic_created_at,
           showpic.updated_at AS showpic_updated_at
-        FROM species_images species_image
+        FROM ranked_images
+        LEFT JOIN species_images species_image
+          ON ranked_images.image_source = 'species'
+         AND species_image.source_table = ranked_images.image_source_table
+         AND species_image.species_id = ranked_images.image_species_id
+         AND species_image.image_order = ranked_images.image_order
         LEFT JOIN species_showpic_metadata showpic
-          ON showpic.source_table = species_image.source_table
-         AND showpic.species_id = species_image.species_id
-         AND showpic.image_order = species_image.image_order
-        WHERE species_image.source_table = $1
-          AND species_image.species_id = $2
+          ON ranked_images.image_source = 'showpic'
+         AND showpic.source_table = ranked_images.image_source_table
+         AND showpic.species_id = ranked_images.image_species_id
+         AND showpic.image_order = ranked_images.image_order
+        WHERE ranked_images.image_rank = 1
         ORDER BY
-          (coalesce(showpic.image_width, species_image.width, 0) * coalesce(showpic.image_height, species_image.height, 0)) DESC,
-          coalesce(showpic.image_file_size, octet_length(species_image.image_data), 0) DESC,
-          octet_length(species_image.image_data) DESC,
-          species_image.image_order ASC
+          ranked_images.match_rank ASC,
+          ranked_images.image_source_rank ASC,
+          ranked_images.image_order ASC
       `,
       sourceTable,
       speciesId,
@@ -730,14 +1510,16 @@ export class SpeciesRepository {
 
     return rows.map((row) => ({
       imageOrder: Number(row.image_order),
-      imageUrl: `/species/${sourceTable}/${speciesId}/images/${Number(row.image_order)}`,
+      imageUrl: row.image_source === 'showpic'
+        ? `/species/${row.image_source_table}/${row.image_species_id}/showpic-images/${Number(row.image_order)}`
+        : `/species/${row.image_source_table}/${row.image_species_id}/images/${Number(row.image_order)}`,
       showpicImageUrl: row.showpic_id && row.showpic_has_image_data
-        ? `/species/${sourceTable}/${speciesId}/showpic-images/${Number(row.image_order)}`
+        ? `/species/${row.image_source_table}/${row.image_species_id}/showpic-images/${Number(row.image_order)}`
         : null,
-      mimeType: row.mime_type ?? 'image/jpeg',
-      width: row.width,
-      height: row.height,
-      sizeBytes: Number(row.size_bytes),
+      mimeType: row.mime_type ?? row.showpic_image_mime_type ?? 'image/jpeg',
+      width: row.width ?? row.showpic_image_width,
+      height: row.height ?? row.showpic_image_height,
+      sizeBytes: Number(row.size_bytes ?? row.showpic_image_file_size ?? 0),
       showpicMetadata: row.showpic_id
         ? {
             showpicId: String(row.showpic_id),

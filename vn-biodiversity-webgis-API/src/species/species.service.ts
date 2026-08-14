@@ -4,6 +4,8 @@ import { SpeciesRepository } from './species.repository';
 import { isSpeciesSourceTable } from './types/species-source.type';
 import type {
   SpeciesImageResult,
+  SpeciesSearchFacets,
+  SpeciesSearchResult,
   SpeciesSearchFilters,
   SpeciesSearchResponse,
 } from './types/species-search-result.type';
@@ -13,10 +15,15 @@ import { stableCacheKey, TtlCache } from '../common/utils/ttl-cache.util';
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 60;
 
+interface SpeciesSearchMeta {
+  total: number;
+  facets: SpeciesSearchFacets;
+}
+
 @Injectable()
 export class SpeciesService {
-  private readonly searchCache = new TtlCache<SpeciesSearchResponse>(120_000, 120);
-  private readonly detailCache = new TtlCache<SpeciesDetailResult>(600_000, 500);
+  private readonly searchCache = new TtlCache<SpeciesSearchResponse>(60_000, 240);
+  private readonly searchMetaCache = new TtlCache<SpeciesSearchMeta>(120_000, 120);
 
   constructor(private readonly speciesRepository: SpeciesRepository) {}
 
@@ -33,16 +40,24 @@ export class SpeciesService {
       return cachedResponse;
     }
 
-    const [items, total, facets] = await Promise.all([
+    const metaCacheKey = stableCacheKey('species:search-meta', { filters, query });
+    const [rawItems, meta] = await Promise.all([
       this.speciesRepository.search(query, filters, limit, offset),
-      this.speciesRepository.count(query, filters),
-      this.speciesRepository.facets(query, filters),
+      this.searchMetaCache.getOrSet(metaCacheKey, async () => {
+        const [total, facets] = await Promise.all([
+          this.speciesRepository.count(query, filters),
+          this.speciesRepository.facets(query, filters),
+        ]);
+
+        return { total, facets };
+      }),
     ]);
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const items = this.mergeDuplicateSearchItems(rawItems);
+    const totalPages = Math.max(1, Math.ceil(meta.total / limit));
 
     const response = {
       items,
-      total,
+      total: meta.total,
       page,
       limit,
       totalPages,
@@ -50,7 +65,7 @@ export class SpeciesService {
       hasNextPage: page < totalPages,
       query,
       filters,
-      facets,
+      facets: meta.facets,
     };
 
     this.searchCache.set(cacheKey, response);
@@ -140,20 +155,12 @@ export class SpeciesService {
       throw new BadRequestException('Invalid species source table.');
     }
 
-    const cacheKey = stableCacheKey('species:detail', { sourceTable, speciesId });
-    const cachedDetail = this.detailCache.get(cacheKey);
-
-    if (cachedDetail) {
-      return cachedDetail;
-    }
-
     const detail = await this.speciesRepository.findDetail(sourceTable, speciesId);
 
     if (!detail) {
       throw new NotFoundException('Species detail was not found.');
     }
 
-    this.detailCache.set(cacheKey, detail);
     return detail;
   }
 
@@ -169,6 +176,85 @@ export class SpeciesService {
     }
 
     return Math.floor(parsed);
+  }
+
+  private mergeDuplicateSearchItems(items: SpeciesSearchResult[]): SpeciesSearchResult[] {
+    const mergedItems: SpeciesSearchResult[] = [];
+    const itemByDuplicateKey = new Map<string, SpeciesSearchResult>();
+
+    for (const item of items) {
+      const duplicateKey = this.duplicateSearchKey(item);
+
+      if (!duplicateKey) {
+        mergedItems.push(item);
+        continue;
+      }
+
+      const existingItem = itemByDuplicateKey.get(duplicateKey);
+
+      if (!existingItem) {
+        itemByDuplicateKey.set(duplicateKey, item);
+        mergedItems.push(item);
+        continue;
+      }
+
+      this.mergeSearchItemData(existingItem, item);
+    }
+
+    return mergedItems;
+  }
+
+  private duplicateSearchKey(item: SpeciesSearchResult): string {
+    const vietnameseName = this.normalizeDuplicateText(item.vietnameseName);
+
+    if (vietnameseName) {
+      return `${item.sourceTable}:${vietnameseName}`;
+    }
+
+    const scientificName = this.normalizeScientificName(item.scientificName);
+    return scientificName ? `${item.sourceTable}:${scientificName}` : '';
+  }
+
+  private mergeSearchItemData(target: SpeciesSearchResult, duplicate: SpeciesSearchResult): void {
+    target.imageUrl ??= duplicate.imageUrl;
+    target.imageMimeType ??= duplicate.imageMimeType;
+    target.family ??= duplicate.family;
+    target.order ??= duplicate.order;
+    target.className ??= duplicate.className;
+    target.genus ??= duplicate.genus;
+
+    const duplicateScientificName = duplicate.scientificName?.trim();
+
+    if (
+      duplicateScientificName &&
+      target.scientificName?.trim() &&
+      this.normalizeScientificName(target.scientificName) !== this.normalizeScientificName(duplicateScientificName)
+    ) {
+      const synonymLine = `Tên khoa học khác: ${duplicateScientificName}`;
+      target.titleBlock = target.titleBlock?.includes(synonymLine)
+        ? target.titleBlock
+        : [target.titleBlock, synonymLine].filter(Boolean).join('\n');
+    }
+  }
+
+  private normalizeDuplicateText(value: string | null | undefined): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'd')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  private normalizeScientificName(value: string | null | undefined): string {
+    return (value ?? '')
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/[,.;:]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
   }
 
   private parseFilters(queryDto: SpeciesSearchQueryDto): SpeciesSearchFilters {
