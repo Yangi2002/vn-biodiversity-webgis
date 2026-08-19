@@ -5,5 +5,7 @@ docker-package/
 *.tar
 *.sql
 *.sql.gz
+!scripts/*.sql
+!vn-biodiversity-webgis-API/prisma/migrations/**/*.sql
 vn-biodiversity-webgis-DB/docker-init/*
 !vn-biodiversity-webgis-DB/docker-init/.gitkeep

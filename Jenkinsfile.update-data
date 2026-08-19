@@ -1,0 +1,296 @@
+pipeline {
+  agent any
+
+  parameters {
+    choice(
+      name: 'DATA_ACTION',
+      choices: ['replace-data', 'dry-run', 'sql-import', 'csv-import', 'seed-script'],
+      description: 'Chon cach cap nhat data'
+    )
+    string(
+      name: 'IMPORT_FILE',
+      defaultValue: 'vnsc-data-replace.sql',
+      description: 'Ten file trong /opt/vn-biodiversity-webgis/imports'
+    )
+    choice(
+      name: 'RESTART_API',
+      choices: ['yes', 'no'],
+      description: 'Restart API sau khi import'
+    )
+    file(
+      name: 'DATA_FILE',
+      description: 'Upload file SQL/CSV de cap nhat du lieu production'
+    )
+  }
+
+  environment {
+    SSH_KEY = 'C:\\Users\\Duong\\.ssh\\jenkins_vn_biodiversity'
+    SERVER = 'dev@100.87.247.104'
+    APP_DIR = '/opt/vn-biodiversity-webgis'
+    DB_CONTAINER = 'vn-biodiversity-db'
+    API_CONTAINER = 'vn-biodiversity-api'
+    DB_USER = 'postgres'
+    DB_NAME = 'vn_biodiversity'
+    PREPARE_SQL = 'scripts/prepare-species-data-import.sql'
+  }
+
+  stages {
+    stage('Prepare Server') {
+      steps {
+        powershell '''
+          $ErrorActionPreference = "Stop"
+          ssh -i "$env:SSH_KEY" "$env:SERVER" "mkdir -p $env:APP_DIR/imports $env:APP_DIR/backups $env:APP_DIR/scripts"
+        '''
+      }
+    }
+
+    stage('Upload Scripts And Optional Data') {
+      steps {
+        powershell '''
+          $ErrorActionPreference = "Stop"
+
+          scp -i "$env:SSH_KEY" `
+            "$env:WORKSPACE\\$env:PREPARE_SQL" `
+            "${env:SERVER}:${env:APP_DIR}/scripts/prepare-species-data-import.sql"
+
+          $uploadFile = $null
+
+          if ($env:DATA_FILE -and $env:DATA_FILE.Trim() -ne "") {
+            $candidate = Join-Path $env:WORKSPACE $env:DATA_FILE
+
+            if ((Test-Path $candidate) -and -not (Test-Path $candidate -PathType Container)) {
+              $uploadFile = $candidate
+            }
+          }
+
+          if ($uploadFile) {
+            Write-Host "Uploading $uploadFile to ${env:SERVER}:${env:APP_DIR}/imports/${env:IMPORT_FILE}"
+            scp -i "$env:SSH_KEY" "$uploadFile" "${env:SERVER}:${env:APP_DIR}/imports/${env:IMPORT_FILE}"
+          } else {
+            Write-Host "No DATA_FILE uploaded. Will use existing server file: ${env:APP_DIR}/imports/${env:IMPORT_FILE}"
+          }
+        '''
+      }
+    }
+
+    stage('Run Data Action') {
+      steps {
+        powershell '''
+          $ErrorActionPreference = "Stop"
+
+          $remoteScript = @'
+set -euo pipefail
+
+APP_DIR="__APP_DIR__"
+DB_CONTAINER="__DB_CONTAINER__"
+API_CONTAINER="__API_CONTAINER__"
+DB_USER="__DB_USER__"
+DB_NAME="__DB_NAME__"
+DATA_ACTION="__DATA_ACTION__"
+IMPORT_FILE="__IMPORT_FILE__"
+RESTART_API="__RESTART_API__"
+
+IMPORT_PATH="$APP_DIR/imports/$IMPORT_FILE"
+PREPARE_SQL="$APP_DIR/scripts/prepare-species-data-import.sql"
+BACKUP_PATH="$APP_DIR/backups/prod-before-replace-$(date +%Y%m%d-%H%M%S).sql"
+
+echo "DATA_ACTION=$DATA_ACTION"
+echo "IMPORT_PATH=$IMPORT_PATH"
+echo "DB_NAME=$DB_NAME"
+
+if [ "$DATA_ACTION" = "dry-run" ]; then
+  echo "Dry run only"
+  ls -lh "$IMPORT_PATH" || true
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -Atc "SELECT datname FROM pg_database WHERE datistemplate = false;"
+  exit 0
+fi
+
+if [ ! -s "$IMPORT_PATH" ]; then
+  echo "ERROR: Import file not found or empty: $IMPORT_PATH"
+  exit 1
+fi
+
+require_file_table_data() {
+  table="$1"
+
+  if ! printf '%s\n' "$IMPORT_TABLES" | grep -Eq "^(COPY|INSERT INTO) public\\.${table}$"; then
+    echo "ERROR: Import file is missing data for public.$table"
+    echo "Refusing to replace production data before truncate."
+    exit 1
+  fi
+}
+
+verify_table_exists() {
+  table="$1"
+  exists=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "SELECT to_regclass('public.$table') IS NOT NULL;")
+
+  if [ "$exists" != "t" ]; then
+    echo "ERROR: Required production table does not exist: public.$table"
+    exit 1
+  fi
+}
+
+echo "Checking database exists"
+docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "SELECT current_database();"
+
+echo "Prepare species import schema"
+docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$PREPARE_SQL"
+
+if [ "$DATA_ACTION" = "replace-data" ]; then
+  echo "Preflight import file content"
+  IMPORT_TABLES=$(grep -Eo "^(COPY|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" || true)
+  echo "$IMPORT_TABLES" | sort -u
+
+  require_file_table_data "animal_db_vn"
+  require_file_table_data "plant_db_vn"
+  require_file_table_data "insect_db_vn"
+  require_file_table_data "fungi_db_vn"
+  require_file_table_data "species_showpic_metadata"
+  require_file_table_data "vnredlist_profiles"
+  require_file_table_data "species_vnredlist_matches"
+
+  echo "Preflight production schema"
+  verify_table_exists "animal_db_vn"
+  verify_table_exists "plant_db_vn"
+  verify_table_exists "insect_db_vn"
+  verify_table_exists "fungi_db_vn"
+  verify_table_exists "species_showpic_metadata"
+  verify_table_exists "vnredlist_profiles"
+  verify_table_exists "species_vnredlist_matches"
+fi
+
+if [ "$DATA_ACTION" = "sql-import" ]; then
+  echo "Import SQL only, no truncate"
+  docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$IMPORT_PATH"
+fi
+
+if [ "$DATA_ACTION" = "replace-data" ]; then
+  echo "Backup production data before replace: $BACKUP_PATH"
+  docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" --data-only > "$BACKUP_PATH"
+
+  echo "Truncate existing business data tables only"
+  TRUNCATE_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
+    SELECT 'TRUNCATE TABLE ' ||
+      string_agg(format('%I.%I', schemaname, tablename), ', ') ||
+      ' RESTART IDENTITY CASCADE;'
+    FROM pg_tables
+    WHERE schemaname = 'public'
+      AND tablename IN (
+        'species_conservation_terms',
+        'vnredlist_profiles',
+        'vn_redlist_profiles',
+        'occurrence_records',
+        'species_taxonomy',
+        'taxon_closure',
+        'taxa',
+        'taxon_names',
+        'species_showpic_metadata',
+        'species_images',
+        'species_keyword_links',
+        'species_gbif_occurrence_matches',
+        'species_vnredlist_matches',
+        'fungi_db_vn',
+        'insect_db_vn',
+        'plant_db_vn',
+        'animal_db_vn'
+      );
+  ")
+
+  echo "$TRUNCATE_SQL"
+
+  if [ -z "$TRUNCATE_SQL" ]; then
+    echo "ERROR: No matching business tables found to truncate"
+    exit 1
+  fi
+
+  docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "$TRUNCATE_SQL"
+
+  echo "Import replacement SQL"
+  docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$IMPORT_PATH"
+
+  echo "Analyze database"
+  docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "ANALYZE;"
+
+  echo "Verify imported data counts"
+  COUNTS=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
+    SELECT
+      (
+        (SELECT count(*) FROM public.animal_db_vn) +
+        (SELECT count(*) FROM public.plant_db_vn) +
+        (SELECT count(*) FROM public.insect_db_vn) +
+        (SELECT count(*) FROM public.fungi_db_vn)
+      )::text || '|' ||
+      (SELECT count(*) FROM public.vnredlist_profiles)::text || '|' ||
+      (SELECT count(*) FROM public.species_vnredlist_matches)::text || '|' ||
+      (SELECT count(*) FROM public.species_showpic_metadata)::text;
+  ")
+
+  IFS='|' read -r SPECIES_COUNT REDLIST_COUNT REDLIST_MATCH_COUNT SHOWPIC_COUNT <<EOF_COUNTS
+$COUNTS
+EOF_COUNTS
+
+  echo "species_count=$SPECIES_COUNT"
+  echo "vnredlist_profiles_count=$REDLIST_COUNT"
+  echo "species_vnredlist_matches_count=$REDLIST_MATCH_COUNT"
+  echo "species_showpic_metadata_count=$SHOWPIC_COUNT"
+
+  if [ "$SPECIES_COUNT" -le 0 ]; then
+    echo "ERROR: species_count is zero after import"
+    exit 1
+  fi
+
+  if [ "$REDLIST_COUNT" -le 0 ]; then
+    echo "ERROR: vnredlist_profiles_count is zero after import"
+    exit 1
+  fi
+
+  if [ "$REDLIST_MATCH_COUNT" -le 0 ]; then
+    echo "ERROR: species_vnredlist_matches_count is zero after import"
+    exit 1
+  fi
+
+  if [ "$SHOWPIC_COUNT" -le 0 ]; then
+    echo "ERROR: species_showpic_metadata_count is zero after import"
+    exit 1
+  fi
+fi
+
+if [ "$DATA_ACTION" = "csv-import" ]; then
+  echo "CSV import is not configured yet"
+  exit 1
+fi
+
+if [ "$DATA_ACTION" = "seed-script" ]; then
+  echo "Seed script is not configured yet"
+  exit 1
+fi
+
+if [ "$RESTART_API" = "yes" ]; then
+  echo "Restart API"
+  docker restart "$API_CONTAINER"
+fi
+
+echo "Done"
+'@
+
+          $remoteScript = $remoteScript `
+            -replace '__APP_DIR__', $env:APP_DIR `
+            -replace '__DB_CONTAINER__', $env:DB_CONTAINER `
+            -replace '__API_CONTAINER__', $env:API_CONTAINER `
+            -replace '__DB_USER__', $env:DB_USER `
+            -replace '__DB_NAME__', $env:DB_NAME `
+            -replace '__DATA_ACTION__', $env:DATA_ACTION `
+            -replace '__IMPORT_FILE__', $env:IMPORT_FILE `
+            -replace '__RESTART_API__', $env:RESTART_API
+
+          $scriptPath = Join-Path $env:WORKSPACE "remote-update-data.sh"
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [System.IO.File]::WriteAllText($scriptPath, $remoteScript, $utf8NoBom)
+
+          scp -i "$env:SSH_KEY" "$scriptPath" "${env:SERVER}:/tmp/vnsc-update-data.sh"
+          ssh -i "$env:SSH_KEY" "$env:SERVER" "bash /tmp/vnsc-update-data.sh"
+        '''
+      }
+    }
+  }
+}

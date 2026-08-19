@@ -317,6 +317,7 @@ model species_conservation_terms {
   animal_species_id  String?
   plant_species_id   String?
   insect_species_id  String?
+  fungi_species_id   String?
   term_id            BigInt
   source_field       String
   matched_text       String
@@ -324,6 +325,7 @@ model species_conservation_terms {
   detail_url         String?
   created_at         DateTime           @default(now()) @db.Timestamptz(6)
   animal_db_vn       animal_db_vn?      @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_animal")
+  fungi_db_vn        fungi_db_vn?       @relation(fields: [fungi_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_fungi")
   insect_db_vn       insect_db_vn?      @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_insect")
   plant_db_vn        plant_db_vn?       @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_species_conservation_plant")
   conservation_terms conservation_terms @relation(fields: [term_id], references: [term_id], onDelete: Cascade, onUpdate: NoAction)
@@ -340,10 +342,12 @@ model species_gbif_occurrence_matches {
   animal_species_id   String?
   plant_species_id    String?
   insect_species_id   String?
+  fungi_species_id    String?
   gbif_occurrence_key BigInt
   match_method        String
   created_at          DateTime         @default(now()) @db.Timestamptz(6)
   animal_db_vn        animal_db_vn?    @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  fungi_db_vn         fungi_db_vn?     @relation(fields: [fungi_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   gbif_occurrences    gbif_occurrences @relation(fields: [gbif_occurrence_key], references: [gbif_occurrence_key], onDelete: Cascade, onUpdate: NoAction)
   insect_db_vn        insect_db_vn?    @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   plant_db_vn         plant_db_vn?     @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
@@ -398,7 +402,9 @@ model species_keyword_links {
   animal_species_id      String?
   plant_species_id       String?
   insect_species_id      String?
+  fungi_species_id       String?
   animal_db_vn           animal_db_vn? @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  fungi_db_vn            fungi_db_vn?  @relation(fields: [fungi_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   insect_db_vn           insect_db_vn? @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   site_keywords          site_keywords @relation(fields: [keyword_id], references: [keyword_id], onDelete: Cascade, onUpdate: NoAction)
   plant_db_vn            plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
@@ -474,50 +480,55 @@ model taxon_names {
 }
 
 model fungi_db_vn {
-  species_id              String             @id
-  source_loai             String?
-  detail_url              String?
-  page                    String?
-  ten_viet_nam            String?
-  ten_latin               String?
-  ho                      String?
-  bo                      String?
-  lop_nhom                String?
-  title_block             String?
-  dac_diem_nhan_dang      String?
-  dac_diem_bo_sung        String?
-  kich_thuoc              String?
-  sinh_hoc_sinh_thai      String?
-  phan_bo                 String?
-  phan_hang               String?
-  gia_tri                 String?
-  tinh_trang              String?
-  bien_phap_bao_ve        String?
-  tai_lieu_dan            String?
-  cong_dung               String?
-  mo_ta                   String?
-  mo_ta_loai              String?
-  mau_mo_ta               String?
-  ban_do_phan_bo_cua_loai String?
-  list_ten_viet_nam       String?
-  list_ten_latin          String?
-  hinh                    String?
-  source_table            String?
-  source_slug             String?
-  source_post_url         String?
-  ten_tieng_anh           String?
-  dong_danh               String?
-  ten_khac                String?
-  gioi                    String?
-  nganh                   String?
-  lop                     String?
-  do_cao                  String?
-  ma_dinh_danh            String?
-  xac_dinh_boi            String?
-  moi_truong_song         String?
-  sinh_thai               String?
-  species_images          species_images[]
-  species_taxonomy        species_taxonomy[]
+  species_id                      String                            @id
+  source_loai                     String?
+  detail_url                      String?
+  page                            String?
+  ten_viet_nam                    String?
+  ten_latin                       String?
+  ho                              String?
+  bo                              String?
+  lop_nhom                        String?
+  title_block                     String?
+  dac_diem_nhan_dang              String?
+  dac_diem_bo_sung                String?
+  kich_thuoc                      String?
+  sinh_hoc_sinh_thai              String?
+  phan_bo                         String?
+  phan_hang                       String?
+  gia_tri                         String?
+  tinh_trang                      String?
+  bien_phap_bao_ve                String?
+  tai_lieu_dan                    String?
+  cong_dung                       String?
+  mo_ta                           String?
+  mo_ta_loai                      String?
+  mau_mo_ta                       String?
+  ban_do_phan_bo_cua_loai         String?
+  list_ten_viet_nam               String?
+  list_ten_latin                  String?
+  hinh                            String?
+  source_table                    String?
+  source_slug                     String?
+  source_post_url                 String?
+  ten_tieng_anh                   String?
+  dong_danh                       String?
+  ten_khac                        String?
+  gioi                            String?
+  nganh                           String?
+  lop                             String?
+  do_cao                          String?
+  ma_dinh_danh                    String?
+  xac_dinh_boi                    String?
+  moi_truong_song                 String?
+  sinh_thai                       String?
+  species_conservation_terms      species_conservation_terms[]
+  species_gbif_occurrence_matches species_gbif_occurrence_matches[]
+  species_images                  species_images[]
+  species_keyword_links           species_keyword_links[]
+  species_showpic_metadata        species_showpic_metadata[]
+  species_taxonomy                species_taxonomy[]
+  species_vnredlist_matches       species_vnredlist_matches[]
 
   @@index([species_id], map: "idx_fungi_db_vn_species_id")
   @@index([ten_latin], map: "idx_fungi_db_vn_ten_latin")
@@ -572,6 +583,7 @@ model species_showpic_metadata {
   animal_species_id String?
   plant_species_id  String?
   insect_species_id String?
+  fungi_species_id  String?
   image_local_path  String?
   image_mime_type   String?
   image_data        Bytes?
@@ -579,6 +591,7 @@ model species_showpic_metadata {
   image_width       Int?
   image_height      Int?
   animal_db_vn      animal_db_vn? @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  fungi_db_vn       fungi_db_vn?  @relation(fields: [fungi_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   insect_db_vn      insect_db_vn? @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   plant_db_vn       plant_db_vn?  @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -593,11 +606,13 @@ model species_vnredlist_matches {
   animal_species_id  String?
   plant_species_id   String?
   insect_species_id  String?
+  fungi_species_id   String?
   profile_id         BigInt
   match_method       String
   confidence         Int                @default(100)
   matched_at         DateTime           @default(now()) @db.Timestamptz(6)
   animal_db_vn       animal_db_vn?      @relation(fields: [animal_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
+  fungi_db_vn        fungi_db_vn?       @relation(fields: [fungi_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   insect_db_vn       insect_db_vn?      @relation(fields: [insect_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   plant_db_vn        plant_db_vn?       @relation(fields: [plant_species_id], references: [species_id], onDelete: Cascade, onUpdate: NoAction)
   vnredlist_profiles vnredlist_profiles @relation(fields: [profile_id], references: [profile_id], onDelete: Cascade, onUpdate: NoAction)
