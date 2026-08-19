@@ -34,10 +34,10 @@ app-dashboard-metric-strip {
   max-width: 980px;
   margin: 0;
   color: #062d24;
-  font-size: clamp(3.05rem, 5vw, 5.45rem);
-  font-weight: 900;
+  font-size: clamp(2.6rem, 4.3vw, 4.7rem);
+  font-weight: 800;
   letter-spacing: 0;
-  line-height: 1.05;
+  line-height: 1.09;
 }
 
 .map-hero p:not(.eyebrow) {
@@ -52,7 +52,7 @@ app-dashboard-metric-strip {
   color: #00713d;
   font-size: 0.86rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   margin: 0 0 12px;
   text-transform: uppercase;
 }

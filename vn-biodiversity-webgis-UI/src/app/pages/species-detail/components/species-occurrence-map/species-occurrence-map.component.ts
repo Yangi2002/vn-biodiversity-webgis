@@ -26,8 +26,8 @@ const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
   [23.9, 110.2],
 ];
 const MAP_INTERACTION_BOUNDS: Leaflet.LatLngBoundsExpression = [
-  [3.8, 94.5],
-  [27.0, 118.5],
+  [5.0, 100.0],
+  [24.8, 112.5],
 ];
 const PIN_MARKER_HTML = '<span class="pin-marker-core"></span>';
 const DEFAULT_POINT_LIMIT = 700;
@@ -315,23 +315,52 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     this.map = this.leaflet
       .map(element, {
         maxBounds: MAP_INTERACTION_BOUNDS,
-        maxBoundsViscosity: 0.75,
-        minZoom: 5,
+        maxBoundsViscosity: 1,
+        minZoom: 5.7,
         maxZoom: 18,
         preferCanvas: true,
         scrollWheelZoom: true,
         worldCopyJump: false,
         zoomControl: true,
+        zoomDelta: 0.5,
+        zoomSnap: 0.25,
       })
       .setView(VIETNAM_CENTER, DEFAULT_ZOOM);
 
-    this.leaflet
-      .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
+    const satelliteLayer = this.leaflet.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Tiles &copy; Esri',
         maxZoom: 18,
         minZoom: 5,
         noWrap: true,
-      })
+      },
+    );
+
+    const customNoLabelLayer = this.leaflet.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '&copy; CARTO',
+        maxZoom: 19,
+        minZoom: 5,
+        noWrap: true,
+      },
+    );
+
+    customNoLabelLayer.addTo(this.map);
+
+    this.leaflet.control
+      .layers(
+        {
+          'Bản đồ nền': customNoLabelLayer,
+          Satellite: satelliteLayer,
+        },
+        undefined,
+        {
+          collapsed: false,
+          position: 'topleft',
+        },
+      )
       .addTo(this.map);
 
     this.markerLayer = this.leaflet.layerGroup().addTo(this.map);

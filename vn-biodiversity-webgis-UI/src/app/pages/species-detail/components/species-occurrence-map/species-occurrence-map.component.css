@@ -539,6 +539,29 @@
   padding: 5px 9px;
 }
 
+:host ::ng-deep .leaflet-top.leaflet-left {
+  display: grid;
+  gap: 8px;
+}
+
+:host ::ng-deep .leaflet-control-layers {
+  border: 1px solid #c8ddcf;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 28px rgba(27, 74, 47, 0.14);
+  color: #183226;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+:host ::ng-deep .leaflet-control-layers-expanded {
+  padding: 8px 10px;
+}
+
+:host ::ng-deep .leaflet-control-layers label {
+  margin: 3px 0;
+}
+
 .map-state {
   align-items: center;
   background: rgba(248, 252, 247, 0.88);

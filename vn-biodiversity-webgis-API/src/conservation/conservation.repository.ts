@@ -76,9 +76,83 @@ const SOURCE_LABEL_SQL = `
     WHEN 'animal_db_vn' THEN 'Động vật'
     WHEN 'plant_db_vn' THEN 'Thực vật'
     WHEN 'insect_db_vn' THEN 'Côn trùng'
+    WHEN 'fungi_db_vn' THEN 'Nấm'
     ELSE match.source_table
   END
 `;
+
+const RESOLVED_SPECIES_JOINS_SQL = `
+  LEFT JOIN LATERAL (
+    SELECT animal_species.*
+    FROM animal_db_vn animal_species
+    WHERE match.source_table = 'animal_db_vn'
+      AND (
+        animal_species.species_id = match.animal_species_id
+        OR animal_species.species_id = match.species_id
+        OR lower(coalesce(animal_species.ten_latin, '')) = lower(coalesce(profile.scientific_name, ''))
+        OR lower(coalesce(animal_species.ten_viet_nam, '')) = lower(coalesce(profile.vietnamese_name, ''))
+      )
+    ORDER BY
+      (animal_species.species_id = match.animal_species_id) DESC,
+      (animal_species.species_id ~ '^[0-9]+$') DESC,
+      length(animal_species.species_id) ASC,
+      animal_species.species_id ASC
+    LIMIT 1
+  ) animal ON true
+  LEFT JOIN LATERAL (
+    SELECT plant_species.*
+    FROM plant_db_vn plant_species
+    WHERE match.source_table = 'plant_db_vn'
+      AND (
+        plant_species.species_id = match.plant_species_id
+        OR plant_species.species_id = match.species_id
+        OR lower(coalesce(plant_species.ten_latin, '')) = lower(coalesce(profile.scientific_name, ''))
+        OR lower(coalesce(plant_species.ten_viet_nam, '')) = lower(coalesce(profile.vietnamese_name, ''))
+      )
+    ORDER BY
+      (plant_species.species_id = match.plant_species_id) DESC,
+      (plant_species.species_id ~ '^[0-9]+$') DESC,
+      length(plant_species.species_id) ASC,
+      plant_species.species_id ASC
+    LIMIT 1
+  ) plant ON true
+  LEFT JOIN LATERAL (
+    SELECT insect_species.*
+    FROM insect_db_vn insect_species
+    WHERE match.source_table = 'insect_db_vn'
+      AND (
+        insect_species.species_id = match.insect_species_id
+        OR insect_species.species_id = match.species_id
+        OR lower(coalesce(insect_species.ten_latin, '')) = lower(coalesce(profile.scientific_name, ''))
+        OR lower(coalesce(insect_species.ten_viet_nam, '')) = lower(coalesce(profile.vietnamese_name, ''))
+      )
+    ORDER BY
+      (insect_species.species_id = match.insect_species_id) DESC,
+      (insect_species.species_id ~ '^[0-9]+$') DESC,
+      length(insect_species.species_id) ASC,
+      insect_species.species_id ASC
+    LIMIT 1
+  ) insect ON true
+  LEFT JOIN LATERAL (
+    SELECT fungi_species.*
+    FROM fungi_db_vn fungi_species
+    WHERE match.source_table = 'fungi_db_vn'
+      AND (
+        fungi_species.species_id = match.fungi_species_id
+        OR fungi_species.species_id = match.species_id
+        OR lower(coalesce(fungi_species.ten_latin, '')) = lower(coalesce(profile.scientific_name, ''))
+        OR lower(coalesce(fungi_species.ten_viet_nam, '')) = lower(coalesce(profile.vietnamese_name, ''))
+      )
+    ORDER BY
+      (fungi_species.species_id = match.fungi_species_id) DESC,
+      (fungi_species.species_id ~ '^[0-9]+$') DESC,
+      length(fungi_species.species_id) ASC,
+      fungi_species.species_id ASC
+    LIMIT 1
+  ) fungi ON true
+`;
+
+const RESOLVED_SPECIES_ID_SQL = `coalesce(animal.species_id, plant.species_id, insect.species_id, fungi.species_id, match.species_id)`;
 
 @Injectable()
 export class ConservationRepository {
@@ -91,15 +165,15 @@ export class ConservationRepository {
         SELECT
           match.source_table,
           ${SOURCE_LABEL_SQL} AS source_label,
-          match.species_id,
-          coalesce(animal.ten_viet_nam, plant.ten_viet_nam, insect.ten_viet_nam, profile.vietnamese_name) AS vietnamese_name,
-          coalesce(animal.ten_latin, plant.ten_latin, insect.ten_latin, profile.scientific_name) AS scientific_name,
-          coalesce(animal.ho, plant.ho, insect.ho, profile.family) AS family,
-          coalesce(animal.bo, plant.bo, insect.bo, profile.order_name) AS order_name,
-          coalesce(animal.lop_nhom, plant.lop_nhom, insect.lop_nhom, profile.class_name) AS class_name,
+          ${RESOLVED_SPECIES_ID_SQL} AS species_id,
+          coalesce(animal.ten_viet_nam, plant.ten_viet_nam, insect.ten_viet_nam, fungi.ten_viet_nam, profile.vietnamese_name) AS vietnamese_name,
+          coalesce(animal.ten_latin, plant.ten_latin, insect.ten_latin, fungi.ten_latin, profile.scientific_name) AS scientific_name,
+          coalesce(animal.ho, plant.ho, insect.ho, fungi.ho, profile.family) AS family,
+          coalesce(animal.bo, plant.bo, insect.bo, fungi.bo, profile.order_name) AS order_name,
+          coalesce(animal.lop_nhom, plant.lop_nhom, insect.lop_nhom, fungi.lop_nhom, profile.class_name) AS class_name,
           CASE
             WHEN species_image.image_id IS NULL THEN NULL
-            ELSE '/species/' || match.source_table || '/' || match.species_id || '/image'
+            ELSE '/species/' || match.source_table || '/' || ${RESOLVED_SPECIES_ID_SQL} || '/image'
           END AS image_url,
           profile.profile_id,
           profile.page_url,
@@ -118,17 +192,12 @@ export class ConservationRepository {
         FROM species_vnredlist_matches match
         JOIN vnredlist_profiles profile
           ON profile.profile_id = match.profile_id
-        LEFT JOIN animal_db_vn animal
-          ON animal.species_id = match.animal_species_id
-        LEFT JOIN plant_db_vn plant
-          ON plant.species_id = match.plant_species_id
-        LEFT JOIN insect_db_vn insect
-          ON insect.species_id = match.insect_species_id
+        ${RESOLVED_SPECIES_JOINS_SQL}
         LEFT JOIN LATERAL (
           SELECT image_id
           FROM species_images
           WHERE source_table = match.source_table
-            AND species_id = match.species_id
+            AND species_id = ${RESOLVED_SPECIES_ID_SQL}
           ORDER BY
             (coalesce(width, 0) * coalesce(height, 0)) DESC,
             octet_length(image_data) DESC,
@@ -187,12 +256,7 @@ export class ConservationRepository {
         FROM species_vnredlist_matches match
         JOIN vnredlist_profiles profile
           ON profile.profile_id = match.profile_id
-        LEFT JOIN animal_db_vn animal
-          ON animal.species_id = match.animal_species_id
-        LEFT JOIN plant_db_vn plant
-          ON plant.species_id = match.plant_species_id
-        LEFT JOIN insect_db_vn insect
-          ON insect.species_id = match.insect_species_id
+        ${RESOLVED_SPECIES_JOINS_SQL}
         WHERE ${filterSql.whereSql}
       `,
       ...filterSql.values,
@@ -225,12 +289,7 @@ export class ConservationRepository {
         JOIN conservation_terms category_term
           ON category_term.term_type = 'vnredlist_red_list_category'
          AND category_term.category_code = profile.redlist_category
-        LEFT JOIN animal_db_vn animal
-          ON animal.species_id = match.animal_species_id
-        LEFT JOIN plant_db_vn plant
-          ON plant.species_id = match.plant_species_id
-        LEFT JOIN insect_db_vn insect
-          ON insect.species_id = match.insect_species_id
+        ${RESOLVED_SPECIES_JOINS_SQL}
         WHERE ${filterSql.whereSql}
         GROUP BY profile.redlist_category, category_term.severity_order
         ORDER BY category_term.severity_order DESC NULLS LAST
@@ -272,12 +331,7 @@ export class ConservationRepository {
         FROM species_vnredlist_matches match
         JOIN vnredlist_profiles profile
           ON profile.profile_id = match.profile_id
-        LEFT JOIN animal_db_vn animal
-          ON animal.species_id = match.animal_species_id
-        LEFT JOIN plant_db_vn plant
-          ON plant.species_id = match.plant_species_id
-        LEFT JOIN insect_db_vn insect
-          ON insect.species_id = match.insect_species_id
+        ${RESOLVED_SPECIES_JOINS_SQL}
         WHERE ${filterSql.whereSql}
         GROUP BY match.source_table
         ORDER BY total DESC
@@ -339,9 +393,9 @@ export class ConservationRepository {
       values.push(filter.query);
       clauses.push(`
         (
-          coalesce(animal.ten_viet_nam, plant.ten_viet_nam, insect.ten_viet_nam, profile.vietnamese_name, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
-          OR coalesce(animal.ten_latin, plant.ten_latin, insect.ten_latin, profile.scientific_name, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
-          OR coalesce(profile.family, animal.ho, plant.ho, insect.ho, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
+          coalesce(animal.ten_viet_nam, plant.ten_viet_nam, insect.ten_viet_nam, fungi.ten_viet_nam, profile.vietnamese_name, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
+          OR coalesce(animal.ten_latin, plant.ten_latin, insect.ten_latin, fungi.ten_latin, profile.scientific_name, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
+          OR coalesce(profile.family, animal.ho, plant.ho, insect.ho, fungi.ho, '') ILIKE '%' || $${startIndex + values.length - 1} || '%'
         )
       `);
     }

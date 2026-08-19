@@ -47,8 +47,9 @@
 h1 {
   max-width: 840px;
   margin: 0;
-  font-size: 62px;
-  line-height: 1.06;
+  font-size: clamp(40px, 4.2vw, 58px);
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .scientific-name {

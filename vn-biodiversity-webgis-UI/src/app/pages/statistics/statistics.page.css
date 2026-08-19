@@ -50,7 +50,9 @@ app-dashboard-metric-strip {
 .statistics-hero h1 {
   max-width: 880px;
   margin: 0;
-  font-size: clamp(2.9rem, 4vw, 4.8rem);
+  font-size: clamp(2.4rem, 3.55vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .statistics-hero p:not(.eyebrow) {

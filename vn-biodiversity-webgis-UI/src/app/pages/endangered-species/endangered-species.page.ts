@@ -30,6 +30,7 @@ export class EndangeredSpeciesPage {
     { value: 'animal_db_vn', label: 'Động vật' },
     { value: 'plant_db_vn', label: 'Thực vật' },
     { value: 'insect_db_vn', label: 'Côn trùng' },
+    { value: 'fungi_db_vn', label: 'Nấm' },
   ];
 
   protected readonly metricItems = computed<DashboardMetricItem[]>(() => {

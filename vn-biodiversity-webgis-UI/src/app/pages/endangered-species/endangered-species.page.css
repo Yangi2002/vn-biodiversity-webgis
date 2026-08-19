@@ -29,8 +29,9 @@
   max-width: 900px;
   margin: 0;
   color: #10251c;
-  font-size: clamp(42px, 5vw, 72px);
-  line-height: 1.02;
+  font-size: clamp(38px, 4.2vw, 64px);
+  font-weight: 800;
+  line-height: 1.08;
 }
 
 .page-hero p:not(.eyebrow) {
@@ -260,7 +261,7 @@ button:disabled {
   gap: 14px;
   border-bottom: 1px solid #edf2ee;
   padding-bottom: 10px;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .source-list strong {
@@ -357,8 +358,9 @@ button:disabled {
 
 .card-title h3 {
   margin: 5px 0 3px;
-  font-size: 25px;
-  line-height: 1.15;
+  max-width: 100%;
+  font-size: clamp(21px, 1.7vw, 24px);
+  line-height: 1.2;
 }
 
 .card-title em {
@@ -383,7 +385,9 @@ dt {
 
 dd {
   margin: 4px 0 0;
-  font-weight: 850;
+  font-weight: 800;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
 }
 
 .short-note {
@@ -474,7 +478,7 @@ dd {
     top: auto;
     right: auto;
     width: 100%;
-    height: 220px;
+    height: 190px;
   }
 
   .card-body {
