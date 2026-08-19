@@ -26,6 +26,7 @@ $tables = @(
   "public.taxa",
   "public.taxon_names",
   "public.taxon_closure",
+  "public.gbif_taxonomy_cache",
   "public.occurrence_records",
   "public.species_conservation_terms",
   "public.species_keyword_links",
@@ -59,6 +60,11 @@ $requiredTables = @(
   "insect_db_vn",
   "fungi_db_vn",
   "species_showpic_metadata",
+  "species_taxonomy",
+  "taxa",
+  "taxon_names",
+  "taxon_closure",
+  "gbif_taxonomy_cache",
   "vnredlist_profiles",
   "species_vnredlist_matches"
 )
@@ -79,4 +85,4 @@ foreach ($table in $requiredTables) {
   }
 }
 
-Write-Host "Export OK: required species/redlist/showpic tables are present."
+Write-Host "Export OK: required species/taxonomy/redlist/showpic tables are present."

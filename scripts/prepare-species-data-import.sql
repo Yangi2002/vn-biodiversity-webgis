@@ -49,6 +49,34 @@ CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_species_id ON public.fungi_db_vn (spe
 CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_ten_latin ON public.fungi_db_vn (ten_latin);
 CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_ten_viet_nam ON public.fungi_db_vn (ten_viet_nam);
 
+CREATE TABLE IF NOT EXISTS public.gbif_taxonomy_cache (
+  source_table text NOT NULL,
+  species_id text NOT NULL,
+  original_scientific_name text NOT NULL,
+  query_name text NOT NULL,
+  gbif_usage_key bigint,
+  gbif_accepted_usage_key bigint,
+  match_type text,
+  confidence integer,
+  status text,
+  gbif_rank text,
+  accepted_scientific_name text,
+  canonical_name text,
+  kingdom text,
+  phylum text,
+  class_name text,
+  order_name text,
+  family text,
+  genus text,
+  species text,
+  gbif_raw jsonb,
+  fetched_at timestamp with time zone NOT NULL,
+  CONSTRAINT gbif_taxonomy_cache_pkey PRIMARY KEY (source_table, species_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_gbif_taxonomy_cache_query ON public.gbif_taxonomy_cache (query_name);
+CREATE INDEX IF NOT EXISTS idx_gbif_taxonomy_cache_species ON public.gbif_taxonomy_cache (species);
+
 DO $$
 BEGIN
   IF to_regclass('public.species_conservation_terms') IS NOT NULL THEN

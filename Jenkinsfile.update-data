@@ -146,6 +146,11 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   require_file_table_data "insect_db_vn"
   require_file_table_data "fungi_db_vn"
   require_file_table_data "species_showpic_metadata"
+  require_file_table_data "species_taxonomy"
+  require_file_table_data "taxa"
+  require_file_table_data "taxon_names"
+  require_file_table_data "taxon_closure"
+  require_file_table_data "gbif_taxonomy_cache"
   require_file_table_data "vnredlist_profiles"
   require_file_table_data "species_vnredlist_matches"
 
@@ -155,6 +160,11 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   verify_table_exists "insect_db_vn"
   verify_table_exists "fungi_db_vn"
   verify_table_exists "species_showpic_metadata"
+  verify_table_exists "species_taxonomy"
+  verify_table_exists "taxa"
+  verify_table_exists "taxon_names"
+  verify_table_exists "taxon_closure"
+  verify_table_exists "gbif_taxonomy_cache"
   verify_table_exists "vnredlist_profiles"
   verify_table_exists "species_vnredlist_matches"
 fi
@@ -184,6 +194,7 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
         'taxon_closure',
         'taxa',
         'taxon_names',
+        'gbif_taxonomy_cache',
         'species_showpic_metadata',
         'species_images',
         'species_keyword_links',
@@ -222,10 +233,15 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
       )::text || '|' ||
       (SELECT count(*) FROM public.vnredlist_profiles)::text || '|' ||
       (SELECT count(*) FROM public.species_vnredlist_matches)::text || '|' ||
-      (SELECT count(*) FROM public.species_showpic_metadata)::text;
+      (SELECT count(*) FROM public.species_showpic_metadata)::text || '|' ||
+      (SELECT count(*) FROM public.taxa)::text || '|' ||
+      (SELECT count(*) FROM public.taxon_names)::text || '|' ||
+      (SELECT count(*) FROM public.taxon_closure)::text || '|' ||
+      (SELECT count(*) FROM public.species_taxonomy)::text || '|' ||
+      (SELECT count(*) FROM public.gbif_taxonomy_cache)::text;
   ")
 
-  IFS='|' read -r SPECIES_COUNT REDLIST_COUNT REDLIST_MATCH_COUNT SHOWPIC_COUNT <<EOF_COUNTS
+  IFS='|' read -r SPECIES_COUNT REDLIST_COUNT REDLIST_MATCH_COUNT SHOWPIC_COUNT TAXA_COUNT TAXON_NAMES_COUNT TAXON_CLOSURE_COUNT SPECIES_TAXONOMY_COUNT GBIF_TAXONOMY_CACHE_COUNT <<EOF_COUNTS
 $COUNTS
 EOF_COUNTS
 
@@ -233,6 +249,11 @@ EOF_COUNTS
   echo "vnredlist_profiles_count=$REDLIST_COUNT"
   echo "species_vnredlist_matches_count=$REDLIST_MATCH_COUNT"
   echo "species_showpic_metadata_count=$SHOWPIC_COUNT"
+  echo "taxa_count=$TAXA_COUNT"
+  echo "taxon_names_count=$TAXON_NAMES_COUNT"
+  echo "taxon_closure_count=$TAXON_CLOSURE_COUNT"
+  echo "species_taxonomy_count=$SPECIES_TAXONOMY_COUNT"
+  echo "gbif_taxonomy_cache_count=$GBIF_TAXONOMY_CACHE_COUNT"
 
   if [ "$SPECIES_COUNT" -le 0 ]; then
     echo "ERROR: species_count is zero after import"
@@ -251,6 +272,16 @@ EOF_COUNTS
 
   if [ "$SHOWPIC_COUNT" -le 0 ]; then
     echo "ERROR: species_showpic_metadata_count is zero after import"
+    exit 1
+  fi
+
+  if [ "$TAXA_COUNT" -le 0 ] || [ "$TAXON_NAMES_COUNT" -le 0 ] || [ "$TAXON_CLOSURE_COUNT" -le 0 ] || [ "$SPECIES_TAXONOMY_COUNT" -le 0 ]; then
+    echo "ERROR: taxonomy tables are incomplete after import"
+    exit 1
+  fi
+
+  if [ "$GBIF_TAXONOMY_CACHE_COUNT" -le 0 ]; then
+    echo "ERROR: gbif_taxonomy_cache_count is zero after import"
     exit 1
   fi
 fi
