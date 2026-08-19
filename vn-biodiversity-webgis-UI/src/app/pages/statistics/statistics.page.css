@@ -7,6 +7,7 @@
 }
 
 .statistics-hero,
+.stats-topbar,
 .stats-filter,
 app-dashboard-metric-strip,
 .dashboard-tabs,
@@ -166,35 +167,6 @@ button {
   border: 1px solid #1f7a4e;
   background: #fff;
   color: #1f7a4e;
-}
-
-.dashboard-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-  padding: 8px;
-  border: 1px solid #cfe0d5;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-}
-
-.dashboard-tabs button {
-  height: 42px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #344d3f;
-}
-
-.dashboard-tabs button.is-active {
-  border-color: #b9d8c3;
-  background: #e9f5ed;
-  color: #006d3b;
-}
-
-.dashboard-tabs button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
 }
 
 .dashboard-layout {
@@ -839,6 +811,7 @@ button {
 
 @media (max-width: 1180px) {
   .hero-grid,
+  .stats-topbar,
   .stats-filter,
   .stats-filter-form,
   .dashboard-layout {
@@ -869,6 +842,7 @@ button {
 
 @media (max-width: 720px) {
   .statistics-hero,
+  .stats-topbar,
   .stats-filter,
   app-dashboard-metric-strip,
   .dashboard-tabs,

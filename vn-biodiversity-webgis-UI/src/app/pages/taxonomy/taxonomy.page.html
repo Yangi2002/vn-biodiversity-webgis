@@ -32,80 +32,68 @@
     </section>
   }
 
-  @if (activeView() === 'search') {
-    <nav class="taxonomy-view-tabs" aria-label="Chế độ xem taxonomy">
+  <nav
+    class="tree-topbar"
+    aria-label="Công cụ phân loại"
+  >
+    <span class="tree-brand-mark" aria-hidden="true">⌘</span>
+
+    <div class="tree-mode-pills">
       <button
         type="button"
-        class="is-active"
+        [class.is-active]="activeView() === 'search'"
+        (click)="switchView('search')"
       >
         Danh sách taxon
       </button>
 
       <button
         type="button"
+        [class.is-active]="activeView() === 'tree'"
         (click)="switchView('tree')"
       >
         Cây phân loại
       </button>
-    </nav>
-  }
+    </div>
+
+    <form
+      class="tree-search-mini"
+      (submit)="submitTopbarSearch($event)"
+    >
+      <span aria-hidden="true">⌕</span>
+
+      <input
+        type="search"
+        [formControl]="searchControl"
+        placeholder="Tìm taxon, tên Latin, hoặc cấp phân loại..."
+        aria-label="Tìm nhanh taxonomy"
+      />
+    </form>
+
+    <div
+      class="tree-status-pills"
+      aria-label="Trạng thái phân loại"
+    >
+      <span>Root</span>
+      <span>Biodiversity</span>
+
+      @if (activeView() === 'tree' && selectedTreeNode(); as node) {
+        <strong>
+          Đang mở: {{ treeNodeDisplayName(node) }}
+        </strong>
+      } @else {
+        <strong>
+          {{ response()?.total ?? 0 }} taxon
+        </strong>
+      }
+    </div>
+  </nav>
 
   @if (activeView() === 'tree') {
     <section
       class="taxonomy-tree-section"
       aria-label="Cây phân loại sinh học"
     >
-      <div
-        class="tree-topbar"
-        aria-label="Công cụ cây phân loại"
-      >
-        <span class="tree-brand-mark" aria-hidden="true">⌘</span>
-
-        <div class="tree-mode-pills">
-          <button
-            type="button"
-            (click)="switchView('search')"
-          >
-            Danh sách taxon
-          </button>
-
-          <button
-            type="button"
-            class="is-active"
-          >
-            Cây phân loại
-          </button>
-        </div>
-
-        <form
-          class="tree-search-mini"
-          (submit)="submitSearch($event)"
-        >
-          <span aria-hidden="true">⌕</span>
-
-          <input
-            type="search"
-            [formControl]="searchControl"
-            placeholder="Tìm taxon, tên Latin, hoặc cấp phân loại..."
-            aria-label="Tìm nhanh taxonomy trong chế độ cây"
-          />
-        </form>
-
-        <div
-          class="tree-status-pills"
-          aria-label="Trạng thái cây"
-        >
-          <span>Root</span>
-          <span>Biodiversity</span>
-
-          @if (selectedTreeNode(); as node) {
-            <strong>
-              Đang mở: {{ treeNodeDisplayName(node) }}
-            </strong>
-          }
-        </div>
-      </div>
-
       <div class="tree-section-heading">
         <div class="tree-intro-card leaf-hero-surface">
           <p class="eyebrow">Taxonomy tree explorer</p>

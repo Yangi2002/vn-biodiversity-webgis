@@ -5,6 +5,7 @@
 }
 
 .taxonomy-hero,
+.tree-topbar,
 .taxonomy-tree-section,
 .taxonomy-layout {
   width: min(1520px, calc(100% - 64px));
@@ -143,6 +144,7 @@ button {
   grid-template-columns: auto auto minmax(280px, 1fr) auto;
   align-items: center;
   gap: 18px;
+  margin-bottom: 22px;
   padding: 18px 22px;
   border: 1px solid #d4e6dc;
   border-radius: 24px;
@@ -677,7 +679,7 @@ h2 {
 @media (max-width: 620px) {
   .taxonomy-hero,
   .taxonomy-tree-section,
-  .taxonomy-view-tabs,
+  .tree-topbar,
   .taxonomy-layout {
     width: min(100% - 28px, 1440px);
   }

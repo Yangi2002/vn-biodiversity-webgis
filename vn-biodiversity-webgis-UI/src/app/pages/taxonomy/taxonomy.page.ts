@@ -95,6 +95,12 @@ export class TaxonomyPage {
     this.search(this.createState(1));
   }
 
+  protected submitTopbarSearch(event?: Event): void {
+    event?.preventDefault();
+    this.activeView.set('search');
+    this.search(this.createState(1));
+  }
+
   protected applyRank(rank: string): void {
     this.rankControl.setValue(rank, { emitEvent: false });
     this.search(this.createState(1));

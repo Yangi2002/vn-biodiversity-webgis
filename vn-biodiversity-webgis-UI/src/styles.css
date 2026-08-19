@@ -52,3 +52,158 @@ a {
     linear-gradient(135deg, #ffffff, #eff8f2);
   box-shadow: 0 20px 54px rgba(23, 37, 31, 0.08);
 }
+
+.stats-topbar {
+  display: grid;
+  grid-template-columns: auto auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+  margin-bottom: 18px;
+  padding: 18px 22px;
+  border: 1px solid #d4e6dc;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 54px rgba(23, 37, 31, 0.1);
+}
+
+.stats-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #acd6bd;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff, #e8f5ed);
+  color: #197144;
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.stats-mode-pills,
+.stats-status-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stats-mode-pills {
+  padding: 5px;
+  border: 1px solid #dbe9e1;
+  border-radius: 999px;
+  background: #fbfdfb;
+}
+
+.stats-mode-pills button {
+  min-width: 150px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #52685d;
+  font-weight: 900;
+}
+
+.stats-mode-pills button.is-active {
+  background: #1f7a4e;
+  color: #ffffff;
+}
+
+.stats-mode-pills button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.stats-topbar-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 50px;
+  padding: 0 14px;
+  border: 1px solid #dbe9e1;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.stats-topbar-summary span {
+  color: #52685d;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.stats-topbar-summary * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-topbar-summary strong {
+  color: #17251f;
+  font-weight: 900;
+}
+
+.stats-topbar-summary small {
+  color: #60746a;
+  font-weight: 800;
+}
+
+.stats-status-pills {
+  justify-content: flex-end;
+}
+
+.stats-status-pills span,
+.stats-status-pills strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid #bdddc9;
+  border-radius: 999px;
+  background: #eff8f2;
+  color: #157244;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .stats-topbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .stats-topbar {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .stats-brand-mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .stats-mode-pills,
+  .stats-status-pills {
+    justify-content: flex-start;
+  }
+
+  .stats-mode-pills button {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .stats-topbar-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    height: auto;
+    min-height: 50px;
+  }
+
+  .stats-topbar-summary small {
+    grid-column: 2;
+  }
+}

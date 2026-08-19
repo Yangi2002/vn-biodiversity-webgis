@@ -103,23 +103,45 @@
 
     <app-dashboard-metric-strip [items]="summaryMetrics()" />
 
-    <nav class="dashboard-tabs" aria-label="Nhóm nội dung thống kê">
-      <button
-        type="button"
-        [class.is-active]="activeTab() === 'overview'"
-        [disabled]="isGroupFiltered()"
-        (click)="showTab('overview')"
-      >
-        Tổng quan
-      </button>
-      <button
-        type="button"
-        [class.is-active]="activeTab() === 'group-detail'"
-        [disabled]="!isGroupFiltered()"
-        (click)="showTab('group-detail')"
-      >
-        Phân tích nhóm
-      </button>
+    <nav
+      class="stats-topbar"
+      aria-label="Công cụ thống kê"
+    >
+      <span class="stats-brand-mark" aria-hidden="true">⌘</span>
+
+      <div class="stats-mode-pills">
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'overview'"
+          [disabled]="isGroupFiltered()"
+          (click)="showTab('overview')"
+        >
+          Tổng quan
+        </button>
+
+        <button
+          type="button"
+          [class.is-active]="activeTab() === 'group-detail'"
+          [disabled]="!isGroupFiltered()"
+          (click)="showTab('group-detail')"
+        >
+          Phân tích nhóm
+        </button>
+      </div>
+
+      <div class="stats-topbar-summary">
+        <span aria-hidden="true">⌕</span>
+        <strong>{{ selectedGroupLabel() }}</strong>
+        <small>
+          {{ isLoading() ? 'Đang cập nhật dữ liệu...' : 'Dashboard thống kê biodiversity' }}
+        </small>
+      </div>
+
+      <div class="stats-status-pills" aria-label="Trạng thái thống kê">
+        <span>{{ data.summary.totalSpecies | number }} loài</span>
+        <span>{{ data.summary.totalOccurrences | number }} occurrence</span>
+        <strong>Observed year {{ observedRange(data) }}</strong>
+      </div>
     </nav>
 
     <section class="dashboard-layout">

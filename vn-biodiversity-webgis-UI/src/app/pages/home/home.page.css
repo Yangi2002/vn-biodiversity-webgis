@@ -51,13 +51,13 @@
 .topbar div {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .topbar div a {
   padding: 8px 0;
   color: #314b3f;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
 }
 
