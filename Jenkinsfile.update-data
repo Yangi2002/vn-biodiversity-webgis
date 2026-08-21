@@ -152,6 +152,7 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   require_file_table_data "taxon_names"
   require_file_table_data "taxon_closure"
   require_file_table_data "gbif_taxonomy_cache"
+  require_file_table_data "gbif_occurrences"
   require_file_table_data "vnredlist_profiles"
   require_file_table_data "species_vnredlist_matches"
 
@@ -166,6 +167,7 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   verify_table_exists "taxon_names"
   verify_table_exists "taxon_closure"
   verify_table_exists "gbif_taxonomy_cache"
+  verify_table_exists "gbif_occurrences"
   verify_table_exists "vnredlist_profiles"
   verify_table_exists "species_vnredlist_matches"
 fi
@@ -191,6 +193,7 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
         'vnredlist_profiles',
         'vn_redlist_profiles',
         'occurrence_records',
+        'gbif_occurrences',
         'species_taxonomy',
         'taxon_closure',
         'taxa',
@@ -239,10 +242,20 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
       (SELECT count(*) FROM public.taxon_names)::text || '|' ||
       (SELECT count(*) FROM public.taxon_closure)::text || '|' ||
       (SELECT count(*) FROM public.species_taxonomy)::text || '|' ||
-      (SELECT count(*) FROM public.gbif_taxonomy_cache)::text;
+      (SELECT count(*) FROM public.gbif_taxonomy_cache)::text || '|' ||
+      (SELECT count(*) FROM public.gbif_occurrences)::text || '|' ||
+      (
+        SELECT count(*)
+        FROM public.gbif_occurrences
+        WHERE latitude BETWEEN 8.2 AND 23.5
+          AND longitude BETWEEN 102.1 AND 109.7
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+          AND coalesce(has_geospatial_issue, false) = false
+      )::text;
   ")
 
-  IFS='|' read -r SPECIES_COUNT REDLIST_COUNT REDLIST_MATCH_COUNT SHOWPIC_COUNT TAXA_COUNT TAXON_NAMES_COUNT TAXON_CLOSURE_COUNT SPECIES_TAXONOMY_COUNT GBIF_TAXONOMY_CACHE_COUNT <<EOF_COUNTS
+  IFS='|' read -r SPECIES_COUNT REDLIST_COUNT REDLIST_MATCH_COUNT SHOWPIC_COUNT TAXA_COUNT TAXON_NAMES_COUNT TAXON_CLOSURE_COUNT SPECIES_TAXONOMY_COUNT GBIF_TAXONOMY_CACHE_COUNT GBIF_OCCURRENCES_COUNT VALID_OCCURRENCES_COUNT <<EOF_COUNTS
 $COUNTS
 EOF_COUNTS
 
@@ -255,6 +268,8 @@ EOF_COUNTS
   echo "taxon_closure_count=$TAXON_CLOSURE_COUNT"
   echo "species_taxonomy_count=$SPECIES_TAXONOMY_COUNT"
   echo "gbif_taxonomy_cache_count=$GBIF_TAXONOMY_CACHE_COUNT"
+  echo "gbif_occurrences_count=$GBIF_OCCURRENCES_COUNT"
+  echo "valid_occurrences_count=$VALID_OCCURRENCES_COUNT"
 
   if [ "$SPECIES_COUNT" -le 0 ]; then
     echo "ERROR: species_count is zero after import"
@@ -283,6 +298,11 @@ EOF_COUNTS
 
   if [ "$GBIF_TAXONOMY_CACHE_COUNT" -le 0 ]; then
     echo "ERROR: gbif_taxonomy_cache_count is zero after import"
+    exit 1
+  fi
+
+  if [ "$GBIF_OCCURRENCES_COUNT" -le 0 ] || [ "$VALID_OCCURRENCES_COUNT" -le 0 ]; then
+    echo "ERROR: gbif_occurrences is empty or has no valid Vietnam coordinates after import"
     exit 1
   fi
 fi

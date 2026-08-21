@@ -27,7 +27,7 @@ $tables = @(
   "public.taxon_names",
   "public.taxon_closure",
   "public.gbif_taxonomy_cache",
-  "public.occurrence_records",
+  "public.gbif_occurrences",
   "public.species_conservation_terms",
   "public.species_keyword_links",
   "public.species_gbif_occurrence_matches",
@@ -65,6 +65,7 @@ $requiredTables = @(
   "taxon_names",
   "taxon_closure",
   "gbif_taxonomy_cache",
+  "gbif_occurrences",
   "vnredlist_profiles",
   "species_vnredlist_matches"
 )
