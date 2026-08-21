@@ -36,6 +36,7 @@
           <option value="animal">Động vật</option>
           <option value="plant">Thực vật</option>
           <option value="insect">Côn trùng</option>
+          <option value="fungi">Nấm</option>
         </select>
       </label>
 
@@ -150,7 +151,7 @@
           <div class="panel-heading">
             <div>
               <span>Tỷ lệ loài</span>
-              <h2>Ba nhóm dữ liệu chính</h2>
+              <h2>Các nhóm dữ liệu chính</h2>
             </div>
             <strong>{{ speciesGroupTotal() | number }} loài</strong>
           </div>
@@ -547,7 +548,7 @@
                   @if (speciesGroup.key === region.region) {
                     @if (groupVisualMode() === 'donut') {
                       <div class="region-species-list">
-                        <strong>Loài chiếm tỷ lệ cao</strong>
+                        <strong>Loài phổ biến và loài còn lại</strong>
                         <div class="mini-donut-layout">
                           <div class="mini-donut" [style.background]="donutMetricBackground(regionSpeciesDonutItems(region.region), true)">
                             <span>{{ visibleDonutCount(regionSpeciesDonutItems(region.region)) }}</span>
@@ -576,16 +577,27 @@
                       </div>
                     } @else {
                       <div class="region-species-list">
-                        <strong>Loài chiếm tỷ lệ cao</strong>
-                        @for (species of speciesGroup.items; track species.sourceTable + species.speciesId) {
-                          <a [routerLink]="species.detailUrl" class="species-share-row is-compact">
-                            <div>
-                              <strong>{{ species.vietnameseName || species.scientificName || 'Chưa rõ tên' }}</strong>
-                              <span>{{ species.sourceGroupLabel }}</span>
+                        <strong>Loài phổ biến và loài còn lại</strong>
+                        @for (item of regionSpeciesShareItems(region.region); track item.key) {
+                          @if (item.isRemainder) {
+                            <div class="species-share-row is-compact is-remainder">
+                              <div>
+                                <strong>{{ item.label }}</strong>
+                                <span>Các loài ít phổ biến vẫn ghi nhận trong vùng</span>
+                              </div>
+                              <small>{{ item.percent }}%</small>
+                              <i><b [style.width]="metricWidth(item)"></b></i>
                             </div>
-                            <small>{{ species.sharePercent }}%</small>
-                            <i><b [style.width]="speciesShareWidth(species)"></b></i>
-                          </a>
+                          } @else {
+                            <a [routerLink]="item.detailUrl || '/species-list'" class="species-share-row is-compact">
+                              <div>
+                                <strong>{{ item.label }}</strong>
+                                <span>Loài nổi bật trong vùng</span>
+                              </div>
+                              <small>{{ item.percent }}%</small>
+                              <i><b [style.width]="metricWidth(item)"></b></i>
+                            </a>
+                          }
                         }
                       </div>
                     }

@@ -128,7 +128,7 @@ export class SpeciesDetailPage {
   }
 
   protected extraFields(detail: SpeciesDetailResponse): SpeciesDetailField[] {
-    return detail.fields.filter((field) => !this.contentFieldKeys.includes(field.key));
+    return detail.fields.filter((field) => !this.contentFieldKeys.includes(field.key) && field.key !== 'old_species_id');
   }
 
   protected isEndangeredSpecies(detail: SpeciesDetailResponse): boolean {

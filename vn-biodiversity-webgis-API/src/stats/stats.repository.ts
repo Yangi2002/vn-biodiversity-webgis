@@ -24,6 +24,7 @@ const SOURCE_GROUP_LABELS: Record<string, string> = {
   animal: 'Động vật',
   plant: 'Thực vật',
   insect: 'Côn trùng',
+  fungi: 'Nấm',
   unknown: 'Chưa phân nhóm',
 };
 
@@ -431,6 +432,10 @@ export class StatsRepository {
 
     if (sourceGroup === 'insect') {
       return insectSql;
+    }
+
+    if (sourceGroup === 'fungi') {
+      return fungiSql;
     }
 
     return `${animalSql}

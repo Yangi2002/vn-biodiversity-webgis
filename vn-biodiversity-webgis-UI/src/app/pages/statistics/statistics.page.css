@@ -733,6 +733,14 @@ button {
   border-top: 1px solid #edf4ef;
 }
 
+.species-share-row.is-remainder {
+  color: #52665d;
+}
+
+.species-share-row.is-remainder b {
+  background: #b8cabe;
+}
+
 .quality-panel dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

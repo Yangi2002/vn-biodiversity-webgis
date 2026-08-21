@@ -97,27 +97,51 @@ export const HOME_SOURCE_GROUPS: readonly HomeSourceGroup[] = [
   {
     name: 'Thực vật',
     image: '/images/home/plant.jpg',
-    description: 'Cây gỗ, cây thân thảo, lan, nấm và các nhóm thực vật bản địa.',
+    description: 'Cây gỗ, cây thân thảo, lan và các nhóm thực vật bản địa.',
   },
   {
     name: 'Côn trùng',
     image: '/images/home/insect.jpg',
     description: 'Bướm, bọ cánh cứng, ong, chuồn chuồn và các nhóm côn trùng.',
   },
+  {
+    name: 'Nấm',
+    image: '/images/home/fungi.jpg',
+    description: 'Nấm lớn, nấm túi, nấm đảm và nhiều nhóm nấm ghi nhận tại Việt Nam.',
+  },
 ];
 
 export const TRUSTED_SOURCES: readonly TrustedSource[] = [
+  { name: 'VNCreatures', url: 'https://www.vncreatures.net/' },
+  { name: 'Sinh vật Việt Nam', url: 'https://vncreatures.net/species/' },
+  { name: 'Vườn quốc gia Việt Nam', url: 'https://sinhvatvietnam.vn/ban-do-vuon-quoc-gia/' },
+  { name: 'VN Red List', url: 'http://vnredlist.vast.vn/' },
+  { name: 'NBCA', url: 'https://dadangsinhhoc.mae.gov.vn/' },
+  { name: 'NBDS', url: 'https://nbds.cebid.vn/' },
   { name: 'GBIF', url: 'https://www.gbif.org/' },
   { name: 'iNaturalist', url: 'https://www.inaturalist.org/' },
-  { name: 'VNCreatures', url: 'https://www.vncreatures.net/' },
-  { name: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
-  { name: 'NBCA', url: 'https://nbca.gov.vn/' },
+  { name: 'Catalogue of Life', url: 'https://www.catalogueoflife.org/' },
+  { name: 'EOL', url: 'https://eol.org/' },
+  { name: 'Wikimedia Commons', url: 'https://commons.wikimedia.org/' },
+  { name: 'MycoBank', url: 'https://www.mycobank.org/' },
+  { name: 'Index Fungorum', url: 'https://www.indexfungorum.org/' },
+  { name: 'First Nature', url: 'https://www.first-nature.com/' },
+  { name: 'MushroomExpert', url: 'https://www.mushroomexpert.com/' },
+  { name: 'MykoWeb', url: 'https://www.mykoweb.com/' },
+  {
+    name: 'Mushroom Field Manual',
+    url: 'https://humidtropics.cgiar.org/wp-content/uploads/downloads/2014/04/Final_Mushroom-Field-Manual_Mar-2014_for-WEB.pdf',
+  },
+  { name: 'Pù Huống Nghệ An', url: 'https://puhuong.nghean.gov.vn/hoat-dong-bao-ton/ket-qua-thuc-hien-nhiem-vu-dieu-tra-thanh-phan-va-de-xuat-giai-phap-phat-trien-hieu-qua-ben-vung-cac-loai-nam-an-nam-duoc-lieu-tai-khu-bttn-pu-huong-nghe-an-380.html' },
+  {
+    name: 'ResearchGate Fungi',
+    url: 'https://www.researchgate.net/publication/340393889_ISOLATION_AND_STUDY_ON_PURE_CULTURE_OF_WILD_EDIBLE_MUSHROOMS_COLLECTED_FROM_PROVINCES_IN_THE_SOUTHEAST_REGION_OF_VIETNAM',
+  },
+  { name: 'NCBI Taxonomy', url: 'https://www.ncbi.nlm.nih.gov/datasets/taxonomy/4751/' },
+  { name: 'NCBI Gene', url: 'https://www.ncbi.nlm.nih.gov/home/genes/' },
 ];
 
-export const FOOTER_CREDENTIAL_LINKS: readonly CredentialLink[] = [
-  { label: 'GBIF', url: 'https://www.gbif.org/' },
-  { label: 'iNaturalist', url: 'https://www.inaturalist.org/' },
-  { label: 'VNCreatures', url: 'https://www.vncreatures.net/' },
-  { label: 'VN Red List', url: 'https://vnredlist.vast.vn/' },
-  { label: 'NBCA', url: 'https://nbca.gov.vn/' },
-];
+export const FOOTER_CREDENTIAL_LINKS: readonly CredentialLink[] = TRUSTED_SOURCES.map(({ name, url }) => ({
+  label: name,
+  url,
+}));

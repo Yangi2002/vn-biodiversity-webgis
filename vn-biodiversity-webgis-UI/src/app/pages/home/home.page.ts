@@ -55,7 +55,7 @@ export class HomePage {
       {
         label: 'Loài trong hệ thống',
         value: speciesCatalog?.total ?? 0,
-        helper: 'Động vật, thực vật và côn trùng',
+        helper: 'Động vật, thực vật, côn trùng và nấm',
         route: '/species-list',
       },
       {

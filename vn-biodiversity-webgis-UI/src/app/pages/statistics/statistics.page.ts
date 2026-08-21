@@ -282,6 +282,10 @@ export class StatisticsPage {
       return '#d69a36';
     }
 
+    if (key === 'fungi') {
+      return '#b85f9b';
+    }
+
     return '#1f7a4e';
   }
 
@@ -307,14 +311,14 @@ export class StatisticsPage {
     return `${Math.max(4, this.speciesRankingRatio(species))}%`;
   }
 
-  regionSpeciesDonutItems(regionKey: string): DonutMetric[] {
+  regionSpeciesShareItems(regionKey: string): DonutMetric[] {
     const speciesGroup = this.regionSpeciesComposition().find((group) => group.key === regionKey);
 
     if (!speciesGroup) {
       return [];
     }
 
-    const visibleItems = speciesGroup.items.slice(0, 6).map((species, index) => ({
+    const visibleItems = speciesGroup.items.slice(0, 5).map((species, index) => ({
       key: `${species.sourceTable}-${species.speciesId}`,
       label: species.vietnameseName || species.scientificName || 'Chưa rõ tên',
       value: species.occurrenceCount,
@@ -324,6 +328,14 @@ export class StatisticsPage {
     }));
 
     return this.withRemainderMetric(visibleItems, speciesGroup.totalOccurrence, 'Loài còn lại');
+  }
+
+  regionSpeciesDonutItems(regionKey: string): DonutMetric[] {
+    return this.regionSpeciesShareItems(regionKey);
+  }
+
+  metricWidth(item: DonutMetric): string {
+    return `${Math.max(4, Math.round(item.percent))}%`;
   }
 
   observedRange(dashboard: StatsDashboard): string {
@@ -470,6 +482,10 @@ export class StatisticsPage {
 
     if (group === 'insect') {
       return 'Côn trùng';
+    }
+
+    if (group === 'fungi') {
+      return 'Nấm';
     }
 
     return 'Toàn bộ nhóm sinh vật';
