@@ -1,6 +1,6 @@
 param(
   [Alias("LocalFile")]
-  [string]$File = "D:\Duong\db-backup\vnsc-data-replace-$(Get-Date -Format yyyy-MM-dd).sql",
+  [string]$File = "D:\Duong\db-backup\vnsc-data-update-$(Get-Date -Format yyyy-MM-dd).sql",
   [string]$RemoteFileName = "",
   [string]$SshKey = "$env:USERPROFILE\.ssh\jenkins_vn_biodiversity",
   [string]$Server = "dev@100.87.247.104",

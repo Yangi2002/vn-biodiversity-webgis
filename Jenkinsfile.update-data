@@ -9,7 +9,7 @@ pipeline {
     )
     string(
       name: 'IMPORT_FILE',
-      defaultValue: 'vnsc-data-replace.sql',
+      defaultValue: 'vnsc-data-update.sql',
       description: 'Ten file trong /opt/vn-biodiversity-webgis/imports'
     )
     choice(
@@ -33,6 +33,8 @@ pipeline {
     DB_NAME = 'vn_biodiversity'
     PREPARE_SQL = 'scripts/prepare-species-data-import.sql'
     PREPARE_REMOTE = '/tmp/vnsc-prepare-species-data-import.sql'
+    TABLE_MANIFEST = 'scripts/data-update-tables.txt'
+    TABLE_MANIFEST_REMOTE = '/tmp/vnsc-data-update-tables.txt'
   }
 
   stages {
@@ -53,6 +55,10 @@ pipeline {
           scp -i "$env:SSH_KEY" `
             "$env:WORKSPACE\\$env:PREPARE_SQL" `
             "${env:SERVER}:${env:PREPARE_REMOTE}"
+
+          scp -i "$env:SSH_KEY" `
+            "$env:WORKSPACE\\$env:TABLE_MANIFEST" `
+            "${env:SERVER}:${env:TABLE_MANIFEST_REMOTE}"
 
           $uploadFile = $null
 
@@ -93,6 +99,7 @@ RESTART_API="__RESTART_API__"
 
 IMPORT_PATH="$APP_DIR/imports/$IMPORT_FILE"
 PREPARE_SQL="__PREPARE_REMOTE__"
+TABLE_MANIFEST="__TABLE_MANIFEST_REMOTE__"
 BACKUP_PATH="$APP_DIR/backups/prod-before-replace-$(date +%Y%m%d-%H%M%S).sql"
 
 echo "DATA_ACTION=$DATA_ACTION"
@@ -131,6 +138,31 @@ verify_table_exists() {
   fi
 }
 
+if [ ! -s "$TABLE_MANIFEST" ]; then
+  echo "ERROR: Data table manifest not found or empty: $TABLE_MANIFEST"
+  exit 1
+fi
+
+mapfile -t DATA_TABLES < <(
+  sed 's/\r$//' "$TABLE_MANIFEST" |
+    sed '/^[[:space:]]*$/d; /^[[:space:]]*#/d'
+)
+
+if [ "${#DATA_TABLES[@]}" -eq 0 ]; then
+  echo "ERROR: Data table manifest contains no tables"
+  exit 1
+fi
+
+for table in "${DATA_TABLES[@]}"; do
+  if ! printf '%s\n' "$table" | grep -Eq '^[a-z0-9_]+$'; then
+    echo "ERROR: Invalid table name in manifest: $table"
+    exit 1
+  fi
+done
+
+TABLE_LIST_SQL=$(printf "'%s'," "${DATA_TABLES[@]}")
+TABLE_LIST_SQL="${TABLE_LIST_SQL%,}"
+
 echo "Checking database exists"
 docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "SELECT current_database();"
 
@@ -142,34 +174,14 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   IMPORT_TABLES=$(grep -Eo "^(COPY|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" || true)
   echo "$IMPORT_TABLES" | sort -u
 
-  require_file_table_data "animal_db_vn"
-  require_file_table_data "plant_db_vn"
-  require_file_table_data "insect_db_vn"
-  require_file_table_data "fungi_db_vn"
-  require_file_table_data "species_showpic_metadata"
-  require_file_table_data "species_taxonomy"
-  require_file_table_data "taxa"
-  require_file_table_data "taxon_names"
-  require_file_table_data "taxon_closure"
-  require_file_table_data "gbif_taxonomy_cache"
-  require_file_table_data "gbif_occurrences"
-  require_file_table_data "vnredlist_profiles"
-  require_file_table_data "species_vnredlist_matches"
+  for table in "${DATA_TABLES[@]}"; do
+    require_file_table_data "$table"
+  done
 
   echo "Preflight production schema"
-  verify_table_exists "animal_db_vn"
-  verify_table_exists "plant_db_vn"
-  verify_table_exists "insect_db_vn"
-  verify_table_exists "fungi_db_vn"
-  verify_table_exists "species_showpic_metadata"
-  verify_table_exists "species_taxonomy"
-  verify_table_exists "taxa"
-  verify_table_exists "taxon_names"
-  verify_table_exists "taxon_closure"
-  verify_table_exists "gbif_taxonomy_cache"
-  verify_table_exists "gbif_occurrences"
-  verify_table_exists "vnredlist_profiles"
-  verify_table_exists "species_vnredlist_matches"
+  for table in "${DATA_TABLES[@]}"; do
+    verify_table_exists "$table"
+  done
 fi
 
 if [ "$DATA_ACTION" = "sql-import" ]; then
@@ -188,27 +200,7 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
       ' RESTART IDENTITY CASCADE;'
     FROM pg_tables
     WHERE schemaname = 'public'
-      AND tablename IN (
-        'species_conservation_terms',
-        'vnredlist_profiles',
-        'vn_redlist_profiles',
-        'occurrence_records',
-        'gbif_occurrences',
-        'species_taxonomy',
-        'taxon_closure',
-        'taxa',
-        'taxon_names',
-        'gbif_taxonomy_cache',
-        'species_showpic_metadata',
-        'species_images',
-        'species_keyword_links',
-        'species_gbif_occurrence_matches',
-        'species_vnredlist_matches',
-        'fungi_db_vn',
-        'insect_db_vn',
-        'plant_db_vn',
-        'animal_db_vn'
-      );
+      AND tablename IN ($TABLE_LIST_SQL);
   ")
 
   echo "$TRUNCATE_SQL"
@@ -332,6 +324,7 @@ echo "Done"
             -replace '__DB_USER__', $env:DB_USER `
             -replace '__DB_NAME__', $env:DB_NAME `
             -replace '__PREPARE_REMOTE__', $env:PREPARE_REMOTE `
+            -replace '__TABLE_MANIFEST_REMOTE__', $env:TABLE_MANIFEST_REMOTE `
             -replace '__DATA_ACTION__', $env:DATA_ACTION `
             -replace '__IMPORT_FILE__', $env:IMPORT_FILE `
             -replace '__RESTART_API__', $env:RESTART_API
