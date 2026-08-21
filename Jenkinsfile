@@ -166,7 +166,7 @@ pipeline {
             -i "%PROD_KEY_FILE%" ^
             -o StrictHostKeyChecking=no ^
             %PROD_USER%@%PROD_HOST% ^
-            "cd %PROD_APP_DIR% && git pull origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"
+            "cd %PROD_APP_DIR% && git restore -- scripts/prepare-species-data-import.sql && git pull --ff-only origin main && docker compose --env-file .env.docker build api frontend && docker compose --env-file .env.docker up -d api frontend && docker compose --env-file .env.docker ps"
 
           set "SSH_EXIT=%ERRORLEVEL%"
 

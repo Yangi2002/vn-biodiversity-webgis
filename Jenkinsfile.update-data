@@ -32,6 +32,7 @@ pipeline {
     DB_USER = 'postgres'
     DB_NAME = 'vn_biodiversity'
     PREPARE_SQL = 'scripts/prepare-species-data-import.sql'
+    PREPARE_REMOTE = '/tmp/vnsc-prepare-species-data-import.sql'
   }
 
   stages {
@@ -39,7 +40,7 @@ pipeline {
       steps {
         powershell '''
           $ErrorActionPreference = "Stop"
-          ssh -i "$env:SSH_KEY" "$env:SERVER" "mkdir -p $env:APP_DIR/imports $env:APP_DIR/backups $env:APP_DIR/scripts"
+          ssh -i "$env:SSH_KEY" "$env:SERVER" "mkdir -p $env:APP_DIR/imports $env:APP_DIR/backups"
         '''
       }
     }
@@ -51,7 +52,7 @@ pipeline {
 
           scp -i "$env:SSH_KEY" `
             "$env:WORKSPACE\\$env:PREPARE_SQL" `
-            "${env:SERVER}:${env:APP_DIR}/scripts/prepare-species-data-import.sql"
+            "${env:SERVER}:${env:PREPARE_REMOTE}"
 
           $uploadFile = $null
 
@@ -91,7 +92,7 @@ IMPORT_FILE="__IMPORT_FILE__"
 RESTART_API="__RESTART_API__"
 
 IMPORT_PATH="$APP_DIR/imports/$IMPORT_FILE"
-PREPARE_SQL="$APP_DIR/scripts/prepare-species-data-import.sql"
+PREPARE_SQL="__PREPARE_REMOTE__"
 BACKUP_PATH="$APP_DIR/backups/prod-before-replace-$(date +%Y%m%d-%H%M%S).sql"
 
 echo "DATA_ACTION=$DATA_ACTION"
@@ -310,6 +311,7 @@ echo "Done"
             -replace '__API_CONTAINER__', $env:API_CONTAINER `
             -replace '__DB_USER__', $env:DB_USER `
             -replace '__DB_NAME__', $env:DB_NAME `
+            -replace '__PREPARE_REMOTE__', $env:PREPARE_REMOTE `
             -replace '__DATA_ACTION__', $env:DATA_ACTION `
             -replace '__IMPORT_FILE__', $env:IMPORT_FILE `
             -replace '__RESTART_API__', $env:RESTART_API
