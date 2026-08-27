@@ -337,23 +337,24 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
       },
     );
 
-    const customNoLabelLayer = this.leaflet.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+    const lightCanvasLayer = this.leaflet.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {
-        attribution: '&copy; CARTO',
-        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 16,
+        maxZoom: 18,
         minZoom: 5,
         noWrap: true,
       },
     );
 
-    customNoLabelLayer.addTo(this.map);
+    lightCanvasLayer.addTo(this.map);
 
     this.leaflet.control
       .layers(
         {
-          'Bản đồ nền': customNoLabelLayer,
-          Satellite: satelliteLayer,
+          'Light Canvas': lightCanvasLayer,
+          'Satellite': satelliteLayer,
         },
         undefined,
         {

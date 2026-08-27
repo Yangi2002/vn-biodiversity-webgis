@@ -376,10 +376,11 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       },
     );
     const vectorLikeLayer = this.leaflet.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        maxNativeZoom: 16,
+        maxZoom: 18,
+        attribution: 'Tiles &copy; Esri',
       },
     );
 
