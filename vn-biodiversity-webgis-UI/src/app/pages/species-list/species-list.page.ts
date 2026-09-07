@@ -385,6 +385,7 @@ export class SpeciesListPage {
         ...(scientificName ? [{ text: scientificName, className: 'is-scientific-name' }] : []),
         ...(family ? [{ text: `Họ: ${family}`, className: 'is-family' }] : []),
         ...(order ? [{ text: `Bộ: ${order}`, className: 'is-order' }] : []),
+        ...(className ? [{ text: `Lớp / nhóm: ${className}`, className: 'is-extra' }] : []),
       ];
     }
 

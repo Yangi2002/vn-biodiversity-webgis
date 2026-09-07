@@ -535,6 +535,62 @@ model fungi_db_vn {
   @@index([ten_viet_nam], map: "idx_fungi_db_vn_ten_viet_nam")
 }
 
+model algae_db_vn {
+  species_id          String  @id
+  ten_viet_nam        String?
+  ten_latin           String?
+  ho                  String?
+  bo                  String?
+  lop_nhom            String?
+  title_block         String?
+  dac_diem_nhan_dang  String?
+  dac_diem_bo_sung    String?
+  kich_thuoc          String?
+  sinh_hoc_sinh_thai  String?
+  phan_bo             String?
+  phan_hang           String?
+  gia_tri             String?
+  tinh_trang          String?
+  bien_phap_bao_ve    String?
+  tai_lieu_dan        String?
+  cong_dung           String?
+  mo_ta               String?
+  mo_ta_loai          String?
+  mau_mo_ta           String?
+  hinh                String?
+
+  @@index([ten_latin], map: "idx_algae_db_vn_ten_latin")
+  @@index([ten_viet_nam], map: "idx_algae_db_vn_ten_viet_nam")
+}
+
+model protista_db_vn {
+  species_id          String  @id
+  ten_viet_nam        String?
+  ten_latin           String?
+  ho                  String?
+  bo                  String?
+  lop_nhom            String?
+  title_block         String?
+  dac_diem_nhan_dang  String?
+  dac_diem_bo_sung    String?
+  kich_thuoc          String?
+  sinh_hoc_sinh_thai  String?
+  phan_bo             String?
+  phan_hang           String?
+  gia_tri             String?
+  tinh_trang          String?
+  bien_phap_bao_ve    String?
+  tai_lieu_dan        String?
+  cong_dung           String?
+  mo_ta               String?
+  mo_ta_loai          String?
+  mau_mo_ta           String?
+  hinh                String?
+
+  @@index([ten_latin], map: "idx_protista_db_vn_ten_latin")
+  @@index([ten_viet_nam], map: "idx_protista_db_vn_ten_viet_nam")
+}
+
 model national_park_images {
   image_id          String            @id
   image_group_id    String?

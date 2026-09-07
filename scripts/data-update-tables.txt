@@ -1,4 +1,5 @@
 animal_db_vn
+algae_db_vn
 conservation_terms
 fungi_db_vn
 gbif_occurrences
@@ -7,6 +8,7 @@ insect_db_vn
 national_park_images
 national_parks_vn
 plant_db_vn
+protista_db_vn
 site_keyword_images
 site_keywords
 species_conservation_terms

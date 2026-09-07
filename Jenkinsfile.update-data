@@ -225,7 +225,9 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
         (SELECT count(*) FROM public.animal_db_vn) +
         (SELECT count(*) FROM public.plant_db_vn) +
         (SELECT count(*) FROM public.insect_db_vn) +
-        (SELECT count(*) FROM public.fungi_db_vn)
+        (SELECT count(*) FROM public.fungi_db_vn) +
+        (SELECT count(*) FROM public.algae_db_vn) +
+        (SELECT count(*) FROM public.protista_db_vn)
       )::text || '|' ||
       (SELECT count(*) FROM public.vnredlist_profiles)::text || '|' ||
       (SELECT count(*) FROM public.species_vnredlist_matches)::text || '|' ||

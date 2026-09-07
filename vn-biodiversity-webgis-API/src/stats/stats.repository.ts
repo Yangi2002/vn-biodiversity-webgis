@@ -25,6 +25,7 @@ const SOURCE_GROUP_LABELS: Record<string, string> = {
   plant: 'Thực vật',
   insect: 'Côn trùng',
   fungi: 'Nấm',
+  protista: 'Sinh vật nguyên sinh',
   unknown: 'Chưa phân nhóm',
 };
 
@@ -88,7 +89,9 @@ export class StatsRepository {
           (SELECT count(*) FROM animal_db_vn) +
           (SELECT count(*) FROM plant_db_vn) +
           (SELECT count(*) FROM insect_db_vn) +
-          (SELECT count(*) FROM fungi_db_vn)
+          (SELECT count(*) FROM fungi_db_vn) +
+          (SELECT count(*) FROM algae_db_vn) +
+          (SELECT count(*) FROM protista_db_vn)
         ) AS total_species,
         count(gbif_occurrence_key) AS total_occurrences,
         count(DISTINCT region) FILTER (WHERE region IS NOT NULL AND region <> '') AS total_regions,
@@ -421,6 +424,18 @@ export class StatsRepository {
           nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
           'fungi'::text AS source_group
         FROM fungi_db_vn`;
+    const algaeSql = `
+        SELECT 'algae_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name,
+          ten_latin AS scientific_name, lop_nhom AS class_group, ho AS family, bo AS order_name,
+          nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
+          'protista'::text AS source_group
+        FROM algae_db_vn`;
+    const protistaSql = `
+        SELECT 'protista_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name,
+          ten_latin AS scientific_name, lop_nhom AS class_group, ho AS family, bo AS order_name,
+          nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
+          'protista'::text AS source_group
+        FROM protista_db_vn`;
 
     if (sourceGroup === 'animal') {
       return animalSql;
@@ -438,13 +453,23 @@ export class StatsRepository {
       return fungiSql;
     }
 
+    if (sourceGroup === 'protista') {
+      return `${algaeSql}
+        UNION ALL
+        ${protistaSql}`;
+    }
+
     return `${animalSql}
         UNION ALL
         ${plantSql}
         UNION ALL
         ${insectSql}
         UNION ALL
-        ${fungiSql}`;
+        ${fungiSql}
+        UNION ALL
+        ${algaeSql}
+        UNION ALL
+        ${protistaSql}`;
   }
 
   private normalizeFilters(query: StatsDashboardQueryDto) {

@@ -1,5 +1,5 @@
 export interface StatsDashboardQueryDto {
-  sourceGroup?: 'all' | 'animal' | 'plant' | 'insect' | 'fungi';
+  sourceGroup?: 'all' | 'animal' | 'plant' | 'insect' | 'fungi' | 'protista';
   yearFrom?: string;
   yearTo?: string;
   basisOfRecord?: string;

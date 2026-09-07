@@ -286,6 +286,10 @@ export class StatisticsPage {
       return '#b85f9b';
     }
 
+    if (key === 'protista') {
+      return '#2f90a8';
+    }
+
     return '#1f7a4e';
   }
 
@@ -486,6 +490,10 @@ export class StatisticsPage {
 
     if (group === 'fungi') {
       return 'Nấm';
+    }
+
+    if (group === 'protista') {
+      return 'Sinh vật nguyên sinh';
     }
 
     return 'Toàn bộ nhóm sinh vật';

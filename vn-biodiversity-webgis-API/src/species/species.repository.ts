@@ -152,6 +152,8 @@ const SOURCE_TABLE_LABELS: Record<SpeciesSourceTable, string> = {
   plant_db_vn: 'Thực vật',
   insect_db_vn: 'Côn trùng',
   fungi_db_vn: 'Nấm',
+  algae_db_vn: 'Tảo',
+  protista_db_vn: 'Sinh vật nguyên sinh',
 };
 
 const DETAIL_FIELD_LABELS: Record<string, string> = {
@@ -261,6 +263,34 @@ const SPECIES_UNION_SQL = `
     title_block,
     concat_ws(' ', title_block, dong_danh, ten_khac, ten_tieng_anh) AS search_text
   FROM fungi_db_vn
+  UNION ALL
+  SELECT
+    'algae_db_vn'::text AS source_table,
+    'Tảo'::text AS source_label,
+    species_id,
+    ten_viet_nam AS vietnamese_name,
+    ten_latin AS scientific_name,
+    ho AS family,
+    bo AS order_name,
+    lop_nhom AS class_name,
+    nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
+    title_block,
+    concat_ws(' ', title_block, dac_diem_nhan_dang, dac_diem_bo_sung, mo_ta, mo_ta_loai) AS search_text
+  FROM algae_db_vn
+  UNION ALL
+  SELECT
+    'protista_db_vn'::text AS source_table,
+    'Sinh vật nguyên sinh'::text AS source_label,
+    species_id,
+    ten_viet_nam AS vietnamese_name,
+    ten_latin AS scientific_name,
+    ho AS family,
+    bo AS order_name,
+    lop_nhom AS class_name,
+    nullif(split_part(trim(coalesce(ten_latin, '')), ' ', 1), '') AS genus_name,
+    title_block,
+    concat_ws(' ', title_block, dac_diem_nhan_dang, dac_diem_bo_sung, mo_ta, mo_ta_loai) AS search_text
+  FROM protista_db_vn
 `;
 
 const SPECIES_ENRICHED_CTE_SQL = `
@@ -268,13 +298,30 @@ const SPECIES_ENRICHED_CTE_SQL = `
   species_enriched AS (
     SELECT
       species_union.*,
-      coalesce(taxonomy_source.effective_source_table, species_union.source_table) AS effective_source_table,
-      coalesce(taxonomy_source.effective_source_label, species_union.source_label) AS effective_source_label,
-      taxonomy_source.kingdom_name
+      species_union.source_table AS effective_source_table,
+      species_union.source_label AS effective_source_label,
+      CASE species_union.source_table
+        WHEN 'animal_db_vn' THEN 'Animalia'
+        WHEN 'insect_db_vn' THEN 'Animalia'
+        WHEN 'fungi_db_vn' THEN 'Fungi'
+        WHEN 'algae_db_vn' THEN 'Protista'
+        WHEN 'protista_db_vn' THEN 'Protista'
+        WHEN 'plant_db_vn' THEN
+          CASE
+            WHEN lower(taxonomy_source.kingdom_name) IN ('chromista', 'protista')
+              OR lower(coalesce(species_union.order_name, '')) LIKE '%fucales%'
+              OR lower(coalesce(species_union.family, '')) LIKE '%sargassaceae%'
+              THEN 'Protista'
+            ELSE 'Plantae'
+          END
+        ELSE taxonomy_source.kingdom_name
+      END AS kingdom_name
     FROM species_union
     LEFT JOIN LATERAL (
       SELECT
         CASE
+          WHEN species_union.source_table = 'algae_db_vn' THEN 'algae_db_vn'
+          WHEN species_union.source_table = 'protista_db_vn' THEN 'protista_db_vn'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'plant_db_vn'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'fungi') THEN 'fungi_db_vn'
           WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'insect_db_vn'
@@ -282,6 +329,8 @@ const SPECIES_ENRICHED_CTE_SQL = `
           ELSE NULL
         END AS effective_source_table,
         CASE
+          WHEN species_union.source_table = 'algae_db_vn' THEN 'Tảo'
+          WHEN species_union.source_table = 'protista_db_vn' THEN 'Sinh vật nguyên sinh'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'plantae') THEN 'Thực vật'
           WHEN bool_or(parent.rank = 'kingdom' AND lower(parent.canonical_name) = 'fungi') THEN 'Nấm'
           WHEN bool_or(parent.rank = 'class' AND lower(parent.canonical_name) = 'insecta') THEN 'Côn trùng'
@@ -382,6 +431,12 @@ const SPECIES_ALIAS_CTE_SQL = `
       UNION ALL
       SELECT 'insect_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
       FROM insect_db_vn
+      UNION ALL
+      SELECT 'algae_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+      FROM algae_db_vn
+      UNION ALL
+      SELECT 'protista_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+      FROM protista_db_vn
     ) duplicate_species
       ON (
         nullif(regexp_replace(lower(coalesce(fungi_species.ten_viet_nam, '')), '\\s+', '', 'g'), '')
@@ -480,6 +535,12 @@ export class SpeciesRepository {
               UNION ALL
               SELECT 'insect_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
               FROM insect_db_vn
+              UNION ALL
+              SELECT 'algae_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+              FROM algae_db_vn
+              UNION ALL
+              SELECT 'protista_db_vn'::text AS source_table, species_id, ten_viet_nam AS vietnamese_name, ten_latin AS scientific_name
+              FROM protista_db_vn
             ) duplicate_species
               ON (
                 nullif(regexp_replace(lower(coalesce(fungi_species.ten_viet_nam, '')), '\\s+', '', 'g'), '')
@@ -849,7 +910,9 @@ export class SpeciesRepository {
   }
 
   private canUseDirectListPath(filters: SpeciesSearchFilters): boolean {
-    return !filters.kingdom && !filters.taxonId;
+    const directKingdoms = new Set(['', 'protista']);
+
+    return directKingdoms.has(filters.kingdom.trim().toLowerCase()) && !filters.taxonId;
   }
 
   private async searchDirect(
@@ -1005,14 +1068,22 @@ export class SpeciesRepository {
           SELECT
             filtered_species.source_table,
             filtered_species.species_id,
-            coalesce(
-              taxonomy_kingdom.kingdom_name,
-              CASE
-                WHEN filtered_species.source_table = 'plant_db_vn' THEN 'Plantae'
-                WHEN filtered_species.source_table = 'fungi_db_vn' THEN 'Fungi'
-                ELSE 'Animalia'
-              END
-            ) AS kingdom_name
+            CASE filtered_species.source_table
+              WHEN 'animal_db_vn' THEN 'Animalia'
+              WHEN 'insect_db_vn' THEN 'Animalia'
+              WHEN 'fungi_db_vn' THEN 'Fungi'
+              WHEN 'algae_db_vn' THEN 'Protista'
+              WHEN 'protista_db_vn' THEN 'Protista'
+              WHEN 'plant_db_vn' THEN
+                CASE
+                  WHEN lower(taxonomy_kingdom.kingdom_name) IN ('chromista', 'protista')
+                    OR lower(coalesce(filtered_species.order_name, '')) LIKE '%fucales%'
+                    OR lower(coalesce(filtered_species.family, '')) LIKE '%sargassaceae%'
+                    THEN 'Protista'
+                  ELSE 'Plantae'
+                END
+              ELSE taxonomy_kingdom.kingdom_name
+            END AS kingdom_name
           FROM filtered_species
           LEFT JOIN LATERAL (
             SELECT parent.canonical_name AS kingdom_name
@@ -1043,6 +1114,7 @@ export class SpeciesRepository {
               WHEN lower(kingdom_name) = 'animalia' THEN 'Động vật - Animalia'
               WHEN lower(kingdom_name) = 'plantae' THEN 'Thực vật - Plantae'
               WHEN lower(kingdom_name) = 'fungi' THEN 'Nấm - Fungi'
+              WHEN lower(kingdom_name) = 'protista' THEN 'Sinh vật nguyên sinh - Protista'
               WHEN lower(kingdom_name) = 'chromista' THEN 'Sinh vật nguyên sinh - Chromista'
               ELSE kingdom_name
             END AS label,
@@ -1357,6 +1429,33 @@ export class SpeciesRepository {
       clauses.push(`AND source_table = $${startIndex + values.length - 1}`);
     }
 
+    if (filters.kingdom.trim().toLowerCase() === 'protista') {
+      clauses.push(`
+        AND (
+          source_table IN ('algae_db_vn', 'protista_db_vn')
+          OR (
+            source_table = 'plant_db_vn'
+            AND (
+              lower(coalesce(order_name, '')) LIKE '%fucales%'
+              OR lower(coalesce(family, '')) LIKE '%sargassaceae%'
+            )
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM species_taxonomy st
+            JOIN taxon_closure tc
+              ON tc.descendant_taxon_id = st.taxon_id
+            JOIN taxa parent
+              ON parent.taxon_id = tc.ancestor_taxon_id
+            WHERE st.source_table = deduped_species.source_table
+              AND st.species_id = deduped_species.species_id
+              AND parent.rank = 'kingdom'
+              AND lower(parent.canonical_name) IN ('chromista', 'protista')
+          )
+        )
+      `);
+    }
+
     if (filters.className) {
       values.push(filters.className);
       clauses.push(`AND class_name = $${startIndex + values.length - 1}`);
@@ -1554,6 +1653,10 @@ export class SpeciesRepository {
   }
 
   private resolveSourceLabel(sourceTable: SpeciesSourceTable, taxonomyPath: SpeciesTaxonomyNode[]): string {
+    if (sourceTable === 'algae_db_vn' || sourceTable === 'protista_db_vn') {
+      return SOURCE_TABLE_LABELS[sourceTable];
+    }
+
     const ranks = new Map(taxonomyPath.map((node) => [node.rank, node.canonicalName.toLowerCase()]));
     const kingdom = ranks.get('kingdom') ?? '';
     const className = ranks.get('class') ?? '';
