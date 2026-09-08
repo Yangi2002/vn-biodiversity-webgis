@@ -53,6 +53,18 @@
             <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
             <dd>{{ cell.insectSpecies | number }}</dd>
           </div>
+          <div>
+            <dt><i class="metric-icon">◇</i> Nấm</dt>
+            <dd>{{ cell.fungiSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">◎</i> Nguyên sinh</dt>
+            <dd>{{ cell.protistaSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">≈</i> Tảo</dt>
+            <dd>{{ cell.algaeSpecies | number }}</dd>
+          </div>
         </dl>
       } @else {
         <h2>{{ summary.totalOccurrences | number }} occurrence</h2>
@@ -72,6 +84,18 @@
           <div>
             <dt><i class="metric-icon">🐞</i> Côn trùng</dt>
             <dd>{{ summary.insectSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">◇</i> Nấm</dt>
+            <dd>{{ summary.fungiSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">◎</i> Nguyên sinh</dt>
+            <dd>{{ summary.protistaSpecies | number }}</dd>
+          </div>
+          <div>
+            <dt><i class="metric-icon">≈</i> Tảo</dt>
+            <dd>{{ summary.algaeSpecies | number }}</dd>
           </div>
           <div>
             <dt><i class="metric-icon">▣</i> Observed year</dt>

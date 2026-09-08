@@ -334,6 +334,17 @@ button {
   line-height: 1.2;
 }
 
+.tree-detail-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 16px 0 0;
+  border: 1px solid #d5e4dc;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #edf5ef;
+}
+
 .tree-detail-panel dl {
   display: grid;
   gap: 0;
@@ -409,7 +420,7 @@ button {
   gap: 9px;
 }
 
-.tree-canvas-tools span {
+.tree-canvas-tools button {
   display: grid;
   place-items: center;
   width: 38px;
@@ -420,6 +431,19 @@ button {
   color: #0f7540;
   font-weight: 900;
   box-shadow: 0 8px 20px rgba(23, 37, 31, 0.08);
+}
+
+.tree-canvas-tools button:hover,
+.tree-canvas-tools button:focus-visible {
+  border-color: #1f7a4c;
+  background: #e8f5ed;
+  outline: 0;
+}
+
+.tree-canvas-viewport {
+  transform: scale(var(--tree-zoom, 1));
+  transform-origin: top center;
+  transition: transform 160ms ease;
 }
 
 .taxonomy-layout {

@@ -5,7 +5,7 @@ export interface DashboardMetricItem {
   label: string;
   value: string | number;
   helper?: string;
-  accent?: 'default' | 'animal' | 'plant' | 'insect' | 'warning';
+  accent?: 'default' | 'animal' | 'plant' | 'insect' | 'fungi' | 'protista' | 'algae' | 'warning';
 }
 
 @Component({

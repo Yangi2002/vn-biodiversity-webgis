@@ -66,6 +66,7 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal('');
   protected readonly selectedPoint = signal<SpeciesOccurrencePoint | null>(null);
+  protected readonly isMapOverlayVisible = signal(true);
   protected readonly isInsightPanelExpanded = signal(true);
   protected readonly isDetailPanelExpanded = signal(true);
   protected readonly brokenImageKeys = signal<Set<string>>(new Set());
@@ -119,6 +120,10 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
 
   protected toggleDetailPanel(): void {
     this.isDetailPanelExpanded.update((isExpanded) => !isExpanded);
+  }
+
+  protected toggleMapOverlay(): void {
+    this.isMapOverlayVisible.update((isVisible) => !isVisible);
   }
 
   protected resetSelectedPoint(): void {
@@ -327,16 +332,6 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
       })
       .setView(VIETNAM_CENTER, DEFAULT_ZOOM);
 
-    const satelliteLayer = this.leaflet.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 18,
-        minZoom: 5,
-        noWrap: true,
-      },
-    );
-
     const lightCanvasLayer = this.leaflet.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {
@@ -349,20 +344,6 @@ export class SpeciesOccurrenceMapComponent implements AfterViewInit, OnChanges, 
     );
 
     lightCanvasLayer.addTo(this.map);
-
-    this.leaflet.control
-      .layers(
-        {
-          'Light Canvas': lightCanvasLayer,
-          'Satellite': satelliteLayer,
-        },
-        undefined,
-        {
-          collapsed: false,
-          position: 'topleft',
-        },
-      )
-      .addTo(this.map);
 
     this.markerLayer = this.leaflet.layerGroup().addTo(this.map);
     this.map.setMaxBounds(MAP_INTERACTION_BOUNDS);

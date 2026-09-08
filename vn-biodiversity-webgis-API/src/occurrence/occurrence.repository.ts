@@ -36,6 +36,9 @@ interface OverviewRow {
   animal_species: bigint | number | null;
   plant_species: bigint | number | null;
   insect_species: bigint | number | null;
+  fungi_species: bigint | number | null;
+  protista_species: bigint | number | null;
+  algae_species: bigint | number | null;
   unknown_species: bigint | number | null;
   earliest_observed_year: number | null;
   latest_observed_year: number | null;
@@ -49,6 +52,9 @@ interface CellRow {
   animal_species: bigint | number;
   plant_species: bigint | number;
   insect_species: bigint | number;
+  fungi_species: bigint | number;
+  protista_species: bigint | number;
+  algae_species: bigint | number;
   unknown_species: bigint | number;
 }
 
@@ -166,6 +172,9 @@ export class OccurrenceRepository {
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'animal') AS animal_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'plant') AS plant_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'insect') AS insect_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'fungi') AS fungi_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'protista') AS protista_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'algae') AS algae_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'unknown') AS unknown_species,
         (SELECT min(observed_year) FROM observed_years) AS earliest_observed_year,
         (SELECT max(observed_year) FROM observed_years) AS latest_observed_year
@@ -216,6 +225,9 @@ export class OccurrenceRepository {
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'animal') AS animal_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'plant') AS plant_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'insect') AS insect_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'fungi') AS fungi_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'protista') AS protista_species,
+        count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'algae') AS algae_species,
         count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) FILTER (WHERE filtered_occurrences.source_group = 'unknown') AS unknown_species
       FROM filtered_occurrences
       GROUP BY filtered_occurrences.cell_latitude, filtered_occurrences.cell_longitude
@@ -507,6 +519,9 @@ export class OccurrenceRepository {
             WHEN m.source_table = 'plant_db_vn' THEN 'plant'
             WHEN m.source_table = 'insect_db_vn' THEN 'insect'
             WHEN m.source_table = 'animal_db_vn' THEN 'animal'
+            WHEN m.source_table = 'fungi_db_vn' THEN 'fungi'
+            WHEN m.source_table = 'algae_db_vn' THEN 'algae'
+            WHEN m.source_table = 'protista_db_vn' THEN 'protista'
             ELSE 'unknown'
           END AS source_group
         FROM valid_occurrences
@@ -687,6 +702,36 @@ export class OccurrenceRepository {
           bo AS order_name,
           lop_nhom AS class_name
         FROM insect_db_vn
+        UNION ALL
+        SELECT
+          'fungi_db_vn'::text AS source_table,
+          species_id,
+          ten_viet_nam AS vietnamese_name,
+          ten_latin AS scientific_name,
+          ho AS family,
+          bo AS order_name,
+          lop_nhom AS class_name
+        FROM fungi_db_vn
+        UNION ALL
+        SELECT
+          'algae_db_vn'::text AS source_table,
+          species_id,
+          ten_viet_nam AS vietnamese_name,
+          ten_latin AS scientific_name,
+          ho AS family,
+          bo AS order_name,
+          lop_nhom AS class_name
+        FROM algae_db_vn
+        UNION ALL
+        SELECT
+          'protista_db_vn'::text AS source_table,
+          species_id,
+          ten_viet_nam AS vietnamese_name,
+          ten_latin AS scientific_name,
+          ho AS family,
+          bo AS order_name,
+          lop_nhom AS class_name
+        FROM protista_db_vn
       )
     `;
   }
@@ -696,6 +741,9 @@ export class OccurrenceRepository {
       animal: 'animal_db_vn',
       plant: 'plant_db_vn',
       insect: 'insect_db_vn',
+      fungi: 'fungi_db_vn',
+      protista: 'protista_db_vn',
+      algae: 'algae_db_vn',
     };
     return {
       yearFrom: filters.yearFrom ?? null,
@@ -727,6 +775,9 @@ export class OccurrenceRepository {
       animalSpecies: this.toNumber(row?.animal_species),
       plantSpecies: this.toNumber(row?.plant_species),
       insectSpecies: this.toNumber(row?.insect_species),
+      fungiSpecies: this.toNumber(row?.fungi_species),
+      protistaSpecies: this.toNumber(row?.protista_species),
+      algaeSpecies: this.toNumber(row?.algae_species),
       unknownSpecies: this.toNumber(row?.unknown_species),
       earliestObservedYear: row?.earliest_observed_year ?? null,
       latestObservedYear: row?.latest_observed_year ?? null,
@@ -750,6 +801,9 @@ export class OccurrenceRepository {
         animalSpecies: this.toNumber(row.animal_species),
         plantSpecies: this.toNumber(row.plant_species),
         insectSpecies: this.toNumber(row.insect_species),
+        fungiSpecies: this.toNumber(row.fungi_species),
+        protistaSpecies: this.toNumber(row.protista_species),
+        algaeSpecies: this.toNumber(row.algae_species),
         unknownSpecies: this.toNumber(row.unknown_species),
         intensity: occurrenceCount / maxOccurrences,
       };
@@ -776,6 +830,9 @@ export class OccurrenceRepository {
       animal: 'Động vật',
       plant: 'Thực vật',
       insect: 'Côn trùng',
+      fungi: 'Nấm',
+      protista: 'Nguyên sinh',
+      algae: 'Tảo',
       unknown: 'Chưa phân nhóm',
     };
 

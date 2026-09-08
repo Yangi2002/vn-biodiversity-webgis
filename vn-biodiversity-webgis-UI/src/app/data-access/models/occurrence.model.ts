@@ -11,6 +11,9 @@ export interface OccurrenceMapSummary {
   animalSpecies: number;
   plantSpecies: number;
   insectSpecies: number;
+  fungiSpecies: number;
+  protistaSpecies: number;
+  algaeSpecies: number;
   unknownSpecies: number;
   earliestObservedYear: number | null;
   latestObservedYear: number | null;
@@ -25,6 +28,9 @@ export interface OccurrenceMapCell {
   animalSpecies: number;
   plantSpecies: number;
   insectSpecies: number;
+  fungiSpecies: number;
+  protistaSpecies: number;
+  algaeSpecies: number;
   unknownSpecies: number;
   intensity: number;
 }

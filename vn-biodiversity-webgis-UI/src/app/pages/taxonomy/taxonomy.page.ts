@@ -52,6 +52,7 @@ export class TaxonomyPage {
   protected readonly activeView = signal<TaxonomyView>('search');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly treeMessage = signal<string | null>(null);
   protected readonly footerLinks = FOOTER_CREDENTIAL_LINKS;
   protected readonly vnscLogoSrc = VNSC_LOGO_SRC;
   protected readonly searchTags: TaxonomySearchTag[] = [
@@ -67,12 +68,15 @@ export class TaxonomyPage {
     this.focusTree(this.taxonomyTreeRoots(), this.selectedTreeNode()?.taxonId ?? null),
   );
   protected readonly isTreeLoading = signal(false);
+  protected readonly treeZoom = signal(1);
+  protected readonly isTreeDetailVisible = signal(true);
 
   private readonly taxonomyService = inject(TaxonomyService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private requestId = 0;
+  private treeRequestId = 0;
 
   constructor() {
     this.loadTreeRoots();
@@ -97,8 +101,14 @@ export class TaxonomyPage {
 
   protected submitTopbarSearch(event?: Event): void {
     event?.preventDefault();
-    this.activeView.set('search');
-    this.search(this.createState(1));
+    const q = this.searchControl.value.trim();
+
+    if (!q) {
+      this.activeView.set('tree');
+      return;
+    }
+
+    this.openFirstSearchResultInTree(q);
   }
 
   protected applyRank(rank: string): void {
@@ -150,6 +160,14 @@ export class TaxonomyPage {
     return item.path.join(' → ');
   }
 
+  protected taxonImageUrl(item: TaxonomySearchItem): string | null {
+    return item.representativeImage?.imageUrl ?? this.fallbackTaxonImage(item.canonicalName);
+  }
+
+  protected treeNodeImageUrl(node: TaxonomyTreeNode): string | null {
+    return node.representativeImage?.imageUrl ?? this.fallbackTaxonImage(node.canonicalName);
+  }
+
   protected relatedSpeciesQuery(item: TaxonomySearchItem): Record<string, string> {
     return { taxonId: item.taxonId };
   }
@@ -196,6 +214,36 @@ export class TaxonomyPage {
 
   protected switchView(view: TaxonomyView): void {
     this.activeView.set(view);
+  }
+
+  protected zoomOutTree(): void {
+    this.treeZoom.update((value) => Math.max(0.7, Math.round((value - 0.1) * 100) / 100));
+  }
+
+  protected resetTreeView(): void {
+    this.treeZoom.set(1);
+    this.selectedTreeHistory.set([]);
+    this.loadTreeRoots();
+  }
+
+  protected focusSelectedTreeNode(): void {
+    this.activeView.set('tree');
+
+    if (!this.isBrowser) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      document.querySelector('.taxonomy-node.is-selected')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      });
+    }, 0);
+  }
+
+  protected toggleTreeDetail(): void {
+    this.isTreeDetailVisible.update((value) => !value);
   }
 
   private search(state: TaxonomyState): void {
@@ -274,6 +322,102 @@ export class TaxonomyPage {
           }
         },
       });
+  }
+
+  private openFirstSearchResultInTree(q: string): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    const currentRequestId = this.treeRequestId + 1;
+    this.treeRequestId = currentRequestId;
+    this.isTreeLoading.set(true);
+    this.treeMessage.set(null);
+    this.errorMessage.set(null);
+
+    this.taxonomyService
+      .search({
+        q,
+        page: 1,
+        limit: 1,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (currentRequestId !== this.treeRequestId) {
+            return;
+          }
+
+          this.response.set(response);
+          const target = response.items[0];
+
+          if (!target) {
+            this.activeView.set('tree');
+            this.treeMessage.set('Không tìm thấy taxon phù hợp để vẽ trên cây.');
+            this.isTreeLoading.set(false);
+            return;
+          }
+
+          this.loadTreePath(target.taxonId, currentRequestId);
+        },
+        error: () => {
+          if (currentRequestId !== this.treeRequestId) {
+            return;
+          }
+
+          this.activeView.set('tree');
+          this.treeMessage.set('Không tải được kết quả tìm kiếm taxonomy.');
+          this.isTreeLoading.set(false);
+        },
+      });
+  }
+
+  private loadTreePath(taxonId: string, requestId: number): void {
+    this.taxonomyService
+      .treePath(taxonId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (path) => {
+          if (requestId !== this.treeRequestId) {
+            return;
+          }
+
+          const roots = this.buildTreePath(path);
+          const selectedNode = roots.length ? this.findTreeNode(roots, taxonId) : null;
+
+          this.taxonomyTreeRoots.set(roots);
+          this.selectedTreeNode.set(selectedNode ?? path.at(-1) ?? null);
+          this.selectedTreeHistory.set([]);
+          this.activeView.set('tree');
+          this.isTreeDetailVisible.set(true);
+          this.treeZoom.set(1);
+          this.isTreeLoading.set(false);
+          this.focusSelectedTreeNode();
+        },
+        error: () => {
+          if (requestId !== this.treeRequestId) {
+            return;
+          }
+
+          this.activeView.set('tree');
+          this.treeMessage.set('Không tải được đường dẫn cây taxonomy.');
+          this.isTreeLoading.set(false);
+        },
+      });
+  }
+
+  private buildTreePath(path: TaxonomyTreeNode[]): TaxonomyTreeNode[] {
+    let child: TaxonomyTreeNode | null = null;
+
+    for (let index = path.length - 1; index >= 0; index -= 1) {
+      child = {
+        ...path[index],
+        isHighlighted: index === path.length - 1,
+        children: child ? [child] : [],
+      };
+    }
+
+    return child ? [child] : [];
   }
 
   private attachChildren(
@@ -360,5 +504,20 @@ export class TaxonomyPage {
     const page = Number(value);
 
     return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  }
+
+  private fallbackTaxonImage(canonicalName: string): string | null {
+    const normalizedName = canonicalName.trim().toLowerCase();
+    const images: Record<string, string> = {
+      animalia: '/images/home/animal.jpg',
+      plantae: '/images/home/plant.jpg',
+      fungi: '/images/home/fungi.jpg',
+      protista: '/images/home/algae-protista.jpg',
+      chromista: '/images/home/algae-protista.jpg',
+      algae: '/images/home/algae-protista.jpg',
+      bacteria: '/images/home/hero-species.jpg',
+    };
+
+    return images[normalizedName] ?? null;
   }
 }

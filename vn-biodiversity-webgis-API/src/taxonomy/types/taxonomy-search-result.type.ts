@@ -70,5 +70,6 @@ export interface TaxonomyTreeNode {
   vietnameseName: string | null;
   speciesCount: number;
   childCount: number;
+  representativeImage: TaxonomyRepresentativeImage | null;
   children: TaxonomyTreeNode[];
 }

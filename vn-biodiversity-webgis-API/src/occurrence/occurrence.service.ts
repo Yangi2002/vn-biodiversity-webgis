@@ -13,13 +13,13 @@ const MIN_GRID_SIZE = 0.1;
 const MAX_GRID_SIZE = 2;
 const MIN_OBSERVED_YEAR = 1500;
 const MAX_OBSERVED_YEAR = 2100;
-const SOURCE_GROUPS = new Set(['all', 'animal', 'plant', 'insect']);
+const SOURCE_GROUPS = new Set(['all', 'animal', 'plant', 'insect', 'fungi', 'protista', 'algae']);
 const DEFAULT_SPECIES_OCCURRENCE_LIMIT = 500;
 const MAX_SPECIES_OCCURRENCE_LIMIT = 1500;
 const IMAGE_MODES = new Set(['all', 'with-image', 'without-image']);
 
 export interface OccurrenceOverviewFilters {
-  sourceGroup: 'all' | 'animal' | 'plant' | 'insect';
+  sourceGroup: 'all' | 'animal' | 'plant' | 'insect' | 'fungi' | 'protista' | 'algae';
   yearFrom?: number;
   yearTo?: number;
 }

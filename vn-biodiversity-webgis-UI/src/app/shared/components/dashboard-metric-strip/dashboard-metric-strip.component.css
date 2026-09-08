@@ -66,6 +66,9 @@
 .accent-animal span,
 .accent-plant span,
 .accent-insect span,
+.accent-fungi span,
+.accent-protista span,
+.accent-algae span,
 .accent-warning span {
   color: #d7f5df;
 }
@@ -80,6 +83,18 @@
 
 .metric-strip.is-light .accent-insect span {
   color: #a97216;
+}
+
+.metric-strip.is-light .accent-fungi span {
+  color: #8a3c1d;
+}
+
+.metric-strip.is-light .accent-protista span {
+  color: #157268;
+}
+
+.metric-strip.is-light .accent-algae span {
+  color: #227a58;
 }
 
 .metric-strip.is-light .accent-warning span {

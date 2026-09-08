@@ -45,11 +45,21 @@ export class TaxonomyService {
   }
 
   treeRoots() {
-    return this.api.get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTree);
+    return this.api
+      .get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTree)
+      .pipe(map((nodes) => this.withAbsoluteTreeImageUrls(nodes)));
   }
 
   treeChildren(taxonId: string) {
-    return this.api.get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTreeChildren(taxonId));
+    return this.api
+      .get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTreeChildren(taxonId))
+      .pipe(map((nodes) => this.withAbsoluteTreeImageUrls(nodes)));
+  }
+
+  treePath(taxonId: string) {
+    return this.api
+      .get<TaxonomyTreeNode[]>(API_ENDPOINTS.taxonomyTreePath(taxonId))
+      .pipe(map((nodes) => this.withAbsoluteTreeImageUrls(nodes)));
   }
 
   private withAbsoluteRepresentativeImageUrl(item: TaxonomySearchItem): TaxonomySearchItem {
@@ -64,5 +74,18 @@ export class TaxonomyService {
         imageUrl: this.api.buildUrl(item.representativeImage.imageUrl),
       },
     };
+  }
+
+  private withAbsoluteTreeImageUrls(nodes: TaxonomyTreeNode[]): TaxonomyTreeNode[] {
+    return nodes.map((node) => ({
+      ...node,
+      representativeImage: node.representativeImage
+        ? {
+            ...node.representativeImage,
+            imageUrl: this.api.buildUrl(node.representativeImage.imageUrl),
+          }
+        : null,
+      children: node.children ? this.withAbsoluteTreeImageUrls(node.children) : [],
+    }));
   }
 }

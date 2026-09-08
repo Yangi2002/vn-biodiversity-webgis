@@ -6,6 +6,7 @@ export const API_ENDPOINTS = {
   speciesSearch: '/species/search',
   taxonomySearch: '/taxonomy/search',
   taxonomyTree: '/taxonomy/tree',
+  taxonomyTreePath: (taxonId: string) => `/taxonomy/tree/${encodeURIComponent(taxonId)}/path`,
   taxonomyTreeChildren: (taxonId: string) => `/taxonomy/tree/${encodeURIComponent(taxonId)}/children`,
   statsSummary: '/stats/summary',
   statsDashboard: '/stats/dashboard',

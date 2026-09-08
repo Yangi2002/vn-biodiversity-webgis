@@ -77,6 +77,25 @@ export class TaxonomyService {
     return response;
   }
 
+  async treePath(taxonId: string): Promise<TaxonomyTreeNode[]> {
+    const normalizedTaxonId = String(taxonId ?? '').trim();
+
+    if (!normalizedTaxonId || !/^\d+$/.test(normalizedTaxonId)) {
+      return [];
+    }
+
+    const cacheKey = stableCacheKey('taxonomy:tree:path', { taxonId: normalizedTaxonId });
+    const cachedResponse = this.treeCache.get(cacheKey);
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const response = await this.taxonomyRepository.treePath(normalizedTaxonId);
+    this.treeCache.set(cacheKey, response);
+    return response;
+  }
+
   private parsePositiveInteger(value: string | number | undefined, fallback: number): number {
     const numberValue = Number(value);
 

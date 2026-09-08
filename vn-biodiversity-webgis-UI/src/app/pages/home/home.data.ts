@@ -109,6 +109,11 @@ export const HOME_SOURCE_GROUPS: readonly HomeSourceGroup[] = [
     image: '/images/home/fungi.jpg',
     description: 'Nấm lớn, nấm túi, nấm đảm và nhiều nhóm nấm ghi nhận tại Việt Nam.',
   },
+  {
+    name: 'Nguyên sinh & tảo',
+    image: '/images/home/algae-protista.jpg',
+    description: 'Sinh vật nguyên sinh và tảo được gom theo nhóm tra cứu riêng trong hệ thống.',
+  },
 ];
 
 export const TRUSTED_SOURCES: readonly TrustedSource[] = [

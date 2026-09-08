@@ -148,6 +148,30 @@
   width: 100%;
 }
 
+.map-overlay-toggle {
+  position: absolute;
+  top: 18px;
+  left: 82px;
+  z-index: 520;
+  border: 1px solid #b9d7c5;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(27, 74, 47, 0.12);
+  color: #0f6f43;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+  min-height: 34px;
+  padding: 7px 12px;
+}
+
+.map-overlay-toggle.is-muted {
+  background: #187846;
+  border-color: #187846;
+  color: #fff;
+}
+
 .species-map-insight {
   position: absolute;
   top: 22px;
@@ -541,25 +565,25 @@
 
 :host ::ng-deep .leaflet-top.leaflet-left {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  left: 18px;
+  top: 18px;
 }
 
-:host ::ng-deep .leaflet-control-layers {
+:host ::ng-deep .leaflet-control-zoom {
   border: 1px solid #c8ddcf;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 12px 28px rgba(27, 74, 47, 0.14);
-  color: #183226;
-  font-size: 0.78rem;
-  font-weight: 800;
+  overflow: hidden;
 }
 
-:host ::ng-deep .leaflet-control-layers-expanded {
-  padding: 8px 10px;
-}
-
-:host ::ng-deep .leaflet-control-layers label {
-  margin: 3px 0;
+:host ::ng-deep .leaflet-control-zoom a {
+  border: 0;
+  color: #14251d;
+  font-weight: 900;
+  width: 36px;
+  height: 34px;
+  line-height: 34px;
 }
 
 .map-state {
@@ -636,8 +660,13 @@
   .species-map-insight {
     left: 12px;
     right: 12px;
-    top: 12px;
+    top: 62px;
     width: auto;
+  }
+
+  .map-overlay-toggle {
+    left: 62px;
+    top: 14px;
   }
 
   .species-map-detail-panel {

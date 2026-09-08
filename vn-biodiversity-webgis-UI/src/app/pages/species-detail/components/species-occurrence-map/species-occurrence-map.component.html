@@ -108,7 +108,20 @@
   <div class="species-map-shell">
     <div #mapContainer class="species-map"></div>
 
+    @if (occurrenceMap()) {
+      <button
+        type="button"
+        class="map-overlay-toggle"
+        [class.is-muted]="!isMapOverlayVisible()"
+        [attr.aria-pressed]="isMapOverlayVisible()"
+        (click)="toggleMapOverlay()"
+      >
+        {{ isMapOverlayVisible() ? 'Ẩn thông tin' : 'Hiện thông tin' }}
+      </button>
+    }
+
     @if (occurrenceMap(); as mapData) {
+      @if (isMapOverlayVisible()) {
       <aside class="species-map-insight" [class.is-collapsed]="!isInsightPanelExpanded()">
         <div class="insight-heading">
           <p class="eyebrow">
@@ -277,6 +290,7 @@
         <strong>Occurrence marker</strong>
         <span>Click ghim để xem chi tiết ghi nhận.</span>
       </div>
+      }
     }
 
     @if (isLoading()) {

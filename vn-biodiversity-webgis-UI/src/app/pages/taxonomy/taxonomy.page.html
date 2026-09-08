@@ -105,7 +105,7 @@
           </p>
         </div>
 
-        @if (selectedTreeNode(); as node) {
+        @if (isTreeDetailVisible() && selectedTreeNode(); as node) {
           <aside class="tree-detail-panel">
             <div class="tree-panel-actions">
               <p class="eyebrow">Nút đang chọn</p>
@@ -122,6 +122,14 @@
             <h3>
               {{ treeNodeDisplayName(node) }}
             </h3>
+
+            @if (treeNodeImageUrl(node); as imageUrl) {
+              <img
+                class="tree-detail-image"
+                [src]="imageUrl"
+                [alt]="treeNodeDisplayName(node)"
+              />
+            }
 
             @if (
               node.vietnameseName &&
@@ -164,22 +172,64 @@
           Đang tải cây phân loại...
         </div>
       } @else {
+        @if (treeMessage()) {
+          <div class="state-panel is-error">
+            {{ treeMessage() }}
+          </div>
+        }
+
         <div class="tree-canvas-card">
           <div
             class="tree-canvas-tools"
-            aria-hidden="true"
+            aria-label="Công cụ cây phân loại"
           >
-            <span>⌕</span>
-            <span>−</span>
-            <span>⛶</span>
-            <span>▣</span>
+            <button
+              type="button"
+              title="Tìm và mở node"
+              aria-label="Tìm và mở node"
+              (click)="submitTopbarSearch()"
+            >
+              ⌕
+            </button>
+
+            <button
+              type="button"
+              title="Thu nhỏ cây"
+              aria-label="Thu nhỏ cây"
+              (click)="zoomOutTree()"
+            >
+              −
+            </button>
+
+            <button
+              type="button"
+              title="Về gốc cây"
+              aria-label="Về gốc cây"
+              (click)="resetTreeView()"
+            >
+              ⛶
+            </button>
+
+            <button
+              type="button"
+              title="Ẩn hiện bảng thông tin"
+              aria-label="Ẩn hiện bảng thông tin"
+              (click)="toggleTreeDetail()"
+            >
+              ▣
+            </button>
           </div>
 
-          <app-taxonomy-branches
-            [roots]="taxonomyTreeView()"
-            [selectedTaxonId]="selectedTreeNodeId()"
-            (selectNode)="selectTreeNode($event)"
-          />
+          <div
+            class="tree-canvas-viewport"
+            [style.--tree-zoom]="treeZoom()"
+          >
+            <app-taxonomy-branches
+              [roots]="taxonomyTreeView()"
+              [selectedTaxonId]="selectedTreeNodeId()"
+              (selectNode)="selectTreeNode($event)"
+            />
+          </div>
         </div>
       }
     </section>
@@ -253,11 +303,11 @@
                 <article class="taxon-card">
                   <div
                     class="taxon-thumbnail"
-                    [class.is-empty]="!item.representativeImage"
+                    [class.is-empty]="!taxonImageUrl(item)"
                   >
-                    @if (item.representativeImage; as image) {
+                    @if (taxonImageUrl(item); as imageUrl) {
                       <img
-                        [src]="image.imageUrl"
+                        [src]="imageUrl"
                         [alt]="displayName(item)"
                       />
 

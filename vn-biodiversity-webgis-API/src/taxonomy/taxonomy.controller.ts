@@ -16,6 +16,11 @@ export class TaxonomyController {
     return this.taxonomyService.treeRoots();
   }
 
+  @Get('tree/:taxonId/path')
+  treePath(@Param('taxonId') taxonId: string) {
+    return this.taxonomyService.treePath(taxonId);
+  }
+
   @Get('tree/:taxonId/children')
   treeChildren(@Param('taxonId') taxonId: string) {
     return this.taxonomyService.treeChildren(taxonId);

@@ -110,6 +110,9 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
       { label: 'Động vật', value: summary.animalSpecies, accent: 'animal' },
       { label: 'Thực vật', value: summary.plantSpecies, accent: 'plant' },
       { label: 'Côn trùng', value: summary.insectSpecies, accent: 'insect' },
+      { label: 'Nấm', value: summary.fungiSpecies, accent: 'fungi' },
+      { label: 'Nguyên sinh', value: summary.protistaSpecies, accent: 'protista' },
+      { label: 'Tảo', value: summary.algaeSpecies, accent: 'algae' },
       {
         label: 'Observed year',
         value: `${summary.earliestObservedYear || 'N/A'}-${summary.latestObservedYear || 'N/A'}`,
@@ -811,6 +814,9 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
         existing.animalSpecies += cell.animalSpecies;
         existing.plantSpecies += cell.plantSpecies;
         existing.insectSpecies += cell.insectSpecies;
+        existing.fungiSpecies += cell.fungiSpecies;
+        existing.protistaSpecies += cell.protistaSpecies;
+        existing.algaeSpecies += cell.algaeSpecies;
         existing.unknownSpecies += cell.unknownSpecies;
         return;
       }
@@ -953,7 +959,14 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private toSourceGroup(value: string): SourceGroupFilter {
-    if (value === 'animal' || value === 'plant' || value === 'insect') {
+    if (
+      value === 'animal' ||
+      value === 'plant' ||
+      value === 'insect' ||
+      value === 'fungi' ||
+      value === 'protista' ||
+      value === 'algae'
+    ) {
       return value;
     }
 
