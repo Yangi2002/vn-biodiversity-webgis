@@ -201,31 +201,25 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
 
   if [ "$IMPORT_HAS_SCHEMA" = "yes" ]; then
     echo "Import file contains schema. Dropping imported public tables before restore."
-    IMPORT_TABLE_LIST_SQL=$(grep -Eo "^(COPY|CREATE TABLE|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" |
+    mapfile -t IMPORTED_TABLES < <(grep -Eo "^(COPY|CREATE TABLE|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" |
       sed -E 's/^(COPY|CREATE TABLE|INSERT INTO) public\\.//' |
-      sort -u |
-      awk '{ printf "'\''%s'\'',", $1 }')
-    IMPORT_TABLE_LIST_SQL="${IMPORT_TABLE_LIST_SQL%,}"
+      sort -u)
 
-    if [ -z "$IMPORT_TABLE_LIST_SQL" ]; then
+    if [ "${#IMPORTED_TABLES[@]}" -eq 0 ]; then
       echo "ERROR: Could not detect imported table names from schema dump"
       exit 1
     fi
 
-    DROP_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
-      SELECT 'DROP TABLE IF EXISTS ' ||
-        string_agg(format('%I.%I', schemaname, tablename), ', ') ||
-        ' CASCADE;'
-      FROM pg_tables
-      WHERE schemaname = 'public'
-        AND tablename IN ($IMPORT_TABLE_LIST_SQL);
-    ")
+    for table in "${IMPORTED_TABLES[@]}"; do
+      if ! printf '%s\n' "$table" | grep -Eq '^[A-Za-z0-9_]+$'; then
+        echo "ERROR: Invalid imported table name detected: $table"
+        exit 1
+      fi
 
-    echo "$DROP_SQL"
-
-    if [ -n "$DROP_SQL" ]; then
-      docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "$DROP_SQL"
-    fi
+      echo "DROP TABLE IF EXISTS public.$table CASCADE"
+      docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" \
+        -c "DROP TABLE IF EXISTS public.\"$table\" CASCADE;"
+    done
   else
     echo "Truncate existing business data tables only"
     TRUNCATE_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
