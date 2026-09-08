@@ -1,6 +1,6 @@
 param(
   [string]$Output = "D:\Duong\db-backup\vnsc-data-update-$(Get-Date -Format yyyy-MM-dd).sql",
-  [string]$DatabaseUrl = "postgresql://postgres:123@localhost:5432/vn-biodiversity-webgis-DB",
+  [string]$DatabaseUrl = $env:VNSC_LOCAL_DATABASE_URL,
   [string]$PgDump = "C:\Program Files\PostgreSQL\18\bin\pg_dump.exe",
   [string]$TableManifest = "$PSScriptRoot\data-update-tables.txt"
 )
@@ -9,6 +9,10 @@ $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $PgDump)) {
   throw "pg_dump.exe not found: $PgDump"
+}
+
+if (-not $DatabaseUrl) {
+  throw "Missing local database URL. Pass -DatabaseUrl or set VNSC_LOCAL_DATABASE_URL."
 }
 
 if (-not (Test-Path $TableManifest)) {

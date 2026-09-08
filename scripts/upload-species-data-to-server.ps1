@@ -2,15 +2,27 @@ param(
   [Alias("LocalFile")]
   [string]$File = "D:\Duong\db-backup\vnsc-data-update-$(Get-Date -Format yyyy-MM-dd).sql",
   [string]$RemoteFileName = "",
-  [string]$SshKey = "$env:USERPROFILE\.ssh\jenkins_vn_biodiversity",
-  [string]$Server = "dev@100.87.247.104",
-  [string]$RemoteDir = "/opt/vn-biodiversity-webgis/imports"
+  [string]$SshKey = "",
+  [string]$Server = "",
+  [string]$RemoteDir = ""
 )
 
 $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $File)) {
   throw "Data file not found: $File"
+}
+
+if (-not $SshKey) {
+  throw "Missing SSH key. Pass -SshKey."
+}
+
+if (-not $Server) {
+  throw "Missing server. Pass -Server."
+}
+
+if (-not $RemoteDir) {
+  throw "Missing remote import directory. Pass -RemoteDir."
 }
 
 if (-not $RemoteFileName) {
