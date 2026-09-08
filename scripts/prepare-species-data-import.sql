@@ -1,5 +1,39 @@
 BEGIN;
 
+CREATE TABLE IF NOT EXISTS public.animal_db_vn (
+  source_loai text,
+  species_id text PRIMARY KEY,
+  detail_url text,
+  page text,
+  hinh text,
+  ten_viet_nam text,
+  ten_latin text,
+  ho text,
+  bo text,
+  lop_nhom text,
+  title_block text,
+  dac_diem_nhan_dang text,
+  sinh_hoc_sinh_thai text,
+  phan_bo text,
+  phan_hang text,
+  gia_tri text,
+  tinh_trang text,
+  bien_phap_bao_ve text,
+  tai_lieu_dan text,
+  mo_ta text,
+  mo_ta_loai text,
+  ban_do_phan_bo_cua_loai text,
+  list_ten_viet_nam text,
+  list_ten_latin text,
+  dac_diem_bo_sung text,
+  kich_thuoc text,
+  mau_mo_ta text
+);
+
+CREATE INDEX IF NOT EXISTS idx_animal_db_vn_species_id ON public.animal_db_vn (species_id);
+CREATE INDEX IF NOT EXISTS idx_animal_db_vn_ten_latin ON public.animal_db_vn (ten_latin);
+CREATE INDEX IF NOT EXISTS idx_animal_db_vn_ten_viet_nam ON public.animal_db_vn (ten_viet_nam);
+
 CREATE TABLE IF NOT EXISTS public.algae_db_vn (
   species_id text PRIMARY KEY,
   ten_viet_nam text,
@@ -104,6 +138,75 @@ CREATE TABLE IF NOT EXISTS public.fungi_db_vn (
 CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_species_id ON public.fungi_db_vn (species_id);
 CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_ten_latin ON public.fungi_db_vn (ten_latin);
 CREATE INDEX IF NOT EXISTS idx_fungi_db_vn_ten_viet_nam ON public.fungi_db_vn (ten_viet_nam);
+
+CREATE TABLE IF NOT EXISTS public.insect_db_vn (
+  source_loai text,
+  species_id text PRIMARY KEY,
+  detail_url text,
+  page text,
+  hinh text,
+  ten_viet_nam text,
+  ten_latin text,
+  ho text,
+  bo text,
+  lop_nhom text,
+  title_block text,
+  dac_diem_nhan_dang text,
+  sinh_hoc_sinh_thai text,
+  phan_bo text,
+  phan_hang text,
+  gia_tri text,
+  tinh_trang text,
+  bien_phap_bao_ve text,
+  tai_lieu_dan text,
+  mo_ta text,
+  mo_ta_loai text,
+  ban_do_phan_bo_cua_loai text,
+  list_ten_viet_nam text,
+  list_ten_latin text,
+  dac_diem_bo_sung text,
+  kich_thuoc text,
+  mau_mo_ta text
+);
+
+CREATE INDEX IF NOT EXISTS idx_insect_db_vn_species_id ON public.insect_db_vn (species_id);
+CREATE INDEX IF NOT EXISTS idx_insect_db_vn_ten_latin ON public.insect_db_vn (ten_latin);
+CREATE INDEX IF NOT EXISTS idx_insect_db_vn_ten_viet_nam ON public.insect_db_vn (ten_viet_nam);
+
+CREATE TABLE IF NOT EXISTS public.plant_db_vn (
+  source_loai text,
+  species_id text PRIMARY KEY,
+  detail_url text,
+  page text,
+  hinh text,
+  ten_viet_nam text,
+  ten_latin text,
+  ho text,
+  bo text,
+  lop_nhom text,
+  title_block text,
+  dac_diem_nhan_dang text,
+  sinh_hoc_sinh_thai text,
+  phan_bo text,
+  phan_hang text,
+  gia_tri text,
+  tinh_trang text,
+  bien_phap_bao_ve text,
+  tai_lieu_dan text,
+  cong_dung text,
+  mo_ta text,
+  mo_ta_loai text,
+  ban_do_phan_bo_cua_loai text,
+  list_ten_viet_nam text,
+  list_ten_latin text,
+  dac_diem_bo_sung text,
+  kich_thuoc text,
+  mau_mo_ta text
+);
+
+CREATE INDEX IF NOT EXISTS idx_plant_db_vn_species_id ON public.plant_db_vn (species_id);
+CREATE INDEX IF NOT EXISTS idx_plant_db_vn_ten_latin ON public.plant_db_vn (ten_latin);
+CREATE INDEX IF NOT EXISTS idx_plant_db_vn_ten_viet_nam ON public.plant_db_vn (ten_viet_nam);
 
 CREATE TABLE IF NOT EXISTS public.gbif_occurrences (
   gbif_occurrence_key bigint PRIMARY KEY,

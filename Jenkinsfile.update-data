@@ -173,15 +173,21 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   echo "Preflight import file content"
   IMPORT_TABLES=$(grep -Eo "^(COPY|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" || true)
   echo "$IMPORT_TABLES" | sort -u
+  IMPORT_HAS_SCHEMA=$(grep -Eq "^CREATE TABLE public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" && echo "yes" || echo "no")
+  echo "IMPORT_HAS_SCHEMA=$IMPORT_HAS_SCHEMA"
 
   for table in "${DATA_TABLES[@]}"; do
     require_file_table_data "$table"
   done
 
-  echo "Preflight production schema"
-  for table in "${DATA_TABLES[@]}"; do
-    verify_table_exists "$table"
-  done
+  if [ "$IMPORT_HAS_SCHEMA" = "yes" ]; then
+    echo "Schema dump detected. Production table existence check will be handled by restore."
+  else
+    echo "Preflight production schema"
+    for table in "${DATA_TABLES[@]}"; do
+      verify_table_exists "$table"
+    done
+  fi
 fi
 
 if [ "$DATA_ACTION" = "sql-import" ]; then
@@ -193,30 +199,63 @@ if [ "$DATA_ACTION" = "replace-data" ]; then
   echo "Backup production data before replace: $BACKUP_PATH"
   docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" --data-only > "$BACKUP_PATH"
 
-  echo "Truncate existing business data tables only"
-  TRUNCATE_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
-    SELECT 'TRUNCATE TABLE ' ||
-      string_agg(format('%I.%I', schemaname, tablename), ', ') ||
-      ' RESTART IDENTITY CASCADE;'
-    FROM pg_tables
-    WHERE schemaname = 'public'
-      AND tablename IN ($TABLE_LIST_SQL);
-  ")
+  if [ "$IMPORT_HAS_SCHEMA" = "yes" ]; then
+    echo "Import file contains schema. Dropping imported public tables before restore."
+    IMPORT_TABLE_LIST_SQL=$(grep -Eo "^(COPY|CREATE TABLE|INSERT INTO) public\\.[A-Za-z0-9_]+" "$IMPORT_PATH" |
+      sed -E 's/^(COPY|CREATE TABLE|INSERT INTO) public\\.//' |
+      sort -u |
+      awk '{ printf "'\''%s'\'',", $1 }')
+    IMPORT_TABLE_LIST_SQL="${IMPORT_TABLE_LIST_SQL%,}"
 
-  echo "$TRUNCATE_SQL"
+    if [ -z "$IMPORT_TABLE_LIST_SQL" ]; then
+      echo "ERROR: Could not detect imported table names from schema dump"
+      exit 1
+    fi
 
-  if [ -z "$TRUNCATE_SQL" ]; then
-    echo "ERROR: No matching business tables found to truncate"
-    exit 1
+    DROP_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
+      SELECT 'DROP TABLE IF EXISTS ' ||
+        string_agg(format('%I.%I', schemaname, tablename), ', ') ||
+        ' CASCADE;'
+      FROM pg_tables
+      WHERE schemaname = 'public'
+        AND tablename IN ($IMPORT_TABLE_LIST_SQL);
+    ")
+
+    echo "$DROP_SQL"
+
+    if [ -n "$DROP_SQL" ]; then
+      docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "$DROP_SQL"
+    fi
+  else
+    echo "Truncate existing business data tables only"
+    TRUNCATE_SQL=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
+      SELECT 'TRUNCATE TABLE ' ||
+        string_agg(format('%I.%I', schemaname, tablename), ', ') ||
+        ' RESTART IDENTITY CASCADE;'
+      FROM pg_tables
+      WHERE schemaname = 'public'
+        AND tablename IN ($TABLE_LIST_SQL);
+    ")
+
+    echo "$TRUNCATE_SQL"
+
+    if [ -z "$TRUNCATE_SQL" ]; then
+      echo "ERROR: No matching business tables found to truncate"
+      exit 1
+    fi
+
+    docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "$TRUNCATE_SQL"
   fi
-
-  docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "$TRUNCATE_SQL"
 
   echo "Import replacement SQL"
   docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" < "$IMPORT_PATH"
 
   echo "Analyze database"
   docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -c "ANALYZE;"
+
+  echo "Clean old uploaded data files, keep current import only"
+  find "$APP_DIR/imports" -maxdepth 1 -type f -name 'vnsc-data-update-*.sql' ! -name "$IMPORT_FILE" -delete
+  ls -lh "$APP_DIR/imports" || true
 
   echo "Verify imported data counts"
   COUNTS=$(docker exec "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" -Atc "
