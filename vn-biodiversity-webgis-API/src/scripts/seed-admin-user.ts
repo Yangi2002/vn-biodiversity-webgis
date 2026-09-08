@@ -63,6 +63,15 @@ async function main() {
       [userResult.rows[0].user_id],
     );
 
+    await client.query(
+      `
+        INSERT INTO user_roles (user_id, role_code)
+        VALUES ($1, 'administrator')
+        ON CONFLICT (user_id, role_code) DO NOTHING
+      `,
+      [userResult.rows[0].user_id],
+    );
+
     await client.query('COMMIT');
     console.log(`Seeded admin user: ${email}`);
   } catch (error) {

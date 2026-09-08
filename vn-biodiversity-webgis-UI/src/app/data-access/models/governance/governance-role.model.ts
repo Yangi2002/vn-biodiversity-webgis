@@ -1,1 +1,1 @@
-export type GovernanceRole = 'admin' | 'animal_manager' | 'plant_manager' | 'insect_manager';
+export type GovernanceRole = 'administrator' | 'editor-staff' | 'registered-user' | 'anonymous';

@@ -2,10 +2,36 @@
   <app-admin-navbar />
 
   <section class="admin-content">
-    <section class="admin-placeholder">
-      <p>Role management</p>
-      <h1>Phân quyền dữ liệu</h1>
-      <span>Admin sẽ dùng khu vực này để quản lý quyền Animal Manager, Plant Manager và Insect Manager.</span>
+    <section class="role-header">
+      <div>
+        <p>Role platform</p>
+        <h1>Nền tảng phân quyền Sprint 2</h1>
+        <span>Administrator là admin cao nhất. Ba role còn lại dùng cho biên tập, tài khoản đăng nhập và khách công khai.</span>
+      </div>
+      <button type="button" (click)="loadRoleMatrix()">Tải lại</button>
     </section>
+
+    @if (isLoading()) {
+      <section class="role-state">Đang tải ma trận quyền...</section>
+    } @else if (errorMessage()) {
+      <section class="role-state is-error">{{ errorMessage() }}</section>
+    } @else {
+      <section class="role-grid" aria-label="Ma trận phân quyền">
+        @for (role of roles(); track role.code) {
+          <article class="role-card">
+            <div class="role-card-header">
+              <span>{{ role.code }}</span>
+              <strong>{{ role.label }}</strong>
+            </div>
+            <p>{{ role.description }}</p>
+            <div class="permission-list">
+              @for (permission of role.permissions; track permission) {
+                <span>{{ permission }}</span>
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
   </section>
 </main>

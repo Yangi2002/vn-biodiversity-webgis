@@ -8,6 +8,7 @@ import { StatisticsPage } from './pages/statistics/statistics.page';
 import { TaxonomyPage } from './pages/taxonomy/taxonomy.page';
 import { EndangeredSpeciesPage } from './pages/endangered-species/endangered-species.page';
 import { adminAuthGuard } from './core/auth/admin-auth.guard';
+import { adminPermissionGuard } from './core/auth/admin-permission.guard';
 import { adminRoutes } from './pages/admin/admin.routes';
 import { LoginPage } from './pages/login/login.page';
 
@@ -69,7 +70,10 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    canActivate: [adminAuthGuard],
+    canActivate: [adminAuthGuard, adminPermissionGuard],
+    data: {
+      roles: ['administrator'],
+    },
     children: adminRoutes,
     title: 'Admin',
   },

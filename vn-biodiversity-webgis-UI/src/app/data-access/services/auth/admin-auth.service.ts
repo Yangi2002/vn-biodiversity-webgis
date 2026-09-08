@@ -3,7 +3,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { tap } from 'rxjs';
 import { API_ENDPOINTS } from '../../../core/api/api-endpoints';
 import { HttpApiService } from '../../../core/api/http-api.service';
-import type { AdminUser, LoginResponse } from '../../models/auth/auth.model';
+import type { AdminUser, GovernancePermission, GovernanceRole, LoginResponse, RoleDefinition } from '../../models/auth/auth.model';
 
 const AUTH_TOKEN_KEY = 'vn_biodiversity_admin_token';
 const AUTH_USER_KEY = 'vn_biodiversity_admin_user';
@@ -32,6 +32,30 @@ export class AdminAuthService {
     localStorage.removeItem(AUTH_USER_KEY);
   }
 
+  logoutFromServer() {
+    return this.api.post<{ success: boolean }>(API_ENDPOINTS.authLogout, {}).pipe(
+      tap(() => {
+        this.logout();
+      }),
+    );
+  }
+
+  me() {
+    return this.api.get<AdminUser>(API_ENDPOINTS.authMe).pipe(
+      tap((user) => {
+        const token = this.token();
+
+        if (token) {
+          this.storeSession(token, user);
+        }
+      }),
+    );
+  }
+
+  permissionMatrix() {
+    return this.api.get<RoleDefinition[]>(API_ENDPOINTS.authPermissionMatrix);
+  }
+
   token() {
     if (!this.isBrowser()) {
       return null;
@@ -47,11 +71,33 @@ export class AdminAuthService {
 
     const value = localStorage.getItem(AUTH_USER_KEY);
 
-    return value ? (JSON.parse(value) as AdminUser) : null;
+    if (!value) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(value) as AdminUser;
+    } catch {
+      this.logout();
+      return null;
+    }
   }
 
   isAuthenticated() {
     return Boolean(this.token());
+  }
+
+  hasRole(requiredRoles: readonly GovernanceRole[]) {
+    const user = this.currentUser();
+    const roles = new Set<GovernanceRole>(user?.roles ?? []);
+
+    return requiredRoles.some((role) => roles.has(role));
+  }
+
+  hasPermission(requiredPermissions: readonly GovernancePermission[]) {
+    const permissions = new Set(this.currentUser()?.permissions ?? []);
+
+    return requiredPermissions.every((permission) => permissions.has(permission));
   }
 
   private storeSession(token: string, user: AdminUser) {

@@ -10,15 +10,25 @@
   padding: 28px;
 }
 
-.admin-placeholder {
+.role-header,
+.role-state,
+.role-card {
   padding: 32px;
   border: 1px solid #c5ded0;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ffffff, #eef8f0);
+  border-radius: 16px;
+  background: #ffffff;
   box-shadow: 0 22px 54px rgba(24, 89, 58, 0.08);
 }
 
-.admin-placeholder p {
+.role-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  background: linear-gradient(135deg, #ffffff, #eef8f0);
+}
+
+.role-header p {
   margin: 0 0 8px;
   color: #00733e;
   font-size: 0.76rem;
@@ -27,20 +37,106 @@
   text-transform: uppercase;
 }
 
-.admin-placeholder h1 {
+.role-header h1 {
   margin: 0 0 12px;
   color: #10251d;
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 1;
 }
 
-.admin-placeholder span {
+.role-header span {
   color: #38574c;
   line-height: 1.6;
+}
+
+.role-header button {
+  border: 1px solid #13804d;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #006b3b;
+  cursor: pointer;
+  font-weight: 900;
+  padding: 12px 18px;
+  white-space: nowrap;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.role-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.role-card-header span {
+  border-radius: 999px;
+  background: #e7f5ec;
+  color: #00733e;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 7px 12px;
+}
+
+.role-card-header strong {
+  color: #10251d;
+  font-size: 1.3rem;
+}
+
+.role-card p {
+  margin: 0;
+  color: #38574c;
+  line-height: 1.55;
+}
+
+.permission-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.permission-list span {
+  border: 1px solid #c5ded0;
+  border-radius: 999px;
+  color: #0b5f3d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.role-state {
+  margin-top: 18px;
+  color: #38574c;
+  font-weight: 800;
+}
+
+.role-state.is-error {
+  border-color: #e5a59b;
+  color: #9b1c0f;
 }
 
 @media (max-width: 1080px) {
   .admin-shell {
     grid-template-columns: 1fr;
+  }
+
+  .role-grid,
+  .role-header {
+    grid-template-columns: 1fr;
+  }
+
+  .role-header {
+    flex-direction: column;
   }
 }

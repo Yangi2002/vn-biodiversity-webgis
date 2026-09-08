@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac, pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { AuthRepository } from './auth.repository';
+import { ROLE_DEFINITIONS, normalizeRoles, permissionsForRoles } from './authorization/role-permission.matrix';
 import type { AuthTokenPayload, AuthUser } from './types/auth-user.type';
 
 const HASH_ITERATIONS = 120000;
@@ -27,7 +28,8 @@ export class AuthService {
       userId: user.userId,
       email: user.email,
       displayName: user.displayName,
-      roles: user.roles,
+      roles: normalizeRoles(user.roles),
+      permissions: permissionsForRoles(user.roles),
     };
 
     return {
@@ -58,11 +60,35 @@ export class AuthService {
     return payload;
   }
 
+  async currentUser(payload: AuthTokenPayload) {
+    const user = await this.authRepository.findUserByEmail(payload.email);
+
+    if (!user?.isActive) {
+      throw new UnauthorizedException('Tài khoản không còn hoạt động.');
+    }
+
+    return {
+      userId: user.userId,
+      email: user.email,
+      displayName: user.displayName,
+      roles: normalizeRoles(user.roles),
+      permissions: permissionsForRoles(user.roles),
+    };
+  }
+
   hashPassword(password: string) {
     const salt = randomBytes(16).toString('base64url');
     const hash = pbkdf2Sync(password, salt, HASH_ITERATIONS, HASH_KEY_LENGTH, HASH_DIGEST).toString('base64url');
 
     return `pbkdf2_${HASH_DIGEST}$${HASH_ITERATIONS}$${salt}$${hash}`;
+  }
+
+  permissionMatrix() {
+    return ROLE_DEFINITIONS;
+  }
+
+  logout() {
+    return { success: true };
   }
 
   private verifyPassword(password: string, storedHash: string) {
@@ -85,6 +111,7 @@ export class AuthService {
         sub: user.userId,
         email: user.email,
         roles: user.roles,
+        permissions: user.permissions,
         exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
       }),
     ).toString('base64url');

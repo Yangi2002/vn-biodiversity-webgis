@@ -21,6 +21,18 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@Req() request: AuthenticatedRequest) {
-    return request.user;
+    return this.authService.currentUser(request.user!);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout() {
+    return this.authService.logout();
+  }
+
+  @Get('permission-matrix')
+  @UseGuards(JwtAuthGuard)
+  permissionMatrix() {
+    return this.authService.permissionMatrix();
   }
 }

@@ -78,6 +78,35 @@ model user_roles {
   @@index([role_code], map: "idx_user_roles_role")
 }
 
+model governance_roles {
+  role_code                   String                        @id
+  role_label                  String
+  description                 String?
+  is_system_role              Boolean                       @default(true)
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  governance_role_permissions governance_role_permissions[]
+}
+
+model governance_permissions {
+  permission_code             String                        @id
+  permission_label            String
+  description                 String?
+  permission_group            String
+  created_at                  DateTime                      @default(now()) @db.Timestamptz(6)
+  governance_role_permissions governance_role_permissions[]
+}
+
+model governance_role_permissions {
+  role_code              String
+  permission_code        String
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
+  governance_roles       governance_roles       @relation(fields: [role_code], references: [role_code], onDelete: Cascade, onUpdate: NoAction)
+  governance_permissions governance_permissions @relation(fields: [permission_code], references: [permission_code], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([role_code, permission_code])
+}
+
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model animal_db_vn {
   source_loai                     String?
