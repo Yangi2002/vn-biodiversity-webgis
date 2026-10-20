@@ -67,6 +67,207 @@ model national_parks_vn {
   @@index([title], map: "idx_national_parks_vn_title")
 }
 
+/// Dữ liệu khu bảo tồn thiên nhiên từ Hệ thống thông tin đa dạng sinh học quốc gia.
+/// Bảng có check constraint tọa độ được quản lý trong migration SQL.
+model nature_reserves {
+  source_id                         String                               @id
+  reserve_code                      String                               @unique
+  name                              String
+  reserve_type                      String?
+  province                          String?
+  district                          String?
+  ward                              String?
+  socio_economic_region             String?
+  heritage_level                    String?
+  heritage_classification           String?
+  heritage_subgroup                 String?
+  biodiversity_conservation_subgroup String?
+  international_designations        String?
+  scope                             String?
+  conservation_criteria             String?
+  management_agency                 String?
+  established_year                  Int?
+  establishment_document_title      String?
+  document_number                   String?
+  issued_date                       DateTime?                            @db.Date
+  issuing_authority                 String?
+  longitude                         Decimal?                             @db.Decimal(11, 7)
+  latitude                          Decimal?                             @db.Decimal(10, 7)
+  center_coordinates                Json?
+  total_area_ha                     Decimal?                             @db.Decimal(18, 4)
+  core_area_ha                      Decimal?                             @db.Decimal(18, 4)
+  strict_protection_area_ha         Decimal?                             @db.Decimal(18, 4)
+  ecological_restoration_area_ha    Decimal?                             @db.Decimal(18, 4)
+  administration_service_area_ha    Decimal?                             @db.Decimal(18, 4)
+  buffer_area_ha                    Decimal?                             @db.Decimal(18, 4)
+  transition_area_ha                Decimal?                             @db.Decimal(18, 4)
+  boundary_text                     String?
+  description                       String?
+  source_citation                   String?
+  planning_status                   String?
+  operating_status                  String?
+  representative_image_url          String?
+  representative_image_credit       String?
+  collection_image_count            Int                                  @default(0)
+  detail_url                        String?
+  source_created_at                 DateTime?                            @db.Date
+  source_updated_at                 DateTime?                            @db.Date
+  geometry                          Json?
+  source_payload                    Json?
+  imported_at                       DateTime                             @default(now()) @db.Timestamptz(6)
+  updated_at                        DateTime                             @default(now()) @db.Timestamptz(6)
+  documents                         nature_reserve_documents[]
+  ecosystems                        nature_reserve_ecosystems[]
+  species_inventories               nature_reserve_species_inventories[]
+  genetic_resources                 nature_reserve_genetic_resources[]
+  files                             nature_reserve_files[]
+
+  @@index([name], map: "idx_nature_reserves_name")
+  @@index([reserve_type], map: "idx_nature_reserves_type")
+  @@index([province], map: "idx_nature_reserves_province")
+  @@index([latitude, longitude], map: "idx_nature_reserves_geo")
+}
+
+model nature_reserve_documents {
+  document_id       String          @id
+  reserve_source_id String
+  source_record_id  String?
+  document_code     String?
+  title             String?
+  heritage_title    String?
+  document_type     String?
+  document_number   String?
+  issuing_authority String?
+  issued_year       Int?
+  issued_date       DateTime?       @db.Date
+  file_name         String?
+  file_url          String?
+  source_created_at DateTime?       @db.Date
+  source_updated_at DateTime?       @db.Date
+  source_payload    Json?
+  imported_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime        @default(now()) @db.Timestamptz(6)
+  reserve           nature_reserves @relation(fields: [reserve_source_id], references: [source_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reserve_source_id], map: "idx_nature_reserve_documents_reserve")
+}
+
+model nature_reserve_ecosystems {
+  ecosystem_id        String          @id
+  reserve_source_id   String
+  source_record_id    String?
+  inventory_code      String?
+  inventory_name      String?
+  ecosystem_type      String?
+  ecosystem_group     String?
+  ecosystem_subtype   String?
+  total_area_ha       Decimal?        @db.Decimal(18, 4)
+  area_ha             Decimal?        @db.Decimal(18, 4)
+  vegetation_cover    String?
+  ecological_status   String?
+  ecosystem_structure String?
+  inventory_period    String?
+  inventory_location  String?
+  implementing_agency String?
+  publication_date    DateTime?       @db.Date
+  publication_source  String?
+  description         String?
+  source_citation     String?
+  data_source         String?
+  source_created_at   DateTime?       @db.Date
+  source_updated_at   DateTime?       @db.Date
+  source_payload      Json?
+  imported_at         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime        @default(now()) @db.Timestamptz(6)
+  reserve             nature_reserves @relation(fields: [reserve_source_id], references: [source_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reserve_source_id], map: "idx_nature_reserve_ecosystems_reserve")
+}
+
+model nature_reserve_species_inventories {
+  inventory_id       String          @id
+  reserve_source_id  String
+  source_record_id   String?
+  inventory_code     String?
+  inventory_name     String?
+  inventory_period   String?
+  inventory_location String?
+  implementing_agency String?
+  species_count      Int?
+  publication_date   DateTime?       @db.Date
+  publication_source String?
+  source_created_at  DateTime?       @db.Date
+  source_updated_at  DateTime?       @db.Date
+  source_payload     Json?
+  imported_at        DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime        @default(now()) @db.Timestamptz(6)
+  reserve            nature_reserves @relation(fields: [reserve_source_id], references: [source_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reserve_source_id], map: "idx_nature_reserve_species_inventories_reserve")
+}
+
+model nature_reserve_genetic_resources {
+  genetic_resource_id      String          @id
+  reserve_source_id        String
+  source_record_id         String?
+  resource_code            String?
+  resource_name            String?
+  local_name               String?
+  scientific_name          String?
+  resource_classification  String?
+  genetic_origin           String?
+  strain_code              String?
+  resource_symbol          String?
+  kingdom                  String?
+  phylum                   String?
+  class_name               String?
+  order_name               String?
+  family                   String?
+  genus                    String?
+  species                  String?
+  province                 String?
+  transfer_isolation_place String?
+  storage_location         String?
+  received_date            DateTime?       @db.Date
+  morphology               String?
+  cell_characteristics     String?
+  biological_activity      String?
+  gene_sequence            String?
+  preservation_conditions  String?
+  culture_medium           String?
+  usage_scope              String?
+  toxicity                 String?
+  source_citation          String?
+  source_created_at        DateTime?       @db.Date
+  source_updated_at        DateTime?       @db.Date
+  source_payload           Json?
+  imported_at              DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime        @default(now()) @db.Timestamptz(6)
+  reserve                  nature_reserves @relation(fields: [reserve_source_id], references: [source_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reserve_source_id], map: "idx_nature_reserve_genetic_resources_reserve")
+}
+
+model nature_reserve_files {
+  file_id                String          @id
+  reserve_source_id      String
+  source_record_id       String?
+  data_group             String?
+  source_field           String?
+  source_file_id         String?
+  file_name              String?
+  mime_type              String?
+  file_size_bytes        BigInt?
+  source_file_updated_at DateTime?       @db.Date
+  source_url             String?
+  imported_at            DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime        @default(now()) @db.Timestamptz(6)
+  reserve                nature_reserves @relation(fields: [reserve_source_id], references: [source_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([reserve_source_id], map: "idx_nature_reserve_files_reserve")
+  @@index([source_url], map: "idx_nature_reserve_files_source_url")
+}
+
 model user_roles {
   user_role_id BigInt    @id @default(autoincrement())
   user_id      String    @db.Uuid

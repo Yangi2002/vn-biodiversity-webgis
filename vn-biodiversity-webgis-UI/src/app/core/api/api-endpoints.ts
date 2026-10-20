@@ -19,6 +19,12 @@ export const API_ENDPOINTS = {
   nationalParkDetail: (parkId: string) => `/national-parks/${encodeURIComponent(parkId)}`,
   nationalParkImage: (parkId: string, imageIndex: number) =>
     `/national-parks/${encodeURIComponent(parkId)}/images/${imageIndex}`,
+  natureReserves: '/nature-reserves',
+  natureReserveMapLayer: '/nature-reserves/map-layer',
+  natureReserveFilterOptions: '/nature-reserves/filter-options',
+  natureReserveSummary: '/nature-reserves/summary',
+  natureReserveDocuments: '/nature-reserves/documents',
+  natureReserveDetail: (sourceId: string) => `/nature-reserves/${encodeURIComponent(sourceId)}`,
   occurrenceMapOverview: '/occurrences/map/overview',
   occurrenceCellDetail: '/occurrences/map/cell-detail',
   speciesOccurrences: (sourceTable: string, speciesId: string) =>

@@ -10,6 +10,7 @@ import { ConservationModule } from './conservation/conservation.module';
 import { AuthModule } from './auth/auth.module';
 import { DataGovernanceModule } from './data-governance/data-governance.module';
 import { NationalParksModule } from './national-parks/national-parks.module';
+import { NatureReservesModule } from './nature-reserves/nature-reserves.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { NationalParksModule } from './national-parks/national-parks.module';
     StatsModule,
     ConservationModule,
     NationalParksModule,
+    NatureReservesModule,
     DataGovernanceModule,
   ],
   controllers: [AppController],

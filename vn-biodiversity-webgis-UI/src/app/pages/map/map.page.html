@@ -41,6 +41,7 @@
             <span>Vector: occurrence grid</span>
             <span>Vector: Vietnam provinces</span>
             <span>Vector: national parks</span>
+            <span>Vector: nature reserves</span>
             <span>{{ mapData.cells.length }} ô dữ liệu</span>
           </div>
         </div>
@@ -66,6 +67,12 @@
             [map]="mapInstance"
             [closeToken]="nationalParkCloseToken()"
             (parkLayerOpenChange)="handleNationalParkLayerOpenChange($event)"
+          />
+          <app-webgis-nature-reserve-panel
+            [leaflet]="leafletInstance"
+            [map]="mapInstance"
+            [closeToken]="natureReserveCloseToken()"
+            (layerOpenChange)="handleNatureReserveLayerOpenChange($event)"
           />
         </div>
 

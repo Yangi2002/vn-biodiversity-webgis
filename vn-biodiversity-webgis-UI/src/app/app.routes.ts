@@ -11,6 +11,8 @@ import { adminAuthGuard } from './core/auth/admin-auth.guard';
 import { adminPermissionGuard } from './core/auth/admin-permission.guard';
 import { adminRoutes } from './pages/admin/admin.routes';
 import { LoginPage } from './pages/login/login.page';
+import { NatureReservesPage } from './pages/nature-reserves/nature-reserves.page';
+import { NatureReserveDetailPage } from './pages/nature-reserve-detail/nature-reserve-detail.page';
 
 export const routes: Routes = [
   {
@@ -62,6 +64,16 @@ export const routes: Routes = [
     path: 'endangered-species',
     component: EndangeredSpeciesPage,
     title: 'Danh sách đỏ',
+  },
+  {
+    path: 'nature-reserves',
+    component: NatureReservesPage,
+    title: 'Khu bảo tồn thiên nhiên',
+  },
+  {
+    path: 'nature-reserves/:sourceId',
+    component: NatureReserveDetailPage,
+    title: 'Hồ sơ khu bảo tồn',
   },
   {
     path: 'login',

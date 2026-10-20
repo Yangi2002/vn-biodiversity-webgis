@@ -29,6 +29,7 @@ import { OccurrenceCellDetailPanelComponent } from './components/occurrence-cell
 import { WebgisFilterPanelComponent } from './components/webgis-filter-panel/webgis-filter-panel.component';
 import { WebgisInsightPanelComponent } from './components/webgis-insight-panel/webgis-insight-panel.component';
 import { WebgisNationalParkPanelComponent } from './components/webgis-national-park-panel/webgis-national-park-panel.component';
+import { WebgisNatureReservePanelComponent } from './components/webgis-nature-reserve-panel/webgis-nature-reserve-panel.component';
 
 type SourceGroupFilter = NonNullable<OccurrenceOverviewQueryDto['sourceGroup']>;
 
@@ -62,6 +63,7 @@ const VIETNAM_FOCUS_BOUNDS: Leaflet.LatLngBoundsExpression = [
     WebgisFilterPanelComponent,
     WebgisInsightPanelComponent,
     WebgisNationalParkPanelComponent,
+    WebgisNatureReservePanelComponent,
   ],
   templateUrl: './map.page.html',
   styleUrl: './map.page.css',
@@ -135,6 +137,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   private pendingOverviewGridSize?: number;
   private zoomGridReloadTimer?: number;
   readonly nationalParkCloseToken = signal(0);
+  readonly natureReserveCloseToken = signal(0);
 
   get leafletInstance(): typeof Leaflet | null {
     return this.leaflet ?? null;
@@ -227,6 +230,13 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     if (this.map.hasLayer(this.occurrenceLayer)) {
       this.map.removeLayer(this.occurrenceLayer);
     }
+    this.natureReserveCloseToken.update((value) => value + 1);
+  }
+
+  handleNatureReserveLayerOpenChange(isOpen: boolean): void {
+    if (!isOpen || !this.map || !this.occurrenceLayer) return;
+    if (this.map.hasLayer(this.occurrenceLayer)) this.map.removeLayer(this.occurrenceLayer);
+    this.nationalParkCloseToken.update((value) => value + 1);
   }
 
   updateSourceGroup(value: string): void {
@@ -442,6 +452,7 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
     this.map.on('overlayadd', (event: Leaflet.LayersControlEvent) => {
       if (event.layer === this.occurrenceLayer) {
         this.nationalParkCloseToken.update((value) => value + 1);
+        this.natureReserveCloseToken.update((value) => value + 1);
       }
     });
   }

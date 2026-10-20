@@ -22,6 +22,14 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Client,
   },
   {
+    path: 'nature-reserves',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'nature-reserves/:sourceId',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'admin/**',
     renderMode: RenderMode.Client,
   },
