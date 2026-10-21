@@ -75,11 +75,11 @@ export const routes: Routes = [
     component: NatureReserveDetailPage,
     title: 'Hồ sơ khu bảo tồn',
   },
-  {
+   {
     path: 'login',
     component: LoginPage,
     title: 'Đăng nhập Admin',
-  },
+   },
   {
     path: 'admin',
     canActivate: [adminAuthGuard, adminPermissionGuard],

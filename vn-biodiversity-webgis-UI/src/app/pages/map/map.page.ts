@@ -138,14 +138,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   private zoomGridReloadTimer?: number;
   readonly nationalParkCloseToken = signal(0);
   readonly natureReserveCloseToken = signal(0);
-
-  get leafletInstance(): typeof Leaflet | null {
-    return this.leaflet ?? null;
-  }
-
-  get mapInstance(): Leaflet.Map | null {
-    return this.map ?? null;
-  }
+  readonly leafletRuntime = signal<typeof Leaflet | null>(null);
+  readonly mapRuntime = signal<Leaflet.Map | null>(null);
 
   get layerControlInstance(): Leaflet.Control.Layers | null {
     return this.layerControl ?? null;
@@ -366,6 +360,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
         zoomSnap: 0.25,
       })
       .setView(VIETNAM_CENTER, INITIAL_MAP_ZOOM);
+    this.leafletRuntime.set(this.leaflet);
+    this.mapRuntime.set(this.map);
 
     this.map.createPane('provinceBoundaryPane');
     this.map.createPane('occurrenceGridPane');
@@ -433,6 +429,8 @@ export class MapPage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private destroyMapInstance(): void {
+    this.mapRuntime.set(null);
+    this.leafletRuntime.set(null);
     this.map?.remove();
     this.mapInitialization = undefined;
     this.clearLeafletContainerId(this.leafletMapElement?.nativeElement);

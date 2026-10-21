@@ -1,1 +1,55 @@
-<aside class="reserve-layer-panel" [class.is-open]="isExpanded()"><button class="layer-toggle" type="button" (click)="toggle()" [attr.aria-expanded]="isExpanded()"><span class="swatch"></span><strong>Khu bảo tồn</strong><small>{{ total() || '182' }}</small></button>@if (isExpanded()) { <div class="panel-body"><div class="panel-heading"><div><p>Lớp ranh giới</p><h3>Khu bảo tồn thiên nhiên</h3></div><button type="button" (click)="close()" aria-label="Đóng lớp khu bảo tồn">×</button></div>@if (isLoading()) { <p>Đang tải ranh giới...</p> } @else if (errorMessage()) { <p class="error">{{ errorMessage() }}</p> } @else if (selected(); as reserve) { <article>@if (reserve.representativeImageUrl) { <img [src]="reserve.representativeImageUrl" [alt]="reserve.name" /> }<span>{{ reserve.reserveType }}</span><h4>{{ reserve.name }}</h4><p>{{ reserve.province }} · {{ reserve.totalAreaHa || 'Chưa rõ' }} ha</p><a [routerLink]="['/nature-reserves', reserve.sourceId]">Mở hồ sơ chi tiết</a></article> } @else { <p>Chọn một ranh giới trên bản đồ để xem thông tin khu bảo tồn.</p><a routerLink="/nature-reserves">Tra cứu toàn bộ khu bảo tồn</a> }</div> }</aside>
+<aside class="reserve-layer-panel" [class.is-open]="isExpanded()">
+  <button class="layer-toggle" type="button" (click)="toggle()" [attr.aria-expanded]="isExpanded()" aria-controls="nature-reserve-layer-details">
+    <span class="swatch" aria-hidden="true"></span>
+    <span class="toggle-copy">
+      <strong>Khu bảo tồn</strong>
+      <small>{{ isExpanded() ? 'Đang hiển thị ranh giới' : 'Hiện lớp ranh giới' }}</small>
+    </span>
+    <span class="reserve-count">{{ total() || 182 }}</span>
+  </button>
+
+  @if (isExpanded()) {
+    <section id="nature-reserve-layer-details" class="panel-body" aria-live="polite">
+      <header class="panel-heading">
+        <div>
+          <p>Lớp bảo tồn thiên nhiên</p>
+          <h3>{{ selected() ? 'Thông tin khu đang chọn' : 'Khám phá ranh giới bảo tồn' }}</h3>
+        </div>
+        <button class="close-button" type="button" (click)="close()" aria-label="Đóng lớp khu bảo tồn">×</button>
+      </header>
+
+      @if (isLoading()) {
+        <div class="panel-state"><span class="loading-dot"></span>Đang tải ranh giới...</div>
+      } @else if (errorMessage()) {
+        <p class="panel-state error">{{ errorMessage() }}</p>
+      } @else if (selected(); as reserve) {
+        <article class="reserve-summary">
+          @if (reserve.representativeImageUrl) {
+            <img [src]="reserve.representativeImageUrl" [alt]="reserve.name" />
+          }
+          <div class="summary-copy">
+            <span class="reserve-type">{{ reserve.reserveType || 'Khu bảo tồn thiên nhiên' }}</span>
+            <h4>{{ reserve.name }}</h4>
+            <p class="location">{{ reserve.province || 'Chưa rõ địa phương' }}</p>
+          </div>
+          <dl>
+            <div><dt>Diện tích</dt><dd>{{ areaLabel(reserve.totalAreaHa) }}</dd></div>
+            <div><dt>Thành lập</dt><dd>{{ reserve.establishedYear || 'Chưa rõ' }}</dd></div>
+            <div><dt>Trạng thái</dt><dd>{{ reserve.operatingStatus || 'Chưa rõ' }}</dd></div>
+          </dl>
+          @if (reserve.managementAgency) {
+            <p class="management"><span>Cơ quan quản lý</span>{{ reserve.managementAgency }}</p>
+          }
+          <a class="primary-link" [routerLink]="['/nature-reserves', reserve.sourceId]">Mở hồ sơ chi tiết <span>→</span></a>
+        </article>
+      } @else {
+        <div class="empty-selection">
+          <span class="boundary-icon" aria-hidden="true"></span>
+          <strong>Di chuột để xem nhanh</strong>
+          <p>Đưa chuột lên ranh giới để xem thông tin tổng quát, hoặc nhấn để giữ hồ sơ trong bảng này.</p>
+        </div>
+        <a class="secondary-link" routerLink="/nature-reserves">Tra cứu toàn bộ khu bảo tồn <span>→</span></a>
+      }
+    </section>
+  }
+</aside>

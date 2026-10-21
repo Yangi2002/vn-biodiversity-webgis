@@ -63,14 +63,14 @@
           />
 
           <app-webgis-national-park-panel
-            [leaflet]="leafletInstance"
-            [map]="mapInstance"
+            [leaflet]="leafletRuntime()"
+            [map]="mapRuntime()"
             [closeToken]="nationalParkCloseToken()"
             (parkLayerOpenChange)="handleNationalParkLayerOpenChange($event)"
           />
           <app-webgis-nature-reserve-panel
-            [leaflet]="leafletInstance"
-            [map]="mapInstance"
+            [leaflet]="leafletRuntime()"
+            [map]="mapRuntime()"
             [closeToken]="natureReserveCloseToken()"
             (layerOpenChange)="handleNatureReserveLayerOpenChange($event)"
           />

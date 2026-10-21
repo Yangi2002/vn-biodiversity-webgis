@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import type * as Leaflet from 'leaflet';
+import { NatureReserveLeafletLayer } from '../../data-access/map/nature-reserve-leaflet-layer';
 import type { NatureReserveDocument, NatureReserveFilterOptions, NatureReserveListItem, NatureReserveSummary } from '../../data-access/models/nature-reserve.model';
 import { NatureReserveService, type NatureReserveQuery } from '../../data-access/services/nature-reserve.service';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
@@ -42,7 +43,7 @@ export class NatureReservesPage implements OnInit, AfterViewInit, OnDestroy {
   documentQuery = '';
   private leaflet?: typeof Leaflet;
   private map?: Leaflet.Map;
-  private reserveLayer?: Leaflet.LayerGroup;
+  private reserveMapLayer?: NatureReserveLeafletLayer;
   private mapElement?: ElementRef<HTMLElement>;
 
   @ViewChild('reserveMap')
@@ -59,7 +60,10 @@ export class NatureReservesPage implements OnInit, AfterViewInit, OnDestroy {
     this.loadDocuments();
   }
   ngAfterViewInit(): void { if (this.mode() === 'map') void this.renderMap(); }
-  ngOnDestroy(): void { this.map?.remove(); }
+  ngOnDestroy(): void {
+    this.reserveMapLayer?.dispose();
+    this.map?.remove();
+  }
 
   setMode(mode: ViewMode): void { this.mode.set(mode); if (mode === 'map' && this.isBrowser) window.setTimeout(() => void this.renderMap()); }
   applyFilters(): void { this.query.page = 1; this.loadList(); }
@@ -86,26 +90,19 @@ export class NatureReservesPage implements OnInit, AfterViewInit, OnDestroy {
     if (!this.map) {
       this.map = L.map(this.mapElement.nativeElement, { zoomControl: true }).setView([16.1, 106.6], 6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 18 }).addTo(this.map);
+      this.reserveMapLayer = new NatureReserveLeafletLayer(L, this.map, {
+        style: { color: '#087f4d', fillColor: '#49a66f', fillOpacity: 0.22, weight: 1.6 },
+        markerRadius: 7,
+        markerFillOpacity: 0.72,
+        popupContent: (reserve) => this.popupContent(reserve),
+      });
+      this.reserveMapLayer.attach();
     }
-    this.reserveLayer?.clearLayers();
-    this.reserveLayer = L.layerGroup().addTo(this.map);
-    const bounds = L.latLngBounds([]);
-    for (const reserve of this.mapItems()) {
-      const style: Leaflet.PathOptions = { color: '#087f4d', fillColor: '#49a66f', fillOpacity: 0.22, weight: 1.6 };
-      let layer: Leaflet.Layer | null = null;
-      if (reserve.geometry?.features?.length) {
-        layer = L.geoJSON(reserve.geometry, { style });
-        const layerBounds = (layer as Leaflet.GeoJSON).getBounds();
-        if (layerBounds.isValid()) bounds.extend(layerBounds);
-      } else if (reserve.latitude !== null && reserve.longitude !== null) {
-        layer = L.circleMarker([reserve.latitude, reserve.longitude], { ...style, radius: 7, fillOpacity: 0.72 });
-        bounds.extend([reserve.latitude, reserve.longitude]);
-      }
-      if (!layer) continue;
-      layer.bindPopup(this.popupContent(reserve));
-      layer.on('click', () => this.selectedReserve.set(reserve));
-      layer.addTo(this.reserveLayer);
-    }
+    if (!this.reserveMapLayer) return;
+    const bounds = this.reserveMapLayer.replace(
+      this.mapItems(),
+      (reserve) => this.selectedReserve.set(reserve),
+    );
     if (bounds.isValid()) this.map.fitBounds(bounds, { padding: [18, 18], maxZoom: 8 });
     window.setTimeout(() => this.map?.invalidateSize());
   }
