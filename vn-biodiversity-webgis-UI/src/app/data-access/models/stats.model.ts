@@ -11,6 +11,49 @@ export interface StatsDashboard {
   basisOfRecord: StatsNameMetric[];
   dataQuality: StatsDataQuality;
   speciesRanking: StatsSpeciesRanking[];
+  reserveBreakdown: StatsReserveMetric[];
+  iucnCategories: StatsIucnCategoryMetric[];
+  iucnSpecies: StatsIucnSpeciesMetric[];
+  iucnGenera: StatsIucnGenusMetric[];
+}
+
+export interface StatsIucnCategoryMetric {
+  category: string;
+  label: string;
+  speciesCount: number;
+  occurrenceCount: number;
+}
+
+export interface StatsIucnSpeciesMetric {
+  sourceTable: string;
+  speciesId: string;
+  vietnameseName: string | null;
+  scientificName: string | null;
+  genus: string | null;
+  sourceGroup: string;
+  sourceGroupLabel: string;
+  category: string;
+  criteria: string | null;
+  occurrenceCount: number;
+  detailUrl: string;
+}
+
+export interface StatsIucnGenusMetric {
+  genus: string;
+  category: string;
+  sourceGroup: string;
+  sourceGroupLabel: string;
+  speciesCount: number;
+  occurrenceCount: number;
+}
+
+export interface StatsReserveMetric {
+  sourceId: string;
+  name: string;
+  reserveType: string | null;
+  province: string | null;
+  occurrenceCount: number;
+  speciesCount: number;
 }
 
 export interface StatsSummary {

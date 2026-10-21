@@ -6,9 +6,13 @@ import { RouterLink } from '@angular/router';
 import type {
   StatsDashboard,
   StatsGroupMetric,
+  StatsIucnCategoryMetric,
+  StatsIucnGenusMetric,
+  StatsIucnSpeciesMetric,
   StatsRegionGroupMetric,
   StatsRegionMetric,
   StatsRegionYearMetric,
+  StatsReserveMetric,
   StatsSpeciesRanking,
   StatsSpeciesShareMetric,
   StatsYearMetric,
@@ -33,13 +37,18 @@ import { FOOTER_CREDENTIAL_LINKS, VNSC_LOGO_SRC } from '../home/home.data';
 type SourceGroupFilter = NonNullable<StatsDashboardQueryDto['sourceGroup']>;
 type ImageFilter = NonNullable<StatsDashboardQueryDto['hasImage']>;
 type DonutMetric = ChartMetricItem;
-type DashboardTab = 'overview' | 'group-detail';
-type GroupVisualMode = 'bar' | 'donut';
 type RegionYearGroup = {
   region: string;
   totalOccurrence: number;
   totalSpecies: number;
   years: StatsRegionYearMetric[];
+};
+type DashboardSection = 'composition' | 'temporal' | 'taxonomy' | 'reserves' | 'iucn';
+type TaxonomyGroupKey = Exclude<SourceGroupFilter, 'all'>;
+type TaxonomyMatrixRow = {
+  orderName: string;
+  totalSpecies: number;
+  cells: Partial<Record<TaxonomyGroupKey, StatsDashboard['taxonomyHighlights'][number]>>;
 };
 
 @Component({
@@ -60,6 +69,7 @@ export class StatisticsPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private loadRequestId = 0;
 
   readonly dashboard = signal<StatsDashboard | null>(null);
   readonly isLoading = signal(true);
@@ -71,8 +81,14 @@ export class StatisticsPage {
   readonly yearTo = signal('');
   readonly basisOfRecord = signal('all');
   readonly hasImage = signal<ImageFilter>('all');
-  readonly activeTab = signal<DashboardTab>('overview');
-  readonly groupVisualMode = signal<GroupVisualMode>('bar');
+  readonly search = signal('');
+  readonly reserveId = signal('');
+  readonly reserveOptions = signal<Array<{ sourceId: string; name: string }>>([]);
+  readonly basisOptions = signal<string[]>([]);
+  readonly activeSection = signal<DashboardSection>('composition');
+  readonly selectedIucnCategory = signal('all');
+  readonly activeTab = signal<'overview' | 'group-detail'>('overview');
+  readonly groupVisualMode = signal<'bar' | 'donut'>('bar');
   protected readonly footerLinks = FOOTER_CREDENTIAL_LINKS;
   protected readonly vnscLogoSrc = VNSC_LOGO_SRC;
 
@@ -95,6 +111,36 @@ export class StatisticsPage {
   readonly maxRegionYearOccurrence = computed(() =>
     Math.max(1, ...this.regionYearGroups().flatMap((group) => group.years.map((year) => year.occurrenceCount))),
   );
+  readonly taxonomyColumns: ReadonlyArray<{ key: TaxonomyGroupKey; label: string }> = [
+    { key: 'animal', label: 'Động vật' },
+    { key: 'plant', label: 'Thực vật' },
+    { key: 'insect', label: 'Côn trùng' },
+    { key: 'fungi', label: 'Nấm' },
+    { key: 'protista', label: 'Nguyên sinh & tảo' },
+  ];
+  readonly taxonomyMatrixRows = computed<TaxonomyMatrixRow[]>(() => {
+    const rows = new Map<string, TaxonomyMatrixRow>();
+
+    for (const metric of this.dashboard()?.taxonomyHighlights ?? []) {
+      const key = metric.sourceGroup as TaxonomyGroupKey;
+      const row = rows.get(metric.canonicalName) ?? {
+        orderName: metric.canonicalName,
+        totalSpecies: 0,
+        cells: {},
+      };
+
+      row.cells[key] = metric;
+      row.totalSpecies += metric.speciesCount;
+      rows.set(metric.canonicalName, row);
+    }
+
+    return Array.from(rows.values()).sort((left, right) => right.totalSpecies - left.totalSpecies);
+  });
+  readonly maxTaxonomySpecies = computed(() =>
+    Math.max(1, ...this.taxonomyMatrixRows().flatMap((row) => Object.values(row.cells).map((cell) => cell?.speciesCount ?? 0))),
+  );
+  readonly visibleIucnSpecies = computed(() => this.filterIucnItems(this.dashboard()?.iucnSpecies ?? []));
+  readonly visibleIucnGenera = computed(() => this.filterIucnItems(this.dashboard()?.iucnGenera ?? []));
   readonly selectedGroupLabel = computed(() => this.resolveGroupLabel(this.appliedSourceGroup()));
   readonly isGroupFiltered = computed(() => this.appliedSourceGroup() !== 'all');
   readonly speciesDonutItems = computed(() => this.buildSpeciesDonut(this.dashboard()?.speciesRanking ?? []));
@@ -117,6 +163,10 @@ export class StatisticsPage {
   constructor() {
     if (this.isBrowser) {
       this.loadDashboard();
+      this.statsService
+        .getReserveOptions()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({ next: (items) => this.reserveOptions.set(items) });
       return;
     }
 
@@ -130,25 +180,39 @@ export class StatisticsPage {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    const requestId = ++this.loadRequestId;
     const appliedSourceGroup = this.sourceGroup();
 
     this.statsService
       .getDashboard({
+        section: this.activeSection(),
         sourceGroup: appliedSourceGroup,
         yearFrom: String(this.yearFrom() ?? '').trim(),
         yearTo: String(this.yearTo() ?? '').trim(),
         basisOfRecord: this.basisOfRecord(),
         hasImage: this.hasImage(),
+        search: this.search(),
+        reserveId: this.reserveId(),
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (dashboard) => {
+          if (requestId !== this.loadRequestId) {
+            return;
+          }
+
           this.dashboard.set(dashboard);
+          if (dashboard.basisOfRecord.length) {
+            this.basisOptions.set(dashboard.basisOfRecord.map((item) => item.name));
+          }
           this.appliedSourceGroup.set(appliedSourceGroup);
-          this.activeTab.set(appliedSourceGroup === 'all' ? 'overview' : 'group-detail');
           this.isLoading.set(false);
         },
         error: () => {
+          if (requestId !== this.loadRequestId) {
+            return;
+          }
+
           this.errorMessage.set('Không tải được dữ liệu thống kê. Kiểm tra API hoặc kết nối database rồi thử lại.');
           this.isLoading.set(false);
         },
@@ -161,6 +225,10 @@ export class StatisticsPage {
     this.yearTo.set('');
     this.basisOfRecord.set('all');
     this.hasImage.set('all');
+    this.search.set('');
+    this.reserveId.set('');
+    this.selectedIucnCategory.set('all');
+    this.loadDashboard();
   }
 
   updateSourceGroup(value: string): void {
@@ -183,22 +251,104 @@ export class StatisticsPage {
     this.yearTo.set(value === null ? '' : String(value));
   }
 
-  showTab(tab: DashboardTab): void {
-    if (tab === 'overview' && this.isGroupFiltered()) {
-      this.activeTab.set('group-detail');
-      return;
-    }
-
-    if (tab === 'group-detail' && !this.isGroupFiltered()) {
-      this.activeTab.set('overview');
-      return;
-    }
-
-    this.activeTab.set(tab);
+  updateSearch(value: string): void {
+    this.search.set(value);
   }
 
-  setGroupVisualMode(mode: GroupVisualMode): void {
+  updateReserve(value: string): void {
+    this.reserveId.set(value);
+  }
+
+  setSection(section: DashboardSection): void {
+    if (this.activeSection() === section) {
+      return;
+    }
+
+    this.activeSection.set(section);
+    this.loadDashboard();
+  }
+
+  setGroupVisualMode(mode: 'bar' | 'donut'): void {
     this.groupVisualMode.set(mode);
+  }
+
+  filterBySourceGroup(group: StatsGroupMetric): void {
+    this.sourceGroup.set(group.key as SourceGroupFilter);
+    this.loadDashboard();
+  }
+
+  filterByYear(year: number): void {
+    const value = String(year);
+    const isSelected = this.yearFrom() === value && this.yearTo() === value;
+    this.yearFrom.set(isSelected ? '' : value);
+    this.yearTo.set(isSelected ? '' : value);
+    this.loadDashboard();
+  }
+
+  filterByTaxonomy(orderName: string, sourceGroup: TaxonomyGroupKey): void {
+    const isSelected = this.search() === orderName && this.sourceGroup() === sourceGroup;
+    this.search.set(isSelected ? '' : orderName);
+    this.sourceGroup.set(isSelected ? 'all' : sourceGroup);
+    this.loadDashboard();
+  }
+
+  selectIucnCategory(category: string): void {
+    this.selectedIucnCategory.set(this.selectedIucnCategory() === category ? 'all' : category);
+  }
+
+  filterByBasisOfRecord(name: string): void {
+    this.basisOfRecord.set(name);
+    this.loadDashboard();
+  }
+
+  filterBySearch(value: string): void {
+    this.search.set(value);
+    this.loadDashboard();
+  }
+
+  filterByRegionYear(region: string, year: number): void {
+    this.search.set(region);
+    this.yearFrom.set(String(year));
+    this.yearTo.set(String(year));
+    this.loadDashboard();
+  }
+
+  filterByReserve(reserve: StatsReserveMetric): void {
+    this.reserveId.set(reserve.sourceId);
+    this.loadDashboard();
+  }
+
+  filterFromDonut(event: MouseEvent, items: DonutMetric[], filter: 'sourceGroup' | 'search'): void {
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const x = event.clientX - rect.left - rect.width / 2;
+    const y = event.clientY - rect.top - rect.height / 2;
+    const radius = Math.min(rect.width, rect.height) / 2;
+    const distance = Math.hypot(x, y);
+
+    if (distance < radius * 0.62 || distance > radius) {
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.value, 0);
+    const angle = (Math.atan2(y, x) * (180 / Math.PI) + 90 + 360) % 360;
+    let cursor = 0;
+    const selected = items.find((item) => {
+      cursor += total ? (item.value / total) * 360 : 0;
+      return angle <= cursor;
+    });
+
+    if (!selected || selected.isRemainder) {
+      return;
+    }
+
+    if (filter === 'sourceGroup') {
+      this.sourceGroup.set(selected.key as SourceGroupFilter);
+    } else {
+      this.search.set(selected.key);
+    }
+
+    this.loadDashboard();
   }
 
   exportDashboardCsv(): void {
@@ -245,6 +395,18 @@ export class StatisticsPage {
         String(item.occurrenceCount),
         item.family || '',
       ]),
+      ...dashboard.reserveBreakdown.map((item) => [
+        'nature_reserve',
+        item.name,
+        String(item.speciesCount),
+        `${item.occurrenceCount} occurrence`,
+      ]),
+      ...dashboard.iucnSpecies.map((item) => [
+        'iucn_species',
+        item.vietnameseName || item.scientificName || item.speciesId,
+        item.category,
+        item.criteria || '',
+      ]),
     ];
     const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
@@ -259,6 +421,44 @@ export class StatisticsPage {
 
   barWidth(value: number, max: number): string {
     return `${Math.max(3, Math.round((value / Math.max(1, max)) * 100))}%`;
+  }
+
+  maxReserveSpecies(): number {
+    return Math.max(1, ...(this.dashboard()?.reserveBreakdown.map((item) => item.speciesCount) ?? [1]));
+  }
+
+  taxonomyHeatColor(speciesCount: number): string {
+    const ratio = speciesCount / this.maxTaxonomySpecies();
+    const alpha = 0.12 + ratio * 0.78;
+    return `rgba(19, 128, 75, ${alpha.toFixed(2)})`;
+  }
+
+  taxonomyHeatTextColor(speciesCount: number): string {
+    return speciesCount / this.maxTaxonomySpecies() >= 0.52 ? '#fff' : '#173b2a';
+  }
+
+  iucnColor(category: string): string {
+    const colors: Record<string, string> = {
+      EX: '#111111',
+      EW: '#4b215f',
+      CR: '#b4142b',
+      EN: '#e45d24',
+      VU: '#e6a51d',
+      NT: '#7e9f35',
+      LC: '#2d8b57',
+      DD: '#7b8580',
+    };
+
+    return colors[category] ?? colors['DD'];
+  }
+
+  iucnCategoryCount(category: StatsIucnCategoryMetric): string {
+    return `${category.speciesCount.toLocaleString('vi-VN')} loài`;
+  }
+
+  private filterIucnItems<T extends StatsIucnSpeciesMetric | StatsIucnGenusMetric>(items: T[]): T[] {
+    const category = this.selectedIucnCategory();
+    return category === 'all' ? items : items.filter((item) => item.category === category);
   }
 
   groupRatio(group: StatsGroupMetric, total: number): number {
@@ -354,6 +554,18 @@ export class StatisticsPage {
 
   donutMetricBackground(items: DonutMetric[], normalizeByValue = false): string {
     return buildDonutMetricBackground(items, normalizeByValue);
+  }
+
+  speciesGroupDonutItems(groups: StatsGroupMetric[]): DonutMetric[] {
+    const total = Math.max(1, groups.reduce((sum, group) => sum + group.speciesCount, 0));
+
+    return groups.map((group) => ({
+      key: group.key,
+      label: group.label,
+      value: group.speciesCount,
+      percent: this.roundPercent(group.speciesCount, total),
+      color: this.groupColor(group.key),
+    }));
   }
 
   visibleDonutCount(items: DonutMetric[]): number {

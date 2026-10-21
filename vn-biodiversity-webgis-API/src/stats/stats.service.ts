@@ -27,11 +27,14 @@ export class StatsService {
 
   private normalizeQuery(query: StatsDashboardQueryDto): StatsDashboardQueryDto {
     return {
+      section: query.section || 'composition',
       basisOfRecord: query.basisOfRecord?.trim() || 'all',
       hasImage: query.hasImage || 'all',
       sourceGroup: query.sourceGroup || 'all',
       yearFrom: query.yearFrom?.trim() || '',
       yearTo: query.yearTo?.trim() || '',
+      search: query.search?.trim() || '',
+      reserveId: query.reserveId?.trim() || '',
     };
   }
 }

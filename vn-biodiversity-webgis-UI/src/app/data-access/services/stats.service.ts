@@ -78,8 +78,16 @@ export class StatsService {
     return request;
   }
 
+  getReserveOptions() {
+    return this.api.get<Array<{ sourceId: string; name: string }>>(API_ENDPOINTS.statsReserveOptions);
+  }
+
   private buildParams(query: StatsDashboardQueryDto): HttpParams {
     let params = new HttpParams();
+
+    if (query.section) {
+      params = params.set('section', query.section);
+    }
 
     if (query.sourceGroup && query.sourceGroup !== 'all') {
       params = params.set('sourceGroup', query.sourceGroup);
@@ -99,6 +107,14 @@ export class StatsService {
 
     if (query.hasImage && query.hasImage !== 'all') {
       params = params.set('hasImage', query.hasImage);
+    }
+
+    if (query.search?.trim()) {
+      params = params.set('search', query.search.trim());
+    }
+
+    if (query.reserveId?.trim()) {
+      params = params.set('reserveId', query.reserveId.trim());
     }
 
     return params;

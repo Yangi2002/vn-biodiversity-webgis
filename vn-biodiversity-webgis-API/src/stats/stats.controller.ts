@@ -15,4 +15,5 @@ export class StatsController {
   getDashboard(@Query() query: StatsDashboardQueryDto) {
     return this.statsService.getDashboard(query);
   }
+
 }

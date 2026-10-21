@@ -5,12 +5,16 @@ import type {
   StatsDashboard,
   StatsDataQuality,
   StatsGroupMetric,
+  StatsIucnCategoryMetric,
+  StatsIucnGenusMetric,
+  StatsIucnSpeciesMetric,
   StatsNameMetric,
   StatsRegionGroupMetric,
   StatsRegionMetric,
   StatsRegionYearMetric,
   StatsSpeciesShareMetric,
   StatsSpeciesRanking,
+  StatsReserveMetric,
   StatsSummary,
   StatsTaxonomyMetric,
   StatsYearMetric,
@@ -39,6 +43,17 @@ const TAXONOMY_RANK_LABELS: Record<string, string> = {
   species: 'Loài',
 };
 
+const IUCN_CATEGORY_LABELS: Record<string, string> = {
+  EX: 'Tuyệt chủng',
+  EW: 'Tuyệt chủng ngoài tự nhiên',
+  CR: 'Cực kỳ nguy cấp',
+  EN: 'Nguy cấp',
+  VU: 'Sắp nguy cấp',
+  NT: 'Sắp bị đe dọa',
+  LC: 'Ít quan tâm',
+  DD: 'Thiếu dữ liệu',
+};
+
 @Injectable()
 export class StatsRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -50,7 +65,15 @@ export class StatsRepository {
       return this.getFastSummary();
     }
 
-    const params = [filters.yearFrom, filters.yearTo, filters.sourceGroup, filters.basisOfRecord, filters.hasImage];
+    const params = [
+      filters.yearFrom,
+      filters.yearTo,
+      filters.sourceGroup,
+      filters.basisOfRecord,
+      filters.hasImage,
+      filters.search,
+      filters.reserveId,
+    ];
     const baseCte = this.buildBaseCte(filters.sourceGroup);
     const [summaryRow] = await this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
       SELECT
@@ -109,6 +132,8 @@ export class StatsRepository {
       filters.sourceGroup === 'all' &&
       filters.basisOfRecord === 'all' &&
       filters.hasImage === 'all' &&
+      filters.search === '' &&
+      filters.reserveId === '' &&
       filters.yearFrom === null &&
       filters.yearTo === null
     );
@@ -116,9 +141,17 @@ export class StatsRepository {
 
   async getDashboard(query: StatsDashboardQueryDto): Promise<StatsDashboard> {
     const filters = this.normalizeFilters(query);
-    const params = [filters.yearFrom, filters.yearTo, filters.sourceGroup, filters.basisOfRecord, filters.hasImage];
+    const params = [
+      filters.yearFrom,
+      filters.yearTo,
+      filters.sourceGroup,
+      filters.basisOfRecord,
+      filters.hasImage,
+      filters.search,
+      filters.reserveId,
+    ];
     const baseCte = this.buildBaseCte(filters.sourceGroup);
-    const includeGroupDetail = filters.sourceGroup !== 'all';
+    const section = filters.section;
 
     const [
       [summaryRow],
@@ -132,6 +165,10 @@ export class StatsRepository {
       taxonomyRows,
       basisRows,
       speciesRows,
+      reserveRows,
+      iucnCategoryRows,
+      iucnSpeciesRows,
+      iucnGenusRows,
     ] = await Promise.all([
       this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
         SELECT
@@ -149,15 +186,15 @@ export class StatsRepository {
           count(DISTINCT gbif_occurrence_key) FILTER (WHERE image_url IS NOT NULL AND image_url <> '') AS with_images,
           count(DISTINCT gbif_occurrence_key) FILTER (WHERE image_url IS NULL OR image_url = '') AS without_images
         FROM filtered_occurrences`, ...params),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+      section === 'composition' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
         SELECT
           source_group,
           count(DISTINCT source_table || ':' || species_id) AS species_count,
           count(DISTINCT gbif_occurrence_key) AS occurrence_count
         FROM filtered_occurrences
         GROUP BY source_group
-        ORDER BY occurrence_count DESC`, ...params),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        ORDER BY occurrence_count DESC`, ...params) : Promise.resolve([]),
+      section === 'temporal' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
         SELECT
           observed_year,
           count(DISTINCT gbif_occurrence_key) AS occurrence_count,
@@ -165,8 +202,8 @@ export class StatsRepository {
         FROM filtered_occurrences
         WHERE observed_year IS NOT NULL
         GROUP BY observed_year
-        ORDER BY observed_year`, ...params),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        ORDER BY observed_year`, ...params) : Promise.resolve([]),
+      section === 'composition' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
         SELECT
           coalesce(nullif(region, ''), 'Chưa rõ vùng') AS region,
           count(DISTINCT gbif_occurrence_key) AS occurrence_count,
@@ -174,8 +211,8 @@ export class StatsRepository {
         FROM filtered_occurrences
         GROUP BY coalesce(nullif(region, ''), 'Chưa rõ vùng')
         ORDER BY occurrence_count DESC
-        LIMIT 12`, ...params),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte},
+        LIMIT 12`, ...params) : Promise.resolve([]),
+      section === 'temporal' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte},
         top_regions AS (
           SELECT coalesce(nullif(region, ''), 'Chưa rõ vùng') AS region
           FROM filtered_occurrences
@@ -194,128 +231,92 @@ export class StatsRepository {
           ON top_regions.region = coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng')
         WHERE filtered_occurrences.observed_year IS NOT NULL
         GROUP BY coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng'), filtered_occurrences.observed_year
-        ORDER BY region ASC, year ASC`, ...params),
-      includeGroupDetail ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte},
-        top_regions AS (
-          SELECT coalesce(nullif(region, ''), 'Chưa rõ vùng') AS region
-          FROM filtered_occurrences
-          GROUP BY coalesce(nullif(region, ''), 'Chưa rõ vùng')
-          ORDER BY count(DISTINCT gbif_occurrence_key) DESC
-          LIMIT 8
-        )
-        SELECT
-          coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng') AS region,
-          filtered_occurrences.source_group,
-          count(DISTINCT filtered_occurrences.source_table || ':' || filtered_occurrences.species_id) AS species_count,
-          count(DISTINCT filtered_occurrences.gbif_occurrence_key) AS occurrence_count
-        FROM filtered_occurrences
-        JOIN top_regions
-          ON top_regions.region = coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng')
-        GROUP BY coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng'), filtered_occurrences.source_group
-        ORDER BY region ASC, occurrence_count DESC`, ...params) : Promise.resolve([]),
+        ORDER BY region ASC, year ASC`, ...params) : Promise.resolve([]),
       Promise.resolve([]),
-      includeGroupDetail ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte},
-        top_regions AS (
-          SELECT coalesce(nullif(region, ''), 'Chưa rõ vùng') AS region
-          FROM filtered_occurrences
-          GROUP BY coalesce(nullif(region, ''), 'Chưa rõ vùng')
-          ORDER BY count(DISTINCT gbif_occurrence_key) DESC
-          LIMIT 6
-        ),
-        species_region_counts AS (
-          SELECT
-            coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng') AS region,
-            filtered_occurrences.source_group,
-            filtered_occurrences.source_table,
-            filtered_occurrences.species_id,
-            max(filtered_occurrences.vietnamese_name) AS vietnamese_name,
-            max(filtered_occurrences.scientific_name) AS scientific_name,
-            max(filtered_occurrences.family) AS family,
-            count(DISTINCT filtered_occurrences.gbif_occurrence_key) AS occurrence_count
-          FROM filtered_occurrences
-          JOIN top_regions
-            ON top_regions.region = coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng')
-          GROUP BY
-            coalesce(nullif(filtered_occurrences.region, ''), 'Chưa rõ vùng'),
-            filtered_occurrences.source_group,
-            filtered_occurrences.source_table,
-            filtered_occurrences.species_id
-        ),
-        region_totals AS (
-          SELECT region, sum(occurrence_count) AS total_occurrence
-          FROM species_region_counts
-          GROUP BY region
-        ),
-        ranked_region_species AS (
-          SELECT
-            species_region_counts.*,
-            region_totals.total_occurrence,
-            row_number() OVER (
-              PARTITION BY species_region_counts.region
-              ORDER BY species_region_counts.occurrence_count DESC
-            ) AS row_index
-          FROM species_region_counts
-          JOIN region_totals
-            ON region_totals.region = species_region_counts.region
-        )
-        SELECT *
-        FROM ranked_region_species
-        WHERE row_index <= 5
-        ORDER BY region ASC, occurrence_count DESC`, ...params) : Promise.resolve([]),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte},
-        taxonomy_items AS (
-          SELECT 'class'::text AS rank, class_group AS canonical_name, source_group, source_table, species_id, gbif_occurrence_key, region
-          FROM filtered_occurrences
-          WHERE class_group IS NOT NULL AND class_group <> ''
-          UNION ALL
-          SELECT 'order'::text AS rank, order_name AS canonical_name, source_group, source_table, species_id, gbif_occurrence_key, region
-          FROM filtered_occurrences
-          WHERE order_name IS NOT NULL AND order_name <> ''
-          UNION ALL
-          SELECT 'family'::text AS rank, family AS canonical_name, source_group, source_table, species_id, gbif_occurrence_key, region
-          FROM filtered_occurrences
-          WHERE family IS NOT NULL AND family <> ''
-          UNION ALL
-          SELECT 'genus'::text AS rank, genus_name AS canonical_name, source_group, source_table, species_id, gbif_occurrence_key, region
-          FROM filtered_occurrences
-          WHERE genus_name IS NOT NULL AND genus_name <> ''
-        )
-        SELECT
-          rank,
-          canonical_name,
-          max(source_group) AS source_group,
+      Promise.resolve([]),
+      Promise.resolve([]),
+      section === 'taxonomy' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT 'order'::text AS rank, order_name AS canonical_name, source_group,
           count(DISTINCT source_table || ':' || species_id) AS species_count,
           count(DISTINCT gbif_occurrence_key) AS occurrence_count,
-          count(DISTINCT region) FILTER (WHERE region IS NOT NULL AND region <> '') AS region_count
-        FROM taxonomy_items
-        GROUP BY rank, canonical_name
-        ORDER BY occurrence_count DESC
-        LIMIT 16`, ...params),
-      this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
-        SELECT
-          coalesce(nullif(basis_of_record, ''), 'Chưa rõ') AS name,
+          count(DISTINCT region) FILTER (WHERE nullif(region, '') IS NOT NULL) AS region_count
+        FROM filtered_occurrences
+        WHERE nullif(order_name, '') IS NOT NULL
+        GROUP BY order_name, source_group
+        ORDER BY species_count DESC, occurrence_count DESC
+        LIMIT 100`, ...params) : Promise.resolve([]),
+      section === 'composition' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT coalesce(nullif(basis_of_record, ''), 'Chưa rõ') AS name,
           count(DISTINCT gbif_occurrence_key) AS count
         FROM filtered_occurrences
         GROUP BY coalesce(nullif(basis_of_record, ''), 'Chưa rõ')
         ORDER BY count DESC
-        LIMIT 10`, ...params),
-      includeGroupDetail ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
-        SELECT
-          source_table,
-          species_id,
-          max(vietnamese_name) AS vietnamese_name,
-          max(scientific_name) AS scientific_name,
-          max(family) AS family,
-          max(order_name) AS order_name,
-          max(source_group) AS source_group,
-          count(DISTINCT gbif_occurrence_key) AS occurrence_count,
-          count(DISTINCT region) FILTER (WHERE region IS NOT NULL AND region <> '') AS region_count,
-          min(observed_year) FILTER (WHERE observed_year IS NOT NULL) AS earliest_observed_year,
-          max(observed_year) FILTER (WHERE observed_year IS NOT NULL) AS latest_observed_year
-        FROM filtered_occurrences
-        GROUP BY source_table, species_id
-        ORDER BY occurrence_count DESC
-        LIMIT 12`, ...params) : Promise.resolve([]),
+        LIMIT 10`, ...params) : Promise.resolve([]),
+      Promise.resolve([]),
+      section === 'reserves' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT reserve.source_id, reserve.name, reserve.reserve_type, reserve.province,
+          count(DISTINCT occurrence.gbif_occurrence_key) AS occurrence_count,
+          count(DISTINCT occurrence.source_table || ':' || occurrence.species_id) AS species_count
+        FROM filtered_occurrences AS occurrence
+        JOIN nature_reserve_occurrence_matches AS reserve_match
+          ON reserve_match.gbif_occurrence_key = occurrence.gbif_occurrence_key
+        JOIN nature_reserves AS reserve
+          ON reserve.source_id = reserve_match.reserve_source_id
+        GROUP BY reserve.source_id, reserve.name, reserve.reserve_type, reserve.province
+        ORDER BY species_count DESC, occurrence_count DESC, reserve.name
+        LIMIT 40`, ...params) : Promise.resolve([]),
+      section === 'iucn' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT upper(trim(profile.redlist_category)) AS category,
+          count(DISTINCT occurrence.source_table || ':' || occurrence.species_id) AS species_count,
+          count(DISTINCT occurrence.gbif_occurrence_key) AS occurrence_count
+        FROM filtered_occurrences AS occurrence
+        JOIN species_vnredlist_matches AS match
+          ON match.source_table = occurrence.source_table
+         AND match.species_id = occurrence.species_id
+        JOIN vnredlist_profiles AS profile ON profile.profile_id = match.profile_id
+        WHERE upper(trim(profile.redlist_category)) IN ('EX', 'EW', 'CR', 'EN', 'VU', 'NT', 'LC', 'DD')
+        GROUP BY upper(trim(profile.redlist_category))
+        ORDER BY CASE upper(trim(profile.redlist_category))
+          WHEN 'EX' THEN 1 WHEN 'EW' THEN 2 WHEN 'CR' THEN 3 WHEN 'EN' THEN 4
+          WHEN 'VU' THEN 5 WHEN 'NT' THEN 6 WHEN 'LC' THEN 7 ELSE 8 END`, ...params) : Promise.resolve([]),
+      section === 'iucn' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT occurrence.source_table, occurrence.species_id,
+          max(occurrence.vietnamese_name) AS vietnamese_name,
+          max(occurrence.scientific_name) AS scientific_name,
+          max(coalesce(nullif(profile.genus, ''), occurrence.genus_name)) AS genus,
+          max(occurrence.source_group) AS source_group,
+          upper(trim(profile.redlist_category)) AS category,
+          max(profile.redlist_criteria) AS criteria,
+          count(DISTINCT occurrence.gbif_occurrence_key) AS occurrence_count
+        FROM filtered_occurrences AS occurrence
+        JOIN species_vnredlist_matches AS match
+          ON match.source_table = occurrence.source_table
+         AND match.species_id = occurrence.species_id
+        JOIN vnredlist_profiles AS profile ON profile.profile_id = match.profile_id
+        WHERE upper(trim(profile.redlist_category)) IN ('EX', 'EW', 'CR', 'EN', 'VU', 'NT', 'LC', 'DD')
+        GROUP BY occurrence.source_table, occurrence.species_id, upper(trim(profile.redlist_category))
+        ORDER BY CASE upper(trim(profile.redlist_category))
+          WHEN 'EX' THEN 1 WHEN 'EW' THEN 2 WHEN 'CR' THEN 3 WHEN 'EN' THEN 4
+          WHEN 'VU' THEN 5 WHEN 'NT' THEN 6 WHEN 'LC' THEN 7 ELSE 8 END,
+          occurrence_count DESC
+        LIMIT 120`, ...params) : Promise.resolve([]),
+      section === 'iucn' ? this.prisma.$queryRawUnsafe<StatsRow[]>(`${baseCte}
+        SELECT coalesce(nullif(profile.genus, ''), occurrence.genus_name, 'Chưa rõ') AS genus,
+          upper(trim(profile.redlist_category)) AS category,
+          max(occurrence.source_group) AS source_group,
+          count(DISTINCT occurrence.source_table || ':' || occurrence.species_id) AS species_count,
+          count(DISTINCT occurrence.gbif_occurrence_key) AS occurrence_count
+        FROM filtered_occurrences AS occurrence
+        JOIN species_vnredlist_matches AS match
+          ON match.source_table = occurrence.source_table
+         AND match.species_id = occurrence.species_id
+        JOIN vnredlist_profiles AS profile ON profile.profile_id = match.profile_id
+        WHERE upper(trim(profile.redlist_category)) IN ('EX', 'EW', 'CR', 'EN', 'VU', 'NT', 'LC', 'DD')
+        GROUP BY coalesce(nullif(profile.genus, ''), occurrence.genus_name, 'Chưa rõ'), upper(trim(profile.redlist_category))
+        ORDER BY species_count DESC, occurrence_count DESC
+        LIMIT 60`, ...params) : Promise.resolve([]),
+      /* legacy group-detail queries are intentionally not executed; dashboard sections load independently. */
+      ...([] as Promise<StatsRow[]>[]),
     ]);
 
     return {
@@ -331,6 +332,10 @@ export class StatsRepository {
       basisOfRecord: this.mapNameMetrics(basisRows),
       dataQuality: this.mapDataQuality(summaryRow),
       speciesRanking: this.mapSpeciesRanking(speciesRows),
+      reserveBreakdown: this.mapReserveMetrics(reserveRows),
+      iucnCategories: this.mapIucnCategories(iucnCategoryRows),
+      iucnSpecies: this.mapIucnSpecies(iucnSpeciesRows),
+      iucnGenera: this.mapIucnGenera(iucnGenusRows),
     };
   }
 
@@ -349,18 +354,11 @@ export class StatsRepository {
             o.latitude,
             o.longitude,
             o.observed_date,
-            CASE
-              WHEN o.observed_date ~ '^\\d{4}' THEN substring(o.observed_date from 1 for 4)::int
-              ELSE NULL
-            END AS observed_year,
+            o.stats_observed_year AS observed_year,
             o.basis_of_record,
             o.image_url,
             o.has_geospatial_issue,
-            coalesce(
-              nullif(o.source_payload -> 'gadm' -> 'level1' ->> 'name', ''),
-              nullif(o.source_payload ->> 'gbifRegion', ''),
-              nullif(o.location, '')
-            ) AS region,
+            o.stats_region AS region,
             m.source_table,
             m.species_id
           FROM species_gbif_occurrence_matches m
@@ -394,6 +392,28 @@ export class StatsRepository {
             $5::text = 'all'
             OR ($5::text = 'true' AND raw_occurrences.image_url IS NOT NULL AND raw_occurrences.image_url <> '')
             OR ($5::text = 'false' AND (raw_occurrences.image_url IS NULL OR raw_occurrences.image_url = ''))
+          )
+          AND (
+            $6::text = ''
+            OR concat_ws(' ',
+              species_union.species_id,
+              species_union.vietnamese_name,
+              species_union.scientific_name,
+              species_union.class_group,
+              species_union.family,
+              species_union.order_name,
+              species_union.genus_name,
+              raw_occurrences.region
+            ) ILIKE '%' || $6::text || '%'
+          )
+          AND (
+            $7::text = ''
+            OR EXISTS (
+              SELECT 1
+              FROM nature_reserve_occurrence_matches reserve_filter
+              WHERE reserve_filter.gbif_occurrence_key = raw_occurrences.gbif_occurrence_key
+                AND reserve_filter.reserve_source_id = $7::text
+            )
           )
       )
     `;
@@ -479,11 +499,20 @@ export class StatsRepository {
     const normalizedYearTo = yearFrom !== null && yearTo !== null ? Math.max(yearFrom, yearTo) : yearTo;
 
     return {
+      section:
+        query.section === 'temporal' ||
+        query.section === 'taxonomy' ||
+        query.section === 'reserves' ||
+        query.section === 'iucn'
+          ? query.section
+          : 'composition',
       yearFrom: normalizedYearFrom,
       yearTo: normalizedYearTo,
       sourceGroup: query.sourceGroup && query.sourceGroup !== 'all' ? query.sourceGroup : 'all',
       basisOfRecord: query.basisOfRecord?.trim() || 'all',
       hasImage: query.hasImage === 'true' || query.hasImage === 'false' ? query.hasImage : 'all',
+      search: query.search?.trim() || '',
+      reserveId: query.reserveId?.trim() || '',
     };
   }
 
@@ -635,6 +664,67 @@ export class StatsRepository {
       latestObservedYear: this.toNullableNumber(row.latest_observed_year),
       detailUrl: `/species/${encodeURIComponent(String(row.source_table))}/${encodeURIComponent(String(row.species_id))}`,
     }));
+  }
+
+  private mapReserveMetrics(rows: StatsRow[]): StatsReserveMetric[] {
+    return rows.map((row) => ({
+      sourceId: String(row.source_id),
+      name: String(row.name ?? 'Chưa rõ khu bảo tồn'),
+      reserveType: this.toNullableString(row.reserve_type),
+      province: this.toNullableString(row.province),
+      occurrenceCount: this.toNumber(row.occurrence_count),
+      speciesCount: this.toNumber(row.species_count),
+    }));
+  }
+
+  private mapIucnCategories(rows: StatsRow[]): StatsIucnCategoryMetric[] {
+    return rows.map((row) => {
+      const category = String(row.category ?? 'DD');
+
+      return {
+        category,
+        label: IUCN_CATEGORY_LABELS[category] ?? category,
+        speciesCount: this.toNumber(row.species_count),
+        occurrenceCount: this.toNumber(row.occurrence_count),
+      };
+    });
+  }
+
+  private mapIucnSpecies(rows: StatsRow[]): StatsIucnSpeciesMetric[] {
+    return rows.map((row) => {
+      const sourceTable = String(row.source_table);
+      const speciesId = String(row.species_id);
+      const sourceGroup = String(row.source_group ?? 'unknown');
+
+      return {
+        sourceTable,
+        speciesId,
+        vietnameseName: this.toNullableString(row.vietnamese_name),
+        scientificName: this.toNullableString(row.scientific_name),
+        genus: this.toNullableString(row.genus),
+        sourceGroup,
+        sourceGroupLabel: SOURCE_GROUP_LABELS[sourceGroup] ?? SOURCE_GROUP_LABELS.unknown,
+        category: String(row.category ?? 'DD'),
+        criteria: this.toNullableString(row.criteria),
+        occurrenceCount: this.toNumber(row.occurrence_count),
+        detailUrl: `/species/${encodeURIComponent(sourceTable)}/${encodeURIComponent(speciesId)}`,
+      };
+    });
+  }
+
+  private mapIucnGenera(rows: StatsRow[]): StatsIucnGenusMetric[] {
+    return rows.map((row) => {
+      const sourceGroup = String(row.source_group ?? 'unknown');
+
+      return {
+        genus: String(row.genus ?? 'Chưa rõ'),
+        category: String(row.category ?? 'DD'),
+        sourceGroup,
+        sourceGroupLabel: SOURCE_GROUP_LABELS[sourceGroup] ?? SOURCE_GROUP_LABELS.unknown,
+        speciesCount: this.toNumber(row.species_count),
+        occurrenceCount: this.toNumber(row.occurrence_count),
+      };
+    });
   }
 
   private toNumber(value: string | number | bigint | null | undefined): number {

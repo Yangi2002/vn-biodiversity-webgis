@@ -1,5 +1,5 @@
 .statistics-page {
-  padding: 0 0 56px;
+  padding:0 0 56px;
   background:
     radial-gradient(circle at 12% 8%, rgba(118, 184, 111, 0.18), transparent 32%),
     linear-gradient(180deg, #eaf5ef 0, #f6f8f5 34%, #f4f8f5 100%);
@@ -7,14 +7,14 @@
 }
 
 .statistics-hero,
-.stats-topbar,
+.statistics-sections,
 .stats-filter,
 app-dashboard-metric-strip,
 .dashboard-tabs,
 .dashboard-layout,
 .state-panel {
   width: min(1640px, calc(100% - 56px));
-  margin: 0 auto;
+  margin:0 auto;
 }
 
 app-dashboard-metric-strip {
@@ -110,7 +110,7 @@ app-dashboard-metric-strip {
 
 .stats-filter-form {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(110px, 0.75fr) minmax(110px, 0.75fr) minmax(210px, 1.18fr) minmax(150px, 0.85fr) auto;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
   gap: 12px;
   align-items: end;
 }
@@ -175,53 +175,6 @@ button {
   align-items: start;
   gap: 16px;
   margin-top: 18px;
-}
-
-.group-view-toolbar {
-  display: flex;
-  grid-column: 1 / -1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid #cfe0d5;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
-}
-
-.group-view-toolbar span {
-  color: #00713d;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.group-view-toolbar strong {
-  display: block;
-  margin-top: 4px;
-  font-size: 1.18rem;
-}
-
-.segmented-control {
-  display: inline-flex;
-  gap: 6px;
-  padding: 5px;
-  border: 1px solid #cfe0d5;
-  border-radius: 999px;
-  background: #f6fbf8;
-}
-
-.segmented-control button {
-  height: 38px;
-  border: 0;
-  background: transparent;
-  color: #355343;
-}
-
-.segmented-control button.is-active {
-  background: #1f7a4e;
-  color: #fff;
 }
 
 .panel-heading,
@@ -365,7 +318,8 @@ button {
 }
 
 .donut-legend a,
-.donut-legend div {
+.donut-legend div,
+.donut-legend button {
   display: grid;
   grid-template-columns: 12px minmax(0, 1fr) auto auto;
   gap: 9px;
@@ -437,13 +391,41 @@ button {
   gap: 9px;
 }
 
-.group-list div {
+.group-list div,
+.group-list button {
   display: grid;
   grid-template-columns: 12px minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   padding-bottom: 10px;
   border-bottom: 1px solid #e3eee7;
+}
+
+.group-list button,
+.donut-legend button,
+.compact-bars button,
+.region-filter-button,
+.year-bar {
+  width: 100%;
+  height: auto;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.group-list button:hover,
+.donut-legend button:not(:disabled):hover,
+.compact-bars button:hover,
+.region-filter-button:hover {
+  background: #eff8f2;
+}
+
+.donut-legend button:disabled {
+  cursor: default;
+  opacity: 0.72;
 }
 
 .group-list i {
@@ -555,6 +537,12 @@ button {
   height: 100%;
 }
 
+button.year-bar {
+  padding: 0;
+  border-radius: 4px;
+  text-align: center;
+}
+
 .year-bar i {
   display: block;
   width: 100%;
@@ -600,7 +588,8 @@ button {
 }
 
 .rank-row,
-.compact-bars div {
+.compact-bars div,
+.compact-bars button {
   display: grid;
   gap: 8px;
 }
@@ -643,7 +632,8 @@ button {
 }
 
 .taxonomy-grid small,
-.region-year-list header span {
+.region-year-list header span,
+.region-filter-button span {
   color: #60746a;
   font-weight: 800;
   line-height: 1.35;
@@ -661,6 +651,13 @@ button {
   gap: 12px;
 }
 
+.region-filter-button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 6px;
+}
+
 .region-year-bars {
   display: flex;
   align-items: end;
@@ -676,6 +673,19 @@ button {
   flex: 1;
   border-radius: 4px 4px 0 0;
   background: linear-gradient(180deg, #1f7a4e, #8cc97f);
+}
+
+.region-year-bars button {
+  align-self: end;
+  min-height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px 3px 0 0;
+  background: #1f7a4e;
+}
+
+.region-year-bars button:hover {
+  background: #0b5f3a;
 }
 
 .rank-row span,
@@ -819,11 +829,14 @@ button {
 
 @media (max-width: 1180px) {
   .hero-grid,
-  .stats-topbar,
   .stats-filter,
   .stats-filter-form,
   .dashboard-layout {
     grid-template-columns: 1fr;
+  }
+
+  .statistics-sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .species-panel,
@@ -850,7 +863,7 @@ button {
 
 @media (max-width: 720px) {
   .statistics-hero,
-  .stats-topbar,
+  .statistics-sections,
   .stats-filter,
   app-dashboard-metric-strip,
   .dashboard-tabs,
@@ -868,7 +881,9 @@ button {
   .region-breakdown-list,
   .taxonomy-grid,
   .quality-panel dl,
-  .species-table a {
+  .species-table a,
+  .reserve-analysis-list,
+  .statistics-sections {
     grid-template-columns: 1fr;
   }
 

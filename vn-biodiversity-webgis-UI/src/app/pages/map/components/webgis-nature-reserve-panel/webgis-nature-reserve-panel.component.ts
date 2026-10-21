@@ -1,4 +1,4 @@
-import { Component, DestroyRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, NgZone, OnChanges, OnDestroy, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type * as Leaflet from 'leaflet';
@@ -15,6 +15,8 @@ import { NatureReserveService } from '../../../../data-access/services/nature-re
 export class WebgisNatureReservePanelComponent implements OnChanges, OnDestroy {
   private readonly service = inject(NatureReserveService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly zone = inject(NgZone);
   @Input() leaflet: typeof Leaflet | null = null;
   @Input() map: Leaflet.Map | null = null;
   @Input() closeToken = 0;
@@ -23,6 +25,7 @@ export class WebgisNatureReservePanelComponent implements OnChanges, OnDestroy {
   readonly isLoading = signal(false);
   readonly total = signal(0);
   readonly selected = signal<NatureReserveListItem | null>(null);
+  readonly hovered = signal<NatureReserveListItem | null>(null);
   readonly errorMessage = signal('');
   private reserveMapLayer?: NatureReserveLeafletLayer;
   private loaded = false;
@@ -71,6 +74,9 @@ export class WebgisNatureReservePanelComponent implements OnChanges, OnDestroy {
     this.service.mapLayer().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (items) => {
         this.total.set(items.length);
+        // Attach before creating paths so the SVG elements exist when the
+        // renderer binds direct pointer interactions to each boundary.
+        if (this.shouldOpen) this.reserveMapLayer?.attach();
         this.render(items);
         this.loaded = true;
         this.isLoading.set(false);
@@ -81,7 +87,30 @@ export class WebgisNatureReservePanelComponent implements OnChanges, OnDestroy {
   }
   private render(items: NatureReserveListItem[]): void {
     this.selected.set(null);
-    this.reserveMapLayer?.replace(items, (item) => this.selected.set(item));
+    this.hovered.set(null);
+    this.reserveMapLayer?.replace(
+      items,
+      (item) => this.updateFromMap(() => {
+        this.selected.set(item);
+        this.hovered.set(null);
+      }),
+      (item) => this.updateFromMap(() => this.hovered.set(item)),
+    );
+  }
+
+  private updateFromMap(update: () => void): void {
+    this.zone.run(() => {
+      update();
+      this.changeDetector.detectChanges();
+    });
+  }
+
+  displayedReserve(): NatureReserveListItem | null {
+    return this.selected() ?? this.hovered();
+  }
+
+  clearSelection(): void {
+    this.selected.set(null);
   }
   private showLayer(): void {
     if (!this.reserveMapLayer) return;

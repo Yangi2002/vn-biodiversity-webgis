@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   taxonomyTreeChildren: (taxonId: string) => `/taxonomy/tree/${encodeURIComponent(taxonId)}/children`,
   statsSummary: '/stats/summary',
   statsDashboard: '/stats/dashboard',
+  statsReserveOptions: '/stats/reserve-options',
   endangeredSpecies: '/conservation/endangered-species',
   nationalParks: '/national-parks',
   nationalParksSummary: '/national-parks/summary',

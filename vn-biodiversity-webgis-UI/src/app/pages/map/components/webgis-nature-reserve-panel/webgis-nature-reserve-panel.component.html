@@ -13,7 +13,7 @@
       <header class="panel-heading">
         <div>
           <p>Lớp bảo tồn thiên nhiên</p>
-          <h3>{{ selected() ? 'Thông tin khu đang chọn' : 'Khám phá ranh giới bảo tồn' }}</h3>
+          <h3>{{ selected() ? 'Khu bảo tồn đã ghim' : hovered() ? 'Thông tin nhanh' : 'Khám phá ranh giới bảo tồn' }}</h3>
         </div>
         <button class="close-button" type="button" (click)="close()" aria-label="Đóng lớp khu bảo tồn">×</button>
       </header>
@@ -22,7 +22,7 @@
         <div class="panel-state"><span class="loading-dot"></span>Đang tải ranh giới...</div>
       } @else if (errorMessage()) {
         <p class="panel-state error">{{ errorMessage() }}</p>
-      } @else if (selected(); as reserve) {
+      } @else if (displayedReserve(); as reserve) {
         <article class="reserve-summary">
           @if (reserve.representativeImageUrl) {
             <img [src]="reserve.representativeImageUrl" [alt]="reserve.name" />
@@ -39,6 +39,11 @@
           </dl>
           @if (reserve.managementAgency) {
             <p class="management"><span>Cơ quan quản lý</span>{{ reserve.managementAgency }}</p>
+          }
+          @if (selected()) {
+            <button class="clear-selection" type="button" (click)="clearSelection()">Bỏ ghim khu này</button>
+          } @else {
+            <p class="hover-hint">Nhấn vào ranh giới để giữ thông tin này.</p>
           }
           <a class="primary-link" [routerLink]="['/nature-reserves', reserve.sourceId]">Mở hồ sơ chi tiết <span>→</span></a>
         </article>

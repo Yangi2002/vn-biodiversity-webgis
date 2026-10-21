@@ -25,7 +25,7 @@
   <section class="stats-filter" aria-label="Bộ lọc thống kê">
     <div class="filter-copy">
       <span>Bộ lọc dashboard</span>
-      <strong>Theo nhóm, năm và dữ liệu ảnh</strong>
+      <strong>Theo loài, khu vực, nhóm, năm và dữ liệu ảnh</strong>
     </div>
 
     <form class="stats-filter-form" (submit)="$event.preventDefault(); loadDashboard()">
@@ -69,8 +69,18 @@
         Nguồn ghi nhận
         <select [ngModel]="basisOfRecord()" name="basisOfRecord" (ngModelChange)="updateBasisOfRecord($event)">
           <option value="all">Tất cả</option>
-          @for (basis of dashboard()?.basisOfRecord ?? []; track basis.name) {
-            <option [value]="basis.name">{{ basis.name }}</option>
+          @for (basis of basisOptions(); track basis) {
+            <option [value]="basis">{{ basis }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Khu bảo tồn
+        <select [ngModel]="reserveId()" name="reserveId" (ngModelChange)="updateReserve($event)">
+          <option value="">Tất cả khu</option>
+          @for (reserve of reserveOptions(); track reserve.sourceId) {
+            <option [value]="reserve.sourceId">{{ reserve.name }}</option>
           }
         </select>
       </label>
@@ -82,6 +92,17 @@
           <option value="true">Có ảnh</option>
           <option value="false">Chưa có ảnh</option>
         </select>
+      </label>
+
+      <label class="search-filter-field">
+        Tìm loài hoặc khu vực
+        <input
+          type="search"
+          placeholder="Tên Việt, tên Latin, mã loài, tỉnh/vùng..."
+          [ngModel]="search()"
+          name="search"
+          (ngModelChange)="updateSearch($event)"
+        />
       </label>
 
       <div class="filter-actions">
@@ -105,49 +126,27 @@
 
     <app-dashboard-metric-strip [items]="summaryMetrics()" />
 
-    <nav
-      class="stats-topbar"
-      aria-label="Công cụ thống kê"
-    >
-      <span class="stats-brand-mark" aria-hidden="true">⌘</span>
-
-      <div class="stats-mode-pills">
-        <button
-          type="button"
-          [class.is-active]="activeTab() === 'overview'"
-          [disabled]="isGroupFiltered()"
-          (click)="showTab('overview')"
-        >
-          Tổng quan
-        </button>
-
-        <button
-          type="button"
-          [class.is-active]="activeTab() === 'group-detail'"
-          [disabled]="!isGroupFiltered()"
-          (click)="showTab('group-detail')"
-        >
-          Phân tích nhóm
-        </button>
-      </div>
-
-      <div class="stats-topbar-summary">
-        <span aria-hidden="true">⌕</span>
-        <strong>{{ selectedGroupLabel() }}</strong>
-        <small>
-          {{ isLoading() ? 'Đang cập nhật dữ liệu...' : 'Dashboard thống kê biodiversity' }}
-        </small>
-      </div>
-
-      <div class="stats-status-pills" aria-label="Trạng thái thống kê">
-        <span>{{ data.summary.totalSpecies | number }} loài</span>
-        <span>{{ data.summary.totalOccurrences | number }} occurrence</span>
-        <strong>Observed year {{ observedRange(data) }}</strong>
-      </div>
+    <nav class="statistics-sections" aria-label="Nhóm phân tích thống kê">
+      <button type="button" [class.is-active]="activeSection() === 'composition'" (click)="setSection('composition')">
+        Cơ cấu dữ liệu
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'temporal'" (click)="setSection('temporal')">
+        Thời gian & chất lượng
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'taxonomy'" (click)="setSection('taxonomy')">
+        Phân loại sinh học
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'reserves'" (click)="setSection('reserves')">
+        Khu bảo tồn
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'iucn'" (click)="setSection('iucn')">
+        IUCN & quý hiếm
+      </button>
     </nav>
 
     <section class="dashboard-layout">
       @if (activeTab() === 'overview') {
+        @if (activeSection() === 'composition') {
         <article class="panel species-panel">
           <div class="panel-heading">
             <div>
@@ -158,7 +157,13 @@
           </div>
 
           <div class="species-overview">
-            <div class="donut-chart" [style.background]="donutBackground(data.speciesGroups)">
+            <div
+              class="donut-chart is-interactive"
+              role="group"
+              aria-label="Chọn nhóm sinh vật từ biểu đồ tròn"
+              [style.background]="donutBackground(data.speciesGroups)"
+              (click)="filterFromDonut($event, speciesGroupDonutItems(data.speciesGroups), 'sourceGroup')"
+            >
               <div>
                 <span>Species</span>
                 <strong>{{ speciesGroupTotal() | number }}</strong>
@@ -167,12 +172,12 @@
 
             <div class="group-list">
               @for (group of data.speciesGroups; track group.key) {
-                <div>
+                <button type="button" (click)="filterBySourceGroup(group)">
                   <i [style.background]="groupColor(group.key)"></i>
                   <span>{{ group.label }}</span>
                   <strong>{{ group.speciesCount | number }} loài</strong>
                   <small>{{ groupRatio(group, speciesGroupTotal()) }}%</small>
-                </div>
+                </button>
               }
             </div>
           </div>
@@ -188,7 +193,13 @@
           </div>
 
           <div class="detail-donut-layout">
-            <div class="detail-donut" [style.background]="donutMetricBackground(regionDonutItems())">
+            <div
+              class="detail-donut is-interactive"
+              role="group"
+              aria-label="Chọn vùng từ biểu đồ tròn"
+              [style.background]="donutMetricBackground(regionDonutItems())"
+              (click)="filterFromDonut($event, regionDonutItems(), 'search')"
+            >
               <div>
                 <span>Top vùng</span>
                 <strong>{{ visibleDonutCount(regionDonutItems()) }}</strong>
@@ -197,17 +208,19 @@
 
             <div class="donut-legend">
               @for (item of regionDonutItems(); track item.key) {
-                <div>
+                <button type="button" [disabled]="item.isRemainder" (click)="filterBySearch(item.key)">
                   <i [style.background]="item.color"></i>
                   <span>{{ item.label }}</span>
                   <strong>{{ item.value | number }}</strong>
                   <small>{{ item.percent }}%</small>
-                </div>
+                </button>
               }
             </div>
           </div>
         </article>
+        }
 
+        @if (activeSection() === 'temporal') {
         <article class="panel quality-panel">
           <div class="panel-heading">
             <div>
@@ -251,18 +264,25 @@
 
           <div class="year-bars" aria-label="Biểu đồ occurrence theo năm">
             @for (year of recentYears(); track year.year) {
-              <div class="year-bar">
+              <button
+                type="button"
+                class="year-bar"
+                [class.is-selected]="yearFrom() === year.year.toString() && yearTo() === year.year.toString()"
+                (click)="filterByYear(year.year)"
+              >
                 <i [style.height]="yearHeight(year)"></i>
                 <span>{{ year.year }}</span>
                 <strong class="year-tooltip">
                   <b>{{ year.year }}</b>
                   {{ year.occurrenceCount | number }} occurrence · {{ year.speciesCount | number }} loài
                 </strong>
-              </div>
+              </button>
             }
           </div>
         </article>
+        }
 
+        @if (activeSection() === 'composition') {
         <article class="panel source-panel overview-source-panel">
           <div class="panel-heading">
             <div>
@@ -273,35 +293,67 @@
 
           <div class="compact-bars">
             @for (basis of data.basisOfRecord; track basis.name) {
-              <div>
+              <button type="button" (click)="filterByBasisOfRecord(basis.name)">
                 <span>{{ basis.name }}</span>
                 <i><b [style.width]="barWidth(basis.count, maxBasisCount())"></b></i>
                 <strong>{{ basis.count | number }}</strong>
-              </div>
+              </button>
             }
           </div>
         </article>
+        }
 
+        @if (activeSection() === 'taxonomy') {
         <article class="panel taxonomy-panel overview-taxonomy-panel">
           <div class="panel-heading">
             <div>
-              <span>Taxonomy depth</span>
-              <h2>Phân loại sâu theo lớp, bộ, họ, chi</h2>
+              <span>Species richness matrix</span>
+              <h2>Độ giàu loài theo bộ và nhóm sinh vật</h2>
             </div>
-            <strong>{{ data.taxonomyHighlights.length }} nhóm</strong>
+            <strong>{{ taxonomyMatrixRows().length }} bộ</strong>
           </div>
 
-          <div class="taxonomy-grid">
-            @for (taxon of data.taxonomyHighlights; track taxon.rank + taxon.canonicalName) {
-              <div>
-                <span>{{ taxon.rankLabel }}</span>
-                <strong>{{ taxon.canonicalName }}</strong>
-                <small>{{ taxon.speciesCount | number }} loài · {{ taxon.occurrenceCount | number }} occurrence · {{ taxon.regionCount | number }} vùng</small>
+          <div class="richness-legend">
+            <span>Ít loài</span><i></i><i></i><i></i><i></i><i></i><span>Nhiều loài</span>
+          </div>
+
+          <div class="taxonomy-matrix" role="table" aria-label="Ma trận độ giàu loài theo bộ">
+            <div class="taxonomy-matrix-head" role="row">
+              <strong role="columnheader">Bộ</strong>
+              @for (column of taxonomyColumns; track column.key) {
+                <strong role="columnheader">{{ column.label }}</strong>
+              }
+            </div>
+            @for (row of taxonomyMatrixRows(); track row.orderName) {
+              <div class="taxonomy-matrix-row" role="row">
+                <button type="button" class="taxonomy-order" (click)="filterBySearch(row.orderName)">
+                  <strong>{{ row.orderName }}</strong>
+                  <small>{{ row.totalSpecies | number }} loài</small>
+                </button>
+                @for (column of taxonomyColumns; track column.key) {
+                  @if (row.cells[column.key]; as cell) {
+                    <button
+                      type="button"
+                      class="taxonomy-heat-cell"
+                      [style.background]="taxonomyHeatColor(cell.speciesCount)"
+                      [style.color]="taxonomyHeatTextColor(cell.speciesCount)"
+                      [title]="row.orderName + ' · ' + column.label + ': ' + cell.speciesCount + ' loài'"
+                      (click)="filterByTaxonomy(row.orderName, column.key)"
+                    >
+                      <strong>{{ cell.speciesCount | number }}</strong>
+                      <small>{{ cell.occurrenceCount | number }} occurrence</small>
+                    </button>
+                  } @else {
+                    <span class="taxonomy-heat-cell is-empty">—</span>
+                  }
+                }
               </div>
             }
           </div>
         </article>
+        }
 
+        @if (activeSection() === 'temporal') {
         <article class="panel region-year-panel overview-region-year-panel">
           <div class="panel-heading">
             <div>
@@ -314,19 +366,135 @@
           <div class="region-year-list">
             @for (region of regionYearGroups(); track region.region) {
               <section>
-                <header>
+                <button type="button" class="region-filter-button" (click)="filterBySearch(region.region)">
                   <strong>{{ region.region }}</strong>
                   <span>{{ region.totalOccurrence | number }} occurrence</span>
-                </header>
+                </button>
                 <div class="region-year-bars">
                   @for (year of region.years.slice(-18); track year.region + year.year) {
-                    <i [style.height]="regionYearHeight(year)" [title]="year.year + ': ' + year.occurrenceCount + ' occurrence'"></i>
+                    <button
+                      type="button"
+                      [class.is-selected]="yearFrom() === year.year.toString() && yearTo() === year.year.toString()"
+                      [style.height]="regionYearHeight(year)"
+                      [title]="region.region + ' · ' + year.year + ': ' + year.occurrenceCount + ' occurrence'"
+                      (click)="filterByRegionYear(region.region, year.year)"
+                    ></button>
                   }
                 </div>
               </section>
             }
           </div>
         </article>
+        }
+
+        @if (activeSection() === 'reserves') {
+          <article class="panel reserve-analysis-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Conservation coverage</span>
+                <h2>Loài ghi nhận trong khu bảo tồn</h2>
+              </div>
+              <strong>{{ data.reserveBreakdown.length }} khu có occurrence</strong>
+            </div>
+
+            @if (data.reserveBreakdown.length) {
+              <div class="reserve-analysis-list">
+                @for (reserve of data.reserveBreakdown; track reserve.sourceId) {
+                  <button type="button" (click)="filterByReserve(reserve)">
+                    <div>
+                      <strong>{{ reserve.name }}</strong>
+                      <span>{{ reserve.reserveType || 'Khu bảo tồn' }} · {{ reserve.province || 'Chưa rõ tỉnh' }}</span>
+                    </div>
+                    <span class="reserve-analysis-counts">
+                      <b>{{ reserve.speciesCount | number }} loài</b>
+                      <small>{{ reserve.occurrenceCount | number }} occurrence</small>
+                    </span>
+                    <i><em [style.width]="barWidth(reserve.speciesCount, maxReserveSpecies())"></em></i>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="empty-analysis">
+                Chưa có occurrence nằm trong ranh giới khu bảo tồn với bộ lọc hiện tại.
+              </div>
+            }
+          </article>
+        }
+
+        @if (activeSection() === 'iucn') {
+          <article class="panel iucn-overview-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Threat status</span>
+                <h2>Phân hạng IUCN trong dữ liệu VN Red List</h2>
+              </div>
+              <strong>{{ data.iucnSpecies.length }} loài có occurrence</strong>
+            </div>
+            <p class="iucn-source-note">
+              Mức phân hạng sử dụng hệ thống mã IUCN; hồ sơ đánh giá lấy từ nguồn VN Red List hiện có trong cơ sở dữ liệu.
+            </p>
+            <div class="iucn-category-grid">
+              @for (category of data.iucnCategories; track category.category) {
+                <button
+                  type="button"
+                  [class.is-selected]="selectedIucnCategory() === category.category"
+                  [style.--category-color]="iucnColor(category.category)"
+                  (click)="selectIucnCategory(category.category)"
+                >
+                  <b>{{ category.category }}</b>
+                  <span>{{ category.label }}</span>
+                  <strong>{{ iucnCategoryCount(category) }}</strong>
+                  <small>{{ category.occurrenceCount | number }} occurrence</small>
+                </button>
+              }
+            </div>
+          </article>
+
+          <article class="panel iucn-genus-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Threatened genera</span>
+                <h2>Chi có loài thuộc nhóm quý hiếm</h2>
+              </div>
+              <strong>{{ visibleIucnGenera().length }} chi / mức</strong>
+            </div>
+            <div class="iucn-genus-grid">
+              @for (genus of visibleIucnGenera(); track genus.genus + genus.category) {
+                <button type="button" (click)="filterBySearch(genus.genus)">
+                  <i [style.background]="iucnColor(genus.category)">{{ genus.category }}</i>
+                  <strong>{{ genus.genus }}</strong>
+                  <span>{{ genus.sourceGroupLabel }}</span>
+                  <b>{{ genus.speciesCount | number }} loài</b>
+                  <small>{{ genus.occurrenceCount | number }} occurrence</small>
+                </button>
+              }
+            </div>
+          </article>
+
+          <article class="panel iucn-species-panel">
+            <div class="panel-heading">
+              <div>
+                <span>Threatened species</span>
+                <h2>Loài theo mức độ đe dọa</h2>
+              </div>
+              <strong>{{ visibleIucnSpecies().length }} hồ sơ</strong>
+            </div>
+            <div class="iucn-species-list">
+              @for (species of visibleIucnSpecies(); track species.sourceTable + species.speciesId + species.category) {
+                <a [routerLink]="species.detailUrl">
+                  <i [style.background]="iucnColor(species.category)">{{ species.category }}</i>
+                  <span>
+                    <strong>{{ species.vietnameseName || species.scientificName || species.speciesId }}</strong>
+                    <em>{{ species.scientificName || 'Chưa có tên khoa học' }}</em>
+                  </span>
+                  <small>{{ species.genus || 'Chưa rõ chi' }} · {{ species.sourceGroupLabel }}</small>
+                  <b>{{ species.criteria || species.category }}</b>
+                  <strong>{{ species.occurrenceCount | number }} occurrence</strong>
+                </a>
+              }
+            </div>
+          </article>
+        }
       }
 
       @if (activeTab() === 'group-detail' && isGroupFiltered()) {

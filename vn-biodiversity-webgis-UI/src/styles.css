@@ -207,3 +207,116 @@ a {
     grid-column: 2;
   }
 }
+.statistics-sections {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 18px;
+  padding: 6px;
+  border: 1px solid #cfe0d5;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.statistics-sections button {
+  height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #52685d;
+  font-weight: 900;
+}
+
+.statistics-sections button.is-active {
+  background: #1f7a4e;
+  color: #fff;
+}
+
+.reserve-analysis-panel { grid-column: 1 / -1; }
+.reserve-analysis-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.reserve-analysis-list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  width: 100%;
+  height: auto;
+  padding: 14px;
+  border: 1px solid #dbe9df;
+  border-radius: 8px;
+  background: #fbfdfb;
+  color: inherit;
+  text-align: left;
+}
+.reserve-analysis-list button > div { min-width: 0; }
+.reserve-analysis-list button > div strong { display: block; line-height: 1.3; overflow-wrap: anywhere; }
+.reserve-analysis-counts { display: grid !important; gap: 3px; min-width: 116px; margin: 0 !important; text-align: right; }
+.reserve-analysis-counts b { color: #10291d; font-size: 1rem; }
+.reserve-analysis-counts small { margin: 0 !important; white-space: nowrap; }
+.reserve-analysis-list button:hover { border-color: #78b891; background: #f1f8f3; }
+.reserve-analysis-list span, .reserve-analysis-list small { display: block; margin-top: 4px; color: #60746a; }
+.reserve-analysis-list i { grid-column: 1 / -1; overflow: hidden; height: 8px; border-radius: 999px; background: #e3eee7; }
+.reserve-analysis-list em { display: block; height: 100%; border-radius: inherit; background: #1f7a4e; }
+.empty-analysis { padding: 28px; border: 1px dashed #b9d8c3; border-radius: 8px; color: #60746a; text-align: center; }
+.search-filter-field { grid-column: 1 / span 3; }
+.search-filter-field + .filter-actions { grid-column: 4 / -1; }
+.region-year-bars button { flex: 1 1 5px; min-width: 5px; }
+.year-bar.is-selected i, .region-year-bars button.is-selected { background: #074b2d; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #157549; }
+
+.taxonomy-panel, .iucn-overview-panel, .iucn-species-panel { grid-column: 1 / -1; }
+.taxonomy-matrix { overflow-x: auto; border: 1px solid #d7e7dc; border-radius: 8px; }
+.taxonomy-matrix-head, .taxonomy-matrix-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(118px, 1fr));
+  min-width: 850px;
+}
+.taxonomy-matrix-head { position: sticky; top: 0; z-index: 1; background: #edf6f0; }
+.taxonomy-matrix-head strong { padding: 11px 9px; border-right: 1px solid #d7e7dc; color: #355a47; font-size: .78rem; text-align: center; }
+.taxonomy-matrix-head strong:first-child { text-align: left; }
+.taxonomy-matrix-row + .taxonomy-matrix-row { border-top: 1px solid #e0ece5; }
+.taxonomy-matrix-row > * { min-height: 66px; border: 0; border-right: 1px solid #e0ece5; border-radius: 0; }
+.taxonomy-order { display: grid; align-content: center; gap: 4px; padding: 10px 12px; background: #fbfdfb; color: #162a20; text-align: left; }
+.taxonomy-order small { color: #60746a; }
+.taxonomy-heat-cell { display: grid; place-content: center; gap: 3px; padding: 8px; text-align: center; }
+.taxonomy-heat-cell small { font-size: .7rem; opacity: .82; }
+.taxonomy-heat-cell.is-empty { background: #f6f8f6; color: #9baaa2; }
+.richness-legend { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-bottom: 10px; color: #60746a; font-size: .75rem; font-weight: 800; }
+.richness-legend i { width: 22px; height: 12px; background: rgba(19,128,75,.14); }
+.richness-legend i:nth-of-type(2) { background: rgba(19,128,75,.3); }
+.richness-legend i:nth-of-type(3) { background: rgba(19,128,75,.48); }
+.richness-legend i:nth-of-type(4) { background: rgba(19,128,75,.67); }
+.richness-legend i:nth-of-type(5) { background: rgba(19,128,75,.9); }
+
+.iucn-overview-panel { grid-column: 1 / -1; }
+.iucn-genus-panel { grid-column: 1 / -1; }
+.iucn-source-note { margin: -4px 0 16px; color: #60746a; line-height: 1.55; }
+.iucn-category-grid { display: grid; grid-template-columns: repeat(4, minmax(145px, 1fr)); gap: 9px; }
+.iucn-category-grid button { display: grid; grid-template-columns: auto 1fr; gap: 3px 9px; height: auto; min-height: 88px; padding: 11px; border: 1px solid #dbe6df; border-left: 6px solid var(--category-color); border-radius: 7px; background: #fff; color: #17251f; text-align: left; }
+.iucn-category-grid button.is-selected { outline: 3px solid color-mix(in srgb, var(--category-color) 35%, transparent); background: #f7faf8; }
+.iucn-category-grid b { grid-row: 1 / span 2; align-self: center; color: var(--category-color); font-size: 1.25rem; }
+.iucn-category-grid span, .iucn-category-grid small { color: #60746a; }
+.iucn-genus-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.iucn-genus-grid button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 9px; align-items: center; height: auto; min-height: 70px; padding: 10px; border: 1px solid #dbe6df; background: #fbfdfb; color: #17251f; text-align: left; }
+.iucn-genus-grid i, .iucn-species-list > a > i { display: grid; place-items: center; min-width: 38px; height: 30px; border-radius: 5px; color: #fff; font-style: normal; font-weight: 900; }
+.iucn-genus-grid i { grid-row: 1 / span 2; }
+.iucn-genus-grid span, .iucn-genus-grid small { color: #60746a; }
+.iucn-genus-grid b, .iucn-genus-grid small { text-align: right; }
+.iucn-species-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.iucn-species-list a { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(120px, .65fr) auto auto; gap: 10px; align-items: center; min-height: 76px; padding: 10px 12px; border: 1px solid #dbe6df; border-radius: 7px; color: inherit; text-decoration: none; }
+.iucn-species-list a:hover { border-color: #79b58e; background: #f3f9f5; }
+.iucn-species-list span { display: grid; min-width: 0; gap: 3px; }
+.iucn-species-list em { overflow: hidden; color: #60746a; font-size: .8rem; text-overflow: ellipsis; white-space: nowrap; }
+.iucn-species-list small { color: #60746a; }
+
+@media (max-width: 1180px) {
+  .statistics-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .iucn-category-grid, .iucn-species-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .iucn-genus-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .statistics-sections, .reserve-analysis-list { grid-template-columns: 1fr; }
+  .iucn-category-grid, .iucn-genus-grid, .iucn-species-list { grid-template-columns: 1fr; }
+  .iucn-species-list a { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .iucn-species-list a > small { grid-column: 2; }
+}
