@@ -13,6 +13,7 @@ import { SpeciesService } from '../../data-access/services/species.service';
 import { StatsService } from '../../data-access/services/stats.service';
 import { CredentialsFooterComponent } from '../../shared/components/credentials-footer/credentials-footer.component';
 import { HeroSliderComponent } from '../../shared/components/hero-slider/hero-slider.component';
+import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
 import {
   FOOTER_CREDENTIAL_LINKS,
   HOME_FEATURE_LINKS,
@@ -31,7 +32,14 @@ interface HomeDataHighlight {
 
 @Component({
   selector: 'app-home-page',
-  imports: [DecimalPipe, ReactiveFormsModule, RouterLink, HeroSliderComponent, CredentialsFooterComponent],
+  imports: [
+    DecimalPipe,
+    ReactiveFormsModule,
+    RouterLink,
+    HeroSliderComponent,
+    CredentialsFooterComponent,
+    SiteHeaderComponent,
+  ],
   templateUrl: './home.page.html',
   styleUrl: './home.page.css',
 })

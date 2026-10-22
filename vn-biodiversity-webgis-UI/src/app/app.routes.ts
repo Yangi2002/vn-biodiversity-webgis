@@ -13,6 +13,8 @@ import { adminRoutes } from './pages/admin/admin.routes';
 import { LoginPage } from './pages/login/login.page';
 import { NatureReservesPage } from './pages/nature-reserves/nature-reserves.page';
 import { NatureReserveDetailPage } from './pages/nature-reserve-detail/nature-reserve-detail.page';
+import { RegisterPage } from './pages/register/register.page';
+import { AccountPage } from './pages/account/account.page';
 
 export const routes: Routes = [
   {
@@ -78,8 +80,19 @@ export const routes: Routes = [
    {
     path: 'login',
     component: LoginPage,
-    title: 'Đăng nhập Admin',
+    title: 'Đăng nhập',
    },
+  {
+    path: 'register',
+    component: RegisterPage,
+    title: 'Đăng ký tài khoản',
+  },
+  {
+    path: 'account',
+    component: AccountPage,
+    canActivate: [adminAuthGuard],
+    title: 'Tài khoản của tôi',
+  },
   {
     path: 'admin',
     canActivate: [adminAuthGuard, adminPermissionGuard],

@@ -1,11 +1,20 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { tap } from 'rxjs';
+import { finalize, type Observable, shareReplay, tap } from 'rxjs';
 import { API_ENDPOINTS } from '../../../core/api/api-endpoints';
 import { HttpApiService } from '../../../core/api/http-api.service';
-import type { AdminUser, GovernancePermission, GovernanceRole, LoginResponse, RoleDefinition } from '../../models/auth/auth.model';
+import type {
+  AdminUser,
+  AuthResponse,
+  GovernancePermission,
+  GovernanceRole,
+  RegisterRequest,
+  RolePermissionMatrix,
+  UpdateProfileRequest,
+} from '../../models/auth/auth.model';
 
 const AUTH_TOKEN_KEY = 'vn_biodiversity_admin_token';
+const AUTH_REFRESH_TOKEN_KEY = 'vn_biodiversity_refresh_token';
 const AUTH_USER_KEY = 'vn_biodiversity_admin_user';
 
 @Injectable({
@@ -14,13 +23,36 @@ const AUTH_USER_KEY = 'vn_biodiversity_admin_user';
 export class AdminAuthService {
   private readonly api = inject(HttpApiService);
   private readonly platformId = inject(PLATFORM_ID);
+  private refreshRequest: Observable<AuthResponse> | null = null;
 
   login(email: string, password: string) {
-    return this.api.post<LoginResponse>(API_ENDPOINTS.authLogin, { email, password }).pipe(
+    return this.api.post<AuthResponse>(API_ENDPOINTS.authLogin, { email, password }).pipe(
       tap((response) => {
-        this.storeSession(response.accessToken, response.user);
+        this.storeSession(response);
       }),
     );
+  }
+
+  register(request: RegisterRequest) {
+    return this.api.post<AuthResponse>(API_ENDPOINTS.authRegister, request).pipe(
+      tap((response) => this.storeSession(response)),
+    );
+  }
+
+  refreshSession() {
+    if (this.refreshRequest) {
+      return this.refreshRequest;
+    }
+
+    const refreshToken = this.refreshToken();
+
+    this.refreshRequest = this.api.post<AuthResponse>(API_ENDPOINTS.authRefresh, { refreshToken }).pipe(
+      tap((response) => this.storeSession(response)),
+      finalize(() => (this.refreshRequest = null)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    return this.refreshRequest;
   }
 
   logout() {
@@ -29,6 +61,7 @@ export class AdminAuthService {
     }
 
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
   }
 
@@ -46,14 +79,24 @@ export class AdminAuthService {
         const token = this.token();
 
         if (token) {
-          this.storeSession(token, user);
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        }
+      }),
+    );
+  }
+
+  updateProfile(request: UpdateProfileRequest) {
+    return this.api.put<AdminUser>(API_ENDPOINTS.authProfile, request).pipe(
+      tap((user) => {
+        if (this.isBrowser()) {
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
         }
       }),
     );
   }
 
   permissionMatrix() {
-    return this.api.get<RoleDefinition[]>(API_ENDPOINTS.authPermissionMatrix);
+    return this.api.get<RolePermissionMatrix>(API_ENDPOINTS.authPermissionMatrix);
   }
 
   token() {
@@ -62,6 +105,14 @@ export class AdminAuthService {
     }
 
     return localStorage.getItem(AUTH_TOKEN_KEY);
+  }
+
+  refreshToken() {
+    if (!this.isBrowser()) {
+      return null;
+    }
+
+    return localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   }
 
   currentUser() {
@@ -100,13 +151,14 @@ export class AdminAuthService {
     return requiredPermissions.every((permission) => permissions.has(permission));
   }
 
-  private storeSession(token: string, user: AdminUser) {
+  private storeSession(response: AuthResponse) {
     if (!this.isBrowser()) {
       return;
     }
 
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    localStorage.setItem(AUTH_TOKEN_KEY, response.accessToken);
+    localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, response.refreshToken);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(response.user));
   }
 
   private isBrowser() {

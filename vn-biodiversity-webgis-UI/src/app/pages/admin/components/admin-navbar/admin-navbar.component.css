@@ -8,6 +8,7 @@
   padding: 24px 18px;
   background: linear-gradient(180deg, #123b2a, #0d2f21);
   color: #edf8f1;
+  overflow-y: auto;
 }
 
 .admin-brand,
@@ -20,6 +21,8 @@
 
 .admin-brand {
   padding: 4px 8px 18px;
+  color: inherit;
+  text-decoration: none;
 }
 
 .admin-brand-mark,
@@ -71,6 +74,30 @@
   gap: 6px;
 }
 
+.public-nav-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.public-nav-links a {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  color: #cfe5d7;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.public-nav-links a:hover,
+.public-nav-links a.is-active {
+  border-color: rgba(126, 214, 156, 0.62);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
 .admin-nav-links button {
   width: 100%;
   padding: 12px;
@@ -110,7 +137,28 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+  text-decoration: none;
 }
+
+.admin-user-card:hover,
+.admin-user-card.is-active {
+  border-color: rgba(126, 214, 156, 0.62);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 3px 0 #7ed69c;
+}
+
+.admin-user-card > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-user-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 
 .admin-user-avatar {
   width: 38px;
@@ -118,6 +166,13 @@
   border-radius: 50%;
   background: #e5f3ea;
   color: #1f6f46;
+  font-size: 1.05rem;
+}
+
+.settings-gear {
+  display: inline-block;
+  margin-left: 6px;
+  color: #9fe1b5;
 }
 
 .admin-logout {

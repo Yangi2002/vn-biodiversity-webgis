@@ -4,14 +4,14 @@
       <img src="/Header-logo-header.png" width="64" height="64" alt="" />
       <span>
         <strong>VN Biodiversity WebGIS</strong>
-        <small>Admin console</small>
+        <small>Tài khoản hệ thống</small>
       </span>
     </a>
 
     <div class="login-copy">
-      <p>Quản trị hệ thống</p>
-      <h1>Đăng nhập Admin</h1>
-      <span>Truy cập khu vực quản lý user, phân quyền và kiểm duyệt dữ liệu.</span>
+      <p>Đăng nhập</p>
+      <h1>Chào mừng trở lại</h1>
+      <span>Truy cập hồ sơ cá nhân và các chức năng được cấp theo vai trò.</span>
     </div>
 
     <form class="login-form" (ngSubmit)="submit()">
@@ -33,5 +33,7 @@
         {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
       </button>
     </form>
+
+    <p class="login-register">Chưa có tài khoản? <a routerLink="/register">Đăng ký</a></p>
   </section>
 </main>

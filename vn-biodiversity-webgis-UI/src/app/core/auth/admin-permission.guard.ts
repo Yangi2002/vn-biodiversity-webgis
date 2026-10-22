@@ -26,7 +26,7 @@ export const adminPermissionGuard: CanActivateFn = (route) => {
   }
 
   return auth.me().pipe(
-    map(() => (canAccess() ? true : router.createUrlTree(['/admin']))),
+    map(() => (canAccess() ? true : router.createUrlTree(['/']))),
     catchError(() => {
       auth.logout();
 

@@ -72,10 +72,19 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
 ];
 
 const ROLE_SET = new Set<string>(GOVERNANCE_ROLES);
+const PERMISSION_SET = new Set<string>(GOVERNANCE_PERMISSIONS);
 const PERMISSION_BY_ROLE = new Map(ROLE_DEFINITIONS.map((role) => [role.code, role.permissions]));
 
 export function isGovernanceRole(role: string): role is GovernanceRole {
   return ROLE_SET.has(role);
+}
+
+export function isGovernancePermission(permission: string): permission is GovernancePermission {
+  return PERMISSION_SET.has(permission);
+}
+
+export function normalizePermissions(permissions: readonly string[]): GovernancePermission[] {
+  return Array.from(new Set(permissions.filter(isGovernancePermission))).sort();
 }
 
 export function permissionsForRoles(roles: readonly string[]) {
@@ -120,4 +129,13 @@ export function hasAnyRole(userRoles: readonly string[], requiredRoles: readonly
   const effectiveRoles = new Set(normalizeRoles(userRoles));
 
   return normalizeRoles(requiredRoles).some((role) => effectiveRoles.has(role));
+}
+
+export function hasEveryPermission(
+  userPermissions: readonly string[],
+  requiredPermissions: readonly GovernancePermission[],
+) {
+  const effectivePermissions = new Set(userPermissions);
+
+  return requiredPermissions.every((permission) => effectivePermissions.has(permission));
 }

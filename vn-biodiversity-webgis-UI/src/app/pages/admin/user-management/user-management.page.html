@@ -1,11 +1,68 @@
 <main class="admin-shell">
-  <app-admin-navbar />
+  <app-admin-navbar activeTab="users" />
 
   <section class="admin-content">
-    <section class="admin-placeholder">
-      <p>User management</p>
-      <h1>Quản lý người dùng</h1>
-      <span>Khu vực này dành cho danh sách tài khoản, trạng thái hoạt động và phân quyền người dùng.</span>
+    <header class="page-header">
+      <div><p>Quản trị tài khoản</p><h1>Người dùng hệ thống</h1></div>
+      <span>{{ users().length }} tài khoản</span>
+    </header>
+
+    <form class="user-search" (submit)="$event.preventDefault(); load()">
+      <input type="search" [value]="search" (input)="updateSearch($event)" placeholder="Tìm theo tên, email hoặc số điện thoại" />
+      <button type="submit">Tìm kiếm</button>
+    </form>
+
+    @if (errorMessage()) { <p class="page-error">{{ errorMessage() }}</p> }
+
+    <section class="user-table-panel">
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Tài khoản</th><th>Thông tin</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+          <tbody>
+            @if (isLoading()) {
+              <tr><td colspan="5" class="table-state">Đang tải tài khoản...</td></tr>
+            } @else if (!users().length) {
+              <tr><td colspan="5" class="table-state">Không tìm thấy tài khoản.</td></tr>
+            } @else {
+              @for (user of users(); track user.userId) {
+                <tr [class.is-locked]="!user.isActive">
+                  <td><strong>{{ user.displayName || 'Chưa cập nhật tên' }}</strong><span>{{ user.email }}</span><small>Tạo {{ user.createdAt | date:'dd/MM/yyyy' }}</small></td>
+                  <td><span>{{ user.phone || 'Chưa có SĐT' }}</span><small>{{ user.birthDate || 'Chưa có ngày sinh' }} · {{ user.gender === 'female' ? 'Nữ' : user.gender === 'male' ? 'Nam' : 'Chưa xác định' }}</small></td>
+                  <td>
+                    @if (isSystemAdministrator(user)) {
+                      <div class="system-role">
+                        <span>Vai trò hệ thống</span>
+                        <strong>Administrator</strong>
+                        <small>Mặc định, không thể thay đổi</small>
+                      </div>
+                    } @else {
+                      <label class="role-field">
+                        <span>Vai trò tài khoản</span>
+                        <select [value]="drafts()[user.userId]" (change)="updateRoleDraft(user.userId, $event)">
+                          @for (role of roleOptions; track role.code) {
+                            <option [value]="role.code">{{ role.label }}</option>
+                          }
+                        </select>
+                      </label>
+                    }
+                  </td>
+                  <td><span class="status" [class.active]="user.isActive">{{ user.isActive ? 'Đang hoạt động' : 'Đã khóa' }}</span></td>
+                  <td>
+                    <div class="actions">
+                      @if (isSystemAdministrator(user)) {
+                        <span class="system-account-note">Tài khoản hệ thống</span>
+                      } @else {
+                        <button type="button" [disabled]="pendingUserId() === user.userId" (click)="saveRole(user)">Lưu role</button>
+                        <button type="button" class="secondary" [disabled]="pendingUserId() === user.userId" (click)="toggleStatus(user)">{{ user.isActive ? 'Khóa' : 'Mở khóa' }}</button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
     </section>
   </section>
 </main>

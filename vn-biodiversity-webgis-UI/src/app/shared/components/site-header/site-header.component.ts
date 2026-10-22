@@ -1,5 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+
+import { AdminAuthService } from '../../../data-access/services/auth/admin-auth.service';
 
 @Component({
   selector: 'app-site-header',
@@ -9,4 +11,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 })
 export class SiteHeaderComponent {
   @Input() sectionLabel = 'VN Biodiversity WebGIS';
+
+  protected readonly auth = inject(AdminAuthService);
 }

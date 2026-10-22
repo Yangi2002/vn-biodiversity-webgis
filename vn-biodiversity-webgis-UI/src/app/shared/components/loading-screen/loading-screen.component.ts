@@ -36,16 +36,30 @@ export class LoadingScreenComponent {
       return;
     }
 
-    this.scheduleHide();
+    if (this.isAdminRoute(this.router.url)) {
+      this.isVisible.set(false);
+    } else {
+      this.scheduleHide();
+    }
 
     const subscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationStart) {
-        this.show();
+        if (this.isAdminRoute(event.url)) {
+          this.clearHideTimer();
+          this.isVisible.set(false);
+        } else {
+          this.show();
+        }
         return;
       }
 
       if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
-        this.scheduleHide();
+        if (event instanceof NavigationEnd && this.isAdminRoute(event.urlAfterRedirects)) {
+          this.clearHideTimer();
+          this.isVisible.set(false);
+        } else {
+          this.scheduleHide();
+        }
       }
     });
 
@@ -70,5 +84,9 @@ export class LoadingScreenComponent {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
+  }
+
+  private isAdminRoute(url: string): boolean {
+    return url === '/account' || url === '/admin' || url.startsWith('/admin/');
   }
 }

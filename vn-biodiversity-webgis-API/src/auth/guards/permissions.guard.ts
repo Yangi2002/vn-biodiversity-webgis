@@ -1,6 +1,7 @@
 import { ForbiddenException, type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+import { type GovernancePermission, hasEveryPermission } from '../authorization/role-permission.matrix';
 import { AUTH_PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import type { AuthTokenPayload } from '../types/auth-user.type';
 
@@ -13,7 +14,7 @@ export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext) {
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(AUTH_PERMISSIONS_KEY, [
+    const requiredPermissions = this.reflector.getAllAndOverride<GovernancePermission[]>(AUTH_PERMISSIONS_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -23,9 +24,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const permissions = new Set(request.user?.permissions ?? []);
-
-    if (requiredPermissions.every((permission) => permissions.has(permission))) {
+    if (hasEveryPermission(request.user?.permissions ?? [], requiredPermissions)) {
       return true;
     }
 

@@ -1,20 +1,5 @@
 <main class="home-page">
-  <nav class="topbar" aria-label="Điều hướng chính">
-    <a class="brand" routerLink="/">
-      <span class="home-brand-mark" aria-hidden="true">
-        <img src="/Header-logo-header.png" width="44" height="44" alt="" />
-      </span>
-      <span>VN Biodiversity WebGIS</span>
-    </a>
-    <div>
-      <a routerLink="/species-list">Tra cứu</a>
-      <a routerLink="/taxonomy">Phân loại</a>
-      <a routerLink="/map">Bản đồ</a>
-      <a routerLink="/statistics">Thống kê</a>
-      <a routerLink="/nature-reserves">Khu bảo tồn</a>
-      <a routerLink="/endangered-species">Danh sách đỏ</a>
-    </div>
-  </nav>
+  <app-site-header sectionLabel="Đa dạng sinh học Việt Nam" />
 
   <section class="hero">
     <app-hero-slider class="hero-visual" [slides]="heroSlides" [intervalMs]="6000" />

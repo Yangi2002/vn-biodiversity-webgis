@@ -1,0 +1,48 @@
+<main class="auth-page">
+  <section class="auth-panel">
+    <a class="auth-brand" routerLink="/">
+      <img src="/Header-logo-header.png" width="56" height="56" alt="" />
+      <span><strong>VN Biodiversity WebGIS</strong><small>Tài khoản thành viên</small></span>
+    </a>
+
+    <header>
+      <p>Đăng ký</p>
+      <h1>Tạo tài khoản</h1>
+      <span>Tài khoản mới được cấp vai trò Registered User.</span>
+    </header>
+
+    <form (ngSubmit)="submit()">
+      <label class="full-width">Họ và tên
+        <input name="displayName" [(ngModel)]="form.displayName" autocomplete="name" minlength="2" maxlength="100" required />
+      </label>
+      <label>Email
+        <input name="email" type="email" [(ngModel)]="form.email" autocomplete="email" required />
+      </label>
+      <label>Số điện thoại
+        <input name="phone" type="tel" [(ngModel)]="form.phone" autocomplete="tel" required />
+      </label>
+      <label>Ngày sinh
+        <input name="birthDate" type="date" [(ngModel)]="form.birthDate" autocomplete="bday" required />
+      </label>
+      <fieldset>
+        <legend>Giới tính</legend>
+        <label><input name="gender" type="radio" value="male" [(ngModel)]="form.gender" /> Nam</label>
+        <label><input name="gender" type="radio" value="female" [(ngModel)]="form.gender" /> Nữ</label>
+      </fieldset>
+      <label>Mật khẩu
+        <input name="password" type="password" [(ngModel)]="form.password" autocomplete="new-password" minlength="8" required />
+      </label>
+      <label>Xác nhận mật khẩu
+        <input name="confirmPassword" type="password" [(ngModel)]="form.confirmPassword" autocomplete="new-password" minlength="8" required />
+      </label>
+
+      @if (errorMessage) { <p class="auth-error full-width">{{ errorMessage }}</p> }
+
+      <button class="full-width" type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Đang tạo tài khoản...' : 'Đăng ký' }}
+      </button>
+    </form>
+
+    <footer>Đã có tài khoản? <a routerLink="/login">Đăng nhập</a></footer>
+  </section>
+</main>

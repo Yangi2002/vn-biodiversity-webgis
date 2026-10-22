@@ -1,12 +1,12 @@
 <main class="admin-shell">
-  <app-admin-navbar />
+  <app-admin-navbar activeTab="roles" />
 
   <section class="admin-content">
     <section class="role-header">
       <div>
-        <p>Role platform</p>
-        <h1>Nền tảng phân quyền Sprint 2</h1>
-        <span>Administrator là admin cao nhất. Ba role còn lại dùng cho biên tập, tài khoản đăng nhập và khách công khai.</span>
+        <p>Phân quyền hệ thống</p>
+        <h1>Vai trò và ma trận quyền</h1>
+        <span>Administrator luôn có toàn quyền. Ma trận bên dưới chỉ cấu hình các vai trò còn lại.</span>
       </div>
       <button type="button" (click)="loadRoleMatrix()">Tải lại</button>
     </section>
@@ -16,21 +16,70 @@
     } @else if (errorMessage()) {
       <section class="role-state is-error">{{ errorMessage() }}</section>
     } @else {
-      <section class="role-grid" aria-label="Ma trận phân quyền">
+      <section class="role-summary" aria-label="Danh sách vai trò">
         @for (role of roles(); track role.code) {
           <article class="role-card">
             <div class="role-card-header">
-              <span>{{ role.code }}</span>
               <strong>{{ role.label }}</strong>
+              <span>{{ role.permissions.length }} quyền</span>
             </div>
             <p>{{ role.description }}</p>
-            <div class="permission-list">
-              @for (permission of role.permissions; track permission) {
-                <span>{{ permission }}</span>
-              }
-            </div>
+            <code>{{ role.code }}</code>
           </article>
         }
+      </section>
+
+      <section class="matrix-panel">
+        <div class="matrix-heading">
+          <div>
+            <p>Permission matrix</p>
+            <h2>Đối chiếu quyền theo vai trò</h2>
+          </div>
+          <span>{{ permissions().length }} quyền hệ thống</span>
+        </div>
+
+        <div class="matrix-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Nhóm / quyền</th>
+                @for (role of editableRoles(); track role.code) {
+                  <th scope="col">
+                    <span>{{ role.label }}</span>
+                    <button
+                      type="button"
+                      class="save-permissions"
+                      [disabled]="pendingRole() === role.code"
+                      (click)="saveRolePermissions(role)"
+                    >{{ pendingRole() === role.code ? 'Đang lưu' : 'Lưu quyền' }}</button>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (permission of permissions(); track permission.code) {
+                <tr>
+                  <th scope="row">
+                    <span>{{ permissionGroupLabel(permission.group) }}</span>
+                    <strong>{{ permission.label }}</strong>
+                    <code>{{ permission.code }}</code>
+                  </th>
+                  @for (role of editableRoles(); track role.code) {
+                    <td>
+                      <input
+                        type="checkbox"
+                        [checked]="hasPermission(role, permission.code)"
+                        [disabled]="pendingRole() === role.code"
+                        [attr.aria-label]="'Cấp quyền ' + permission.label + ' cho ' + role.label"
+                        (change)="togglePermission(role, permission.code, $any($event.target).checked)"
+                      />
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </section>
     }
   </section>

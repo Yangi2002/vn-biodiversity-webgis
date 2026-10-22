@@ -11,7 +11,7 @@ interface AuthenticatedRequest extends Request {
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authorization = request.headers.authorization;
     const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null;
@@ -20,7 +20,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Thiếu token đăng nhập.');
     }
 
-    request.user = this.authService.verifyToken(token);
+    request.user = await this.authService.authenticateToken(token);
 
     return true;
   }

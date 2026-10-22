@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { DataGovernanceModule } from './data-governance/data-governance.module';
 import { NationalParksModule } from './national-parks/national-parks.module';
 import { NatureReservesModule } from './nature-reserves/nature-reserves.module';
+import { UserManagementModule } from './user-management/user-management.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NatureReservesModule } from './nature-reserves/nature-reserves.module';
     NationalParksModule,
     NatureReservesModule,
     DataGovernanceModule,
+    UserManagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],

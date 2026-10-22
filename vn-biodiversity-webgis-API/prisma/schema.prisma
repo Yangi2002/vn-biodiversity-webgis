@@ -8,14 +8,32 @@ datasource db {
 }
 
 model app_users {
-  user_id       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String       @unique
+  user_id       String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String          @unique
   display_name  String?
+  birth_date    DateTime?       @db.Date
+  gender        String?
+  phone         String?
   password_hash String
-  is_active     Boolean      @default(true)
-  created_at    DateTime     @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime     @default(now()) @db.Timestamptz(6)
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @db.Timestamptz(6)
+  auth_sessions auth_sessions[]
   user_roles    user_roles[]
+}
+
+model auth_sessions {
+  session_id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String     @db.Uuid
+  refresh_token_hash String    @unique
+  expires_at        DateTime   @db.Timestamptz(6)
+  revoked_at        DateTime?  @db.Timestamptz(6)
+  created_at        DateTime   @default(now()) @db.Timestamptz(6)
+  last_used_at      DateTime   @default(now()) @db.Timestamptz(6)
+  app_users         app_users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_auth_sessions_user")
+  @@index([expires_at], map: "idx_auth_sessions_expires")
 }
 
 model national_parks_vn {
@@ -276,6 +294,7 @@ model user_roles {
   created_at   DateTime  @default(now()) @db.Timestamptz(6)
   app_users    app_users @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@unique([user_id], map: "uq_user_roles_user")
   @@unique([user_id, role_code], map: "uq_user_roles_user_role")
   @@index([role_code], map: "idx_user_roles_role")
 }

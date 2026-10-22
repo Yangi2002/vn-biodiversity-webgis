@@ -89,6 +89,21 @@ nav a.is-active {
   box-shadow: 0 8px 20px rgba(31, 111, 70, 0.1);
 }
 
+.auth-divider {
+  width: 1px;
+  height: 26px;
+  margin: 0 2px;
+  background: #c9d8cf;
+}
+
+nav .login-link,
+nav .account-link,
+nav .admin-link {
+  border-color: #177a4d;
+  border-radius: 6px;
+  color: #0d693d;
+}
+
 @media (max-width: 760px) {
   .site-header-content {
     width: min(100% - 28px, 1180px);
@@ -100,5 +115,9 @@ nav a.is-active {
   nav {
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+
+  .auth-divider {
+    display: none;
   }
 }

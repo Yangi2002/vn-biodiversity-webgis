@@ -4,67 +4,6 @@
   color: #17251f;
 }
 
-.topbar {
-  position: relative;
-  z-index: 4;
-  width: min(1480px, calc(100% - 64px));
-  height: 76px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 auto;
-}
-
-.topbar a {
-  color: #17251f;
-  text-decoration: none;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 19px;
-  font-weight: 800;
-}
-
-.home-brand-mark {
-  width: 58px;
-  height: 58px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid #b8d6c3;
-  border-radius: 50%;
-  background: #edf7f0;
-  box-shadow:
-    inset 0 0 0 5px rgba(255, 255, 255, 0.75),
-    0 12px 28px rgba(31, 111, 70, 0.14);
-}
-
-.home-brand-mark img {
-  width: 46px;
-  height: 46px;
-  object-fit: contain;
-}
-
-.topbar div {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.topbar div a {
-  padding: 8px 0;
-  color: #314b3f;
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.topbar div a:hover {
-  color: #13743d;
-}
-
 .hero-copy,
 .home-data-overview,
 .feature-section,
@@ -463,8 +402,7 @@ h3 {
   .hero-copy,
   .home-data-overview,
   .feature-section,
-  .source-section,
-  .topbar {
+  .source-section {
     width: min(100% - 28px, 1480px);
   }
 
@@ -510,9 +448,6 @@ h3 {
     mask-image: none;
   }
 
-  .topbar div {
-    display: none;
-  }
 }
 
 @media (max-width: 520px) {

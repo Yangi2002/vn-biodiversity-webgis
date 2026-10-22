@@ -33,12 +33,23 @@ export class LoginPage {
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: () => {
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/admin';
+          const requestedUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          const canOpenRequestedUrl = Boolean(
+            requestedUrl &&
+            requestedUrl.startsWith('/') &&
+            !requestedUrl.startsWith('//') &&
+            (!requestedUrl.startsWith('/admin') || this.auth.hasRole(['administrator'])),
+          );
+          const returnUrl = canOpenRequestedUrl && requestedUrl ? requestedUrl : this.defaultRoute();
           this.router.navigateByUrl(returnUrl);
         },
         error: () => {
           this.errorMessage = 'Email hoặc mật khẩu không đúng.';
         },
       });
+  }
+
+  private defaultRoute() {
+    return this.auth.hasRole(['administrator']) ? '/admin' : '/';
   }
 }

@@ -1,0 +1,49 @@
+<main class="account-page" [class.is-admin]="isAdministrator">
+  @if (isAdministrator) {
+    <app-admin-navbar activeTab="settings" />
+  }
+
+  <section class="account-workspace">
+    @if (!isAdministrator) {
+      <app-site-header sectionLabel="Tài khoản cá nhân" />
+    }
+
+    <div class="profile-wrap">
+      <section class="profile-panel">
+        <div class="profile-heading">
+          <span class="settings-icon" aria-hidden="true">&#9881;</span>
+          <div>
+            <p>Thông tin cá nhân</p>
+            <h1>Chỉnh sửa hồ sơ</h1>
+            <span>{{ user?.displayName || 'Hồ sơ cá nhân' }}</span>
+          </div>
+        </div>
+
+        <form (ngSubmit)="save()">
+          <label class="full-width">Họ và tên<input name="displayName" [(ngModel)]="form.displayName" autocomplete="name" /></label>
+          <label>Email<input name="email" type="email" [(ngModel)]="form.email" autocomplete="email" required /></label>
+          <label>Số điện thoại<input name="phone" type="tel" [(ngModel)]="form.phone" autocomplete="tel" /></label>
+          <label>Ngày sinh<input name="birthDate" type="date" [(ngModel)]="form.birthDate" autocomplete="bday" /></label>
+          <fieldset>
+            <legend>Giới tính</legend>
+            <label><input name="gender" type="radio" value="male" [(ngModel)]="form.gender" /> Nam</label>
+            <label><input name="gender" type="radio" value="female" [(ngModel)]="form.gender" /> Nữ</label>
+            <label><input name="gender" type="radio" value="" [(ngModel)]="form.gender" /> Không cung cấp</label>
+          </fieldset>
+          <label>Mật khẩu mới
+            <input name="password" type="password" [(ngModel)]="form.password" autocomplete="new-password" minlength="8" placeholder="Để trống nếu không đổi" />
+          </label>
+          <label>Xác nhận mật khẩu mới
+            <input name="confirmPassword" type="password" [(ngModel)]="form.confirmPassword" autocomplete="new-password" minlength="8" placeholder="Nhập lại mật khẩu mới" />
+          </label>
+          @if (message) { <p class="form-message" [class.is-error]="isError">{{ message }}</p> }
+          <button type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi' }}</button>
+        </form>
+
+        @if (!isAdministrator) {
+          <button type="button" class="profile-logout" (click)="logout()">Đăng xuất</button>
+        }
+      </section>
+    </div>
+  </section>
+</main>

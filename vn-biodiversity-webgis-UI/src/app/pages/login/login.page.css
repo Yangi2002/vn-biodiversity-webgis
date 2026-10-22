@@ -119,3 +119,14 @@
   color: #b42318;
   font-weight: 700;
 }
+
+.login-register {
+  margin: 20px 0 0;
+  color: #52685d;
+  text-align: center;
+}
+
+.login-register a {
+  color: #08723c;
+  font-weight: 900;
+}

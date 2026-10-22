@@ -18,7 +18,16 @@
       <a routerLink="/statistics" routerLinkActive="is-active">Thống kê</a>
       <a routerLink="/endangered-species" routerLinkActive="is-active">Danh sách đỏ</a>
       <a routerLink="/nature-reserves" routerLinkActive="is-active">Khu bảo tồn</a>
-      <a routerLink="/login" routerLinkActive="is-active">Đăng nhập</a>
+      <span class="auth-divider" aria-hidden="true"></span>
+      @if (auth.isAuthenticated()) {
+        @if (auth.hasRole(['administrator'])) {
+          <a class="admin-link" routerLink="/admin" routerLinkActive="is-active">Quản trị</a>
+        }
+        <a class="account-link" routerLink="/account" routerLinkActive="is-active">Tài khoản</a>
+      } @else {
+        <a routerLink="/register" routerLinkActive="is-active">Đăng ký</a>
+        <a class="login-link" routerLink="/login" routerLinkActive="is-active">Đăng nhập</a>
+      }
     </nav>
   </div>
 </header>
