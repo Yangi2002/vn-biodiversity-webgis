@@ -1,0 +1,29 @@
+<aside class="management-sidebar" [attr.data-workspace]="workspace()" aria-label="Điều hướng khu vực quản lý">
+  <a class="management-brand" [routerLink]="workspace() === 'admin' ? '/admin' : '/editor'">
+    <span class="brand-mark">{{ brandMark() }}</span>
+    <span><strong>VN Biodiversity</strong><small>{{ brandLabel() }}</small></span>
+  </a>
+
+  <p class="section-label">Trang hệ thống</p>
+  <nav class="public-links" aria-label="Điều hướng WebGIS">
+    @for (item of publicNavItems; track item.route) {
+      <a [routerLink]="item.route" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: item.route === '/' }">{{ item.label }}</a>
+    }
+  </nav>
+
+  <p class="section-label">{{ navigationLabel() }}</p>
+  <nav class="workspace-links" aria-label="Công cụ quản lý">
+    @for (item of navItems(); track item.tab) {
+      <a [routerLink]="item.route" [class.is-active]="activeTab() === item.tab">
+        <span class="nav-icon">{{ item.icon }}</span>
+        <span class="nav-copy"><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span>
+      </a>
+    }
+  </nav>
+
+  <a class="user-card" routerLink="/account" [class.is-active]="activeTab() === 'settings'">
+    <span class="user-avatar" aria-hidden="true">&#128100;</span>
+    <span><strong>Cài đặt tài khoản<span class="settings-gear" aria-hidden="true">&#9881;</span></strong><small>{{ currentUser?.displayName || 'Tài khoản hệ thống' }}</small></span>
+  </a>
+  <button type="button" class="logout" (click)="logout()">Đăng xuất</button>
+</aside>

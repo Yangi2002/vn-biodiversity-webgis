@@ -23,6 +23,9 @@
         @if (auth.hasRole(['administrator'])) {
           <a class="admin-link" routerLink="/admin" routerLinkActive="is-active">Quản trị</a>
         }
+        @if (auth.hasRole(['editor-staff'])) {
+          <a class="admin-link" routerLink="/editor" routerLinkActive="is-active">Biên tập</a>
+        }
         <a class="account-link" routerLink="/account" routerLinkActive="is-active">Tài khoản</a>
       } @else {
         <a routerLink="/register" routerLinkActive="is-active">Đăng ký</a>

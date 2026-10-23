@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 
-import { AdminNavbarComponent } from '../components/admin-navbar/admin-navbar.component';
+import { ManagementSidebarComponent } from '../../../shared/components/management-sidebar/management-sidebar.component';
 
 @Component({
   selector: 'app-change-requests-page',
-  imports: [AdminNavbarComponent],
+  imports: [ManagementSidebarComponent],
   templateUrl: './change-requests.page.html',
   styleUrl: './change-requests.page.css',
 })

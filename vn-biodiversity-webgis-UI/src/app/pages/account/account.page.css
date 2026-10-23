@@ -4,7 +4,7 @@
   color: #10251d;
 }
 
-.account-page.is-admin {
+.account-page.is-workspace {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
 }
@@ -19,7 +19,7 @@
   padding: 28px 0;
 }
 
-.is-admin .profile-wrap {
+.is-workspace .profile-wrap {
   width: auto;
   margin: 0;
   padding: 28px;
@@ -149,14 +149,14 @@ form button,
 }
 
 @media (max-width: 980px) {
-  .account-page.is-admin {
+  .account-page.is-workspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
   .profile-wrap,
-  .is-admin .profile-wrap {
+  .is-workspace .profile-wrap {
     width: auto;
     padding: 16px;
   }

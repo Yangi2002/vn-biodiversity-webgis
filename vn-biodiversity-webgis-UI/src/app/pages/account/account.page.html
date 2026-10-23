@@ -1,10 +1,12 @@
-<main class="account-page" [class.is-admin]="isAdministrator">
+<main class="account-page" [class.is-workspace]="isAdministrator || isEditor">
   @if (isAdministrator) {
-    <app-admin-navbar activeTab="settings" />
+    <app-management-sidebar workspace="admin" activeTab="settings" />
+  } @else if (isEditor) {
+    <app-management-sidebar workspace="editor" activeTab="settings" />
   }
 
   <section class="account-workspace">
-    @if (!isAdministrator) {
+    @if (!isAdministrator && !isEditor) {
       <app-site-header sectionLabel="Tài khoản cá nhân" />
     }
 
@@ -40,7 +42,7 @@
           <button type="submit" [disabled]="isSubmitting">{{ isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi' }}</button>
         </form>
 
-        @if (!isAdministrator) {
+        @if (!isAdministrator && !isEditor) {
           <button type="button" class="profile-logout" (click)="logout()">Đăng xuất</button>
         }
       </section>

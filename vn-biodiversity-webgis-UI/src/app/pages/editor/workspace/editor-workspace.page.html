@@ -1,0 +1,132 @@
+<main class="editor-shell">
+  <app-management-sidebar workspace="editor" [activeTab]="activeTab" />
+  <section class="editor-content">
+    <header class="editor-topbar">
+      <div><p>Editor staff</p><h1>Biên tập dữ liệu đa dạng sinh học</h1></div>
+      <span class="permission-note">Tạo và chỉnh sửa · Không có quyền công bố</span>
+    </header>
+
+    @if (message()) { <p class="workspace-message" [class.is-error]="isError()">{{ message() }}</p> }
+
+    @switch (mode) {
+      @case ('overview') {
+        <section class="editor-hero">
+          <div><p>Không gian làm việc</p><h2>Chuẩn bị dữ liệu trước khi kiểm duyệt</h2><span>Mọi thay đổi được lưu thành đề xuất. Dữ liệu công khai chỉ thay đổi sau khi quản trị viên duyệt và công bố.</span></div>
+          @if (canCreate) { <a routerLink="/editor/species/new">Thêm hồ sơ loài</a> }
+        </section>
+        <section class="status-grid">
+          <article><span>Chờ duyệt</span><strong>{{ pendingCount() | number }}</strong></article>
+          <article><span>Đã duyệt</span><strong>{{ approvedCount() | number }}</strong></article>
+          <article><span>Từ chối</span><strong>{{ rejectedCount() | number }}</strong></article>
+        </section>
+        <section class="panel search-panel">
+          <header><div><p>Chỉnh sửa dữ liệu</p><h2>Tìm hồ sơ loài hiện có</h2></div></header>
+          <form class="search-row" (ngSubmit)="searchSpecies()">
+            <input name="searchTerm" [(ngModel)]="searchTerm" placeholder="Tên Việt Nam, tên khoa học hoặc mã loài" />
+            <button type="submit" [disabled]="isLoading()">{{ isLoading() ? 'Đang tìm...' : 'Tìm kiếm' }}</button>
+          </form>
+          @if (searchResults().length) {
+            <div class="result-grid">
+              @for (item of searchResults(); track item.sourceTable + item.speciesId) {
+                <article><div><strong>{{ item.vietnameseName || 'Chưa có tên Việt Nam' }}</strong><em>{{ item.scientificName }}</em><small>{{ item.sourceLabel }} · {{ item.speciesId }}</small></div>@if (canUpdate) { <a [routerLink]="['/editor/species', item.sourceTable, item.speciesId, 'edit']">Chỉnh sửa</a> }</article>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @case ('import') {
+        <section class="panel import-panel">
+          <header><div><p>Excel / CSV</p><h2>Kiểm tra dữ liệu trước khi gửi</h2><span>Đối chiếu từng dòng với PostgreSQL để phát hiện dữ liệu mới, thay đổi, trùng lặp, ô thiếu và lỗi trước khi gửi.</span></div></header>
+          <div class="import-controls">
+            <div class="import-field">
+              <label for="import-source">Nhóm dữ liệu</label>
+              <select id="import-source" [(ngModel)]="importSource" (ngModelChange)="resetImportPreview()">@for (source of importSourceOptions; track source.value) { <option [value]="source.value">{{ source.label }}</option> }</select>
+              @if (importSource === 'all') { <p class="field-hint">File cần có cột <code>Nhóm dữ liệu</code> hoặc <code>sourceTable</code> cho từng dòng.</p> }
+            </div>
+            <div class="import-field">
+              <span class="field-label">Tệp dữ liệu</span>
+              <label class="file-picker" for="species-import-file">
+                <input id="species-import-file" type="file" accept=".xlsx,.xls,.csv" (change)="selectFile($event)" />
+                <span class="file-action">Chọn tệp</span>
+                <span class="file-name" [class.has-file]="selectedFileName">{{ selectedFileName || 'Chưa chọn tệp' }}</span>
+              </label>
+              <p class="field-hint">Hỗ trợ XLSX, XLS và CSV, tối đa 500 dòng mỗi lần.</p>
+            </div>
+          </div>
+          @if (importErrors().length) { <div class="validation-errors"><strong>Cần sửa trước khi gửi</strong>@for (error of importErrors().slice(0, 12); track error) { <span>{{ error }}</span> }</div> }
+          @if (isValidating()) { <p class="validation-progress">Đang đối chiếu dữ liệu với hệ thống...</p> }
+          @if (importValidation(); as validation) {
+            <div class="validation-summary">
+              <span><strong>{{ validation.total }}</strong> tổng dòng</span>
+              <span class="new"><strong>{{ validation.newCount }}</strong> dữ liệu mới</span>
+              <span class="changed"><strong>{{ validation.changedCount }}</strong> có thay đổi</span>
+              <span><strong>{{ validation.duplicateCount }}</strong> trùng hoàn toàn</span>
+              <span class="invalid"><strong>{{ validation.invalidCount }}</strong> cần sửa</span>
+            </div>
+            <div class="preview-heading"><strong>{{ validation.submittable | number }} dòng có thể gửi</strong><button type="button" [disabled]="validation.invalidCount > 0 || validation.submittable < 1 || isSubmitting()" (click)="submitImport()">{{ isSubmitting() ? 'Đang gửi...' : 'Gửi kiểm duyệt' }}</button></div>
+            <div class="table-wrap validation-table"><table><thead><tr><th>Dòng</th><th>Nhóm</th><th>Mã loài</th><th>Tên khoa học</th><th>Đánh giá</th><th>Ô còn thiếu</th><th>Cột thay đổi</th><th>Lỗi</th></tr></thead><tbody>
+              @for (row of validation.rows; track row.rowNumber) {
+                <tr [class.row-invalid]="row.status === 'invalid' || row.status === 'conflict'">
+                  <td>{{ row.rowNumber + 1 }}</td><td>{{ sourceLabel(row.sourceTable) }}</td><td><code>{{ row.speciesId || 'Thiếu' }}</code></td><td><em>{{ row.scientificName || 'Thiếu' }}</em></td>
+                  <td><span class="validation-status" [class]="'validation-status ' + row.status">{{ validationStatusLabel(row.status) }}</span></td>
+                  <td>{{ row.missingFields.join(', ') || 'Đủ trường' }}</td>
+                  <td>@if (row.changes.length) { @for (change of row.changes; track change.field) { <span class="change-item"><strong>{{ change.label }}</strong>: “{{ change.previousValue || 'trống' }}” → “{{ change.nextValue || 'trống' }}”</span> } } @else { — }</td>
+                  <td>{{ row.errors.join(' ') || '—' }}</td>
+                </tr>
+              }
+            </tbody></table></div>
+          }
+        </section>
+      }
+
+      @case ('create') { <ng-container *ngTemplateOutlet="speciesForm"></ng-container> }
+      @case ('edit') { <ng-container *ngTemplateOutlet="speciesForm"></ng-container> }
+
+      @case ('requests') {
+        <section class="panel">
+          <header><div><p>Workflow</p><h2>Đề xuất của tôi</h2><span>Theo dõi kết quả duyệt cho từng hồ sơ đã gửi.</span></div></header>
+          <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Thao tác</th><th>Bảng</th><th>Mã loài</th><th>Trạng thái</th><th>Phản hồi</th></tr></thead><tbody>
+            @if (!requests().length) { <tr><td colspan="6" class="empty-state">Chưa có đề xuất nào.</td></tr> }
+            @for (request of requests(); track request.request_id) { <tr><td>{{ request.submitted_at | date:'dd/MM/yyyy HH:mm' }}</td><td>{{ actionLabel(request.action_type) }}</td><td><code>{{ request.source_table }}</code></td><td>{{ request.species_id }}</td><td><span class="status" [class.pending]="request.status === 'pending'" [class.approved]="request.status === 'approved'" [class.rejected]="request.status === 'rejected'">{{ statusLabel(request.status) }}</span></td><td>{{ request.review_note || '—' }}</td></tr> }
+          </tbody></table></div>
+        </section>
+      }
+    }
+  </section>
+</main>
+
+<ng-template #speciesForm>
+  <section class="panel form-panel">
+    <header><div><p>{{ mode === 'edit' ? 'Chỉnh sửa hồ sơ' : 'Hồ sơ mới' }}</p><h2>{{ mode === 'edit' ? 'Đề xuất cập nhật dữ liệu loài' : 'Thêm dữ liệu loài' }}</h2><span>Đề xuất sẽ chờ quản trị viên kiểm tra trước khi công bố.</span></div></header>
+    <form (ngSubmit)="previewDraft()" (input)="clearDraftValidation()" (change)="clearDraftValidation()">
+      <label>Nhóm dữ liệu<select name="sourceTable" [(ngModel)]="draft.sourceTable" [disabled]="mode === 'edit'">@for (source of sourceOptions; track source.value) { <option [value]="source.value">{{ source.label }}</option> }</select></label>
+      <label>Mã loài *<input name="speciesId" [(ngModel)]="draft.speciesId" [readonly]="mode === 'edit'" required /></label>
+      <label>Tên Việt Nam<input name="vietnameseName" [(ngModel)]="draft.vietnameseName" /></label>
+      <label>Tên khoa học *<input name="scientificName" [(ngModel)]="draft.scientificName" required /></label>
+      <label>Lớp / nhóm<input name="className" [(ngModel)]="draft.className" /></label>
+      <label>Bộ<input name="order" [(ngModel)]="draft.order" /></label>
+      <label>Họ<input name="family" [(ngModel)]="draft.family" /></label>
+      <label class="wide">Đặc điểm nhận dạng<textarea name="identification" [(ngModel)]="draft.identification"></textarea></label>
+      <label class="wide">Sinh học và sinh thái<textarea name="ecology" [(ngModel)]="draft.ecology"></textarea></label>
+      <label class="wide">Phân bố<textarea name="distribution" [(ngModel)]="draft.distribution"></textarea></label>
+      <label>Tình trạng bảo tồn<textarea name="conservationStatus" [(ngModel)]="draft.conservationStatus"></textarea></label>
+      <label>Biện pháp bảo vệ<textarea name="protectionMeasures" [(ngModel)]="draft.protectionMeasures"></textarea></label>
+      <label class="wide">Mô tả<textarea name="description" [(ngModel)]="draft.description"></textarea></label>
+      <label class="wide">Tài liệu dẫn / nguồn<textarea name="references" [(ngModel)]="draft.references"></textarea></label>
+      <button class="submit-wide" type="submit" [disabled]="isValidating() || isLoading()">{{ isValidating() ? 'Đang kiểm tra...' : 'Kiểm tra dữ liệu' }}</button>
+      @if (draftValidation(); as validation) {
+        <div class="draft-validation submit-wide">
+          <table><thead><tr><th>Nhóm</th><th>Mã loài</th><th>Tên khoa học</th><th>Đánh giá</th><th>Ô còn thiếu</th><th>Cột thay đổi</th><th>Lỗi</th></tr></thead><tbody><tr [class.row-invalid]="!validation.canSubmit">
+            <td>{{ sourceLabel(validation.sourceTable) }}</td><td><code>{{ validation.speciesId || 'Thiếu' }}</code></td><td><em>{{ validation.scientificName || 'Thiếu' }}</em></td>
+            <td><span class="validation-status" [class]="'validation-status ' + validation.status">{{ validationStatusLabel(validation.status) }}</span></td>
+            <td>{{ validation.missingFields.join(', ') || 'Đủ trường' }}</td>
+            <td>@if (validation.changes.length) { @for (change of validation.changes; track change.field) { <span class="change-item"><strong>{{ change.label }}</strong>: “{{ change.previousValue || 'trống' }}” → “{{ change.nextValue || 'trống' }}”</span> } } @else { — }</td>
+            <td>{{ validation.errors.join(' ') || '—' }}</td>
+          </tr></tbody></table>
+        </div>
+        <button class="submit-wide" type="button" [disabled]="!validation.canSubmit || isSubmitting()" (click)="submitDraft()">{{ isSubmitting() ? 'Đang gửi...' : 'Gửi kiểm duyệt' }}</button>
+      }
+    </form>
+  </section>
+</ng-template>

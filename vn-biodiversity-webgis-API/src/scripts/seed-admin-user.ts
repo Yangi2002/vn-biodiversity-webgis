@@ -39,38 +39,55 @@ async function main() {
   try {
     await client.query('BEGIN');
 
-    const userResult = await client.query<{ user_id: string }>(
-      `
-        INSERT INTO app_users (email, display_name, password_hash)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (email)
-        DO UPDATE SET
-          display_name = EXCLUDED.display_name,
-          password_hash = EXCLUDED.password_hash,
-          is_active = TRUE,
-          updated_at = NOW()
-        RETURNING user_id
-      `,
-      [email, displayName, hashPassword(password)],
-    );
+    const currentAdmin = await client.query<{ user_id: string }>(`
+      SELECT user_id
+      FROM user_roles
+      WHERE role_code = 'administrator'
+      LIMIT 1
+      FOR UPDATE
+    `);
+    const passwordHash = hashPassword(password);
 
-    await client.query(
-      `
-        INSERT INTO user_roles (user_id, role_code)
-        VALUES ($1, 'admin')
-        ON CONFLICT (user_id, role_code) DO NOTHING
-      `,
-      [userResult.rows[0].user_id],
-    );
+    if (currentAdmin.rows[0]) {
+      await client.query(
+        `
+          UPDATE app_users
+          SET
+            email = $1,
+            display_name = $2,
+            password_hash = $3,
+            is_active = TRUE,
+            updated_at = NOW()
+          WHERE user_id = $4
+        `,
+        [email, displayName, passwordHash, currentAdmin.rows[0].user_id],
+      );
+    } else {
+      const userResult = await client.query<{ user_id: string }>(
+        `
+          INSERT INTO app_users (email, display_name, password_hash)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (email)
+          DO UPDATE SET
+            display_name = EXCLUDED.display_name,
+            password_hash = EXCLUDED.password_hash,
+            is_active = TRUE,
+            updated_at = NOW()
+          RETURNING user_id
+        `,
+        [email, displayName, passwordHash],
+      );
+      const userId = userResult.rows[0].user_id;
 
-    await client.query(
-      `
-        INSERT INTO user_roles (user_id, role_code)
-        VALUES ($1, 'administrator')
-        ON CONFLICT (user_id, role_code) DO NOTHING
-      `,
-      [userResult.rows[0].user_id],
-    );
+      await client.query('DELETE FROM user_roles WHERE user_id = $1', [userId]);
+      await client.query(
+        `
+          INSERT INTO user_roles (user_id, role_code)
+          VALUES ($1, 'administrator')
+        `,
+        [userId],
+      );
+    }
 
     await client.query('COMMIT');
     console.log(`Seeded admin user: ${email}`);

@@ -1,5 +1,5 @@
 <main class="admin-shell">
-  <app-admin-navbar [activeTab]="activeTab()" (tabChange)="setActiveTab($event)" />
+  <app-management-sidebar workspace="admin" activeTab="data" />
 
   <section class="admin-content">
     <header class="admin-topbar">
@@ -10,8 +10,6 @@
       <button type="button" (click)="reload()">Tải lại dữ liệu</button>
     </header>
 
-    @switch (activeTab()) {
-      @case ('data') {
         <section class="admin-hero">
           <div>
             <p>Admin console</p>
@@ -122,31 +120,5 @@
             </article>
           }
         </section>
-      }
-
-      @case ('change-requests') {
-        <section class="admin-placeholder">
-          <p>Change requests</p>
-          <h2>Yêu cầu kiểm duyệt dữ liệu</h2>
-          <span>Danh sách đề xuất thêm, sửa, xóa dữ liệu sẽ được nối vào workflow kiểm duyệt ở bước sau.</span>
-        </section>
-      }
-
-      @case ('users') {
-        <section class="admin-placeholder">
-          <p>User management</p>
-          <h2>Quản lý người dùng</h2>
-          <span>Khu vực này dành cho danh sách tài khoản, trạng thái hoạt động và phân quyền người dùng.</span>
-        </section>
-      }
-
-      @case ('roles') {
-        <section class="admin-placeholder">
-          <p>Role management</p>
-          <h2>Phân quyền dữ liệu</h2>
-          <span>Admin sẽ dùng khu vực này để quản lý quyền Animal Manager, Plant Manager và Insect Manager.</span>
-        </section>
-      }
-    }
   </section>
 </main>

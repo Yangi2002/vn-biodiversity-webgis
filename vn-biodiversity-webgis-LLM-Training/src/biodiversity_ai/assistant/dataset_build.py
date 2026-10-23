@@ -24,6 +24,7 @@ from biodiversity_ai.assistant.contracts import (
 from biodiversity_ai.assistant.ingestion.literature_apis import (
     CrossrefLiteratureClient,
     EuropePmcLiteratureClient,
+    LiteratureProvider,
     search_literature,
 )
 from biodiversity_ai.assistant.ingestion.postgres import (
@@ -47,6 +48,9 @@ class DatasetBuildConfig:
     split_seed: str = "vn-biodiversity-v1"
     evaluation_example_limit: int | None = 500
     api_workers: int = 6
+    crossref_workers: int = 1
+    crossref_delay_seconds: float = 1.0
+    crossref_mailto: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,7 +83,7 @@ def build_real_dataset(config: DatasetBuildConfig) -> DatasetBuildSummary:
     if not raw_records:
         raise RuntimeError("PostgreSQL extraction returned no species records.")
 
-    cache = _ApiCache(config.cache_root / config.version)
+    cache = _shared_api_cache(config.cache_root)
     enrichments, gbif_count, gbif_failures = _load_gbif_enrichments(
         raw_records,
         cache,
@@ -93,6 +97,9 @@ def build_real_dataset(config: DatasetBuildConfig) -> DatasetBuildSummary:
         results_per_provider=config.literature_results_per_provider,
         delay_seconds=config.request_delay_seconds,
         api_workers=config.api_workers,
+        crossref_workers=config.crossref_workers,
+        crossref_delay_seconds=config.crossref_delay_seconds,
+        crossref_mailto=config.crossref_mailto or os.getenv("CROSSREF_MAILTO"),
     )
     source_snapshot = _source_snapshot(settings)
     providers = ("PostgreSQL", "GBIF", "Crossref", "Europe PMC")
@@ -145,14 +152,21 @@ def load_env_file(path: Path) -> None:
 
 
 class _ApiCache:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, fallback_roots: tuple[Path, ...] = ()) -> None:
         self.root = root
+        self.fallback_roots = fallback_roots
 
     def read(self, provider: str, key: str) -> object | None:
         path = self._path(provider, key)
-        if not path.is_file():
-            return None
-        return json.loads(path.read_text(encoding="utf-8"))
+        if path.is_file():
+            return json.loads(path.read_text(encoding="utf-8"))
+        for fallback_root in self.fallback_roots:
+            fallback_path = self._path(provider, key, root=fallback_root)
+            if fallback_path.is_file():
+                payload = json.loads(fallback_path.read_text(encoding="utf-8"))
+                self.write(provider, key, payload)
+                return payload
+        return None
 
     def write(self, provider: str, key: str, payload: object) -> None:
         path = self._path(provider, key)
@@ -164,9 +178,9 @@ class _ApiCache:
         )
         temporary.replace(path)
 
-    def _path(self, provider: str, key: str) -> Path:
+    def _path(self, provider: str, key: str, *, root: Path | None = None) -> Path:
         digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
-        return self.root / provider / f"{digest}.json"
+        return (root or self.root) / provider / f"{digest}.json"
 
 
 def _load_gbif_enrichments(
@@ -231,9 +245,10 @@ def _load_literature(
     results_per_provider: int,
     delay_seconds: float,
     api_workers: int,
+    crossref_workers: int,
+    crossref_delay_seconds: float,
+    crossref_mailto: str | None,
 ) -> tuple[dict[SpeciesKey, tuple[ScientificPublication, ...]], int, list[dict[str, str]]]:
-    result: dict[SpeciesKey, tuple[ScientificPublication, ...]] = {}
-    failures: list[dict[str, str]] = []
     records_by_name: dict[str, list[RawSpeciesRecord]] = defaultdict(list)
     display_names: dict[str, str] = {}
     for record in records:
@@ -245,49 +260,150 @@ def _load_literature(
         display_names.setdefault(cache_key, scientific_name)
     selected_names = tuple(records_by_name)[:species_limit]
 
-    with CrossrefLiteratureClient() as crossref, EuropePmcLiteratureClient() as europe_pmc:
-        providers = (crossref, europe_pmc)
-        pending: dict[str, str] = {}
-        for cache_key in selected_names:
-            cached = cache.read("literature", cache_key)
-            if isinstance(cached, list):
-                publications = (
-                    tuple(_publication_from_json(item) for item in cached)
-                )
-                for record in records_by_name[cache_key]:
-                    result[record.key] = publications
-                continue
-            pending[cache_key] = display_names[cache_key]
+    with CrossrefLiteratureClient(
+        mailto=crossref_mailto,
+        max_retries=5,
+    ) as crossref, EuropePmcLiteratureClient(max_retries=5) as europe_pmc:
+        crossref_results, crossref_failures = _load_literature_provider(
+            provider=crossref,
+            provider_cache_name="crossref",
+            records_by_name=records_by_name,
+            display_names=display_names,
+            selected_names=selected_names,
+            cache=cache,
+            results_per_provider=results_per_provider,
+            workers=crossref_workers,
+            delay_seconds=crossref_delay_seconds,
+        )
+        europe_pmc_results, europe_pmc_failures = _load_literature_provider(
+            provider=europe_pmc,
+            provider_cache_name="europe-pmc",
+            records_by_name=records_by_name,
+            display_names=display_names,
+            selected_names=selected_names,
+            cache=cache,
+            results_per_provider=results_per_provider,
+            workers=api_workers,
+            delay_seconds=delay_seconds,
+        )
 
-        with ThreadPoolExecutor(max_workers=api_workers) as executor:
-            futures = {
-                executor.submit(
-                    search_literature,
-                    scientific_name,
-                    providers,
-                    limit_per_provider=results_per_provider,
-                ): cache_key
-                for cache_key, scientific_name in pending.items()
-            }
-            for future in as_completed(futures):
-                cache_key = futures[future]
-                matching_records = records_by_name[cache_key]
-                try:
-                    publications = future.result()
-                    cache.write(
-                        "literature",
-                        cache_key,
-                        [_json_value(publication) for publication in publications],
-                    )
-                    time.sleep(delay_seconds)
-                    for record in matching_records:
-                        result[record.key] = publications
-                except Exception as error:  # noqa: BLE001 - provider failures are audited
-                    failures.extend(
-                        _failure("scientific-literature", record.key, error)
-                        for record in matching_records
-                    )
-    return result, len(selected_names), failures
+    result = _merge_publication_results(crossref_results, europe_pmc_results)
+    return result, len(selected_names), [*crossref_failures, *europe_pmc_failures]
+
+
+def _load_literature_provider(
+    *,
+    provider: LiteratureProvider,
+    provider_cache_name: str,
+    records_by_name: Mapping[str, list[RawSpeciesRecord]],
+    display_names: Mapping[str, str],
+    selected_names: tuple[str, ...],
+    cache: _ApiCache,
+    results_per_provider: int,
+    workers: int,
+    delay_seconds: float,
+) -> tuple[
+    dict[SpeciesKey, tuple[ScientificPublication, ...]],
+    list[dict[str, str]],
+]:
+    results: dict[SpeciesKey, tuple[ScientificPublication, ...]] = {}
+    failures: list[dict[str, str]] = []
+    pending: dict[str, str] = {}
+
+    for cache_key in selected_names:
+        cached = cache.read(provider_cache_name, cache_key)
+        if not isinstance(cached, list):
+            legacy = cache.read("literature", cache_key)
+            if isinstance(legacy, list):
+                cached = [
+                    item
+                    for item in legacy
+                    if isinstance(item, dict)
+                    and str(item.get("provider", "")).casefold()
+                    == provider.provider_name.casefold()
+                ]
+                cache.write(provider_cache_name, cache_key, cached)
+        if isinstance(cached, list):
+            publications = tuple(_publication_from_json(item) for item in cached)
+            for record in records_by_name[cache_key]:
+                results[record.key] = publications
+            continue
+        pending[cache_key] = display_names[cache_key]
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _fetch_publications,
+                provider,
+                scientific_name,
+                results_per_provider,
+                delay_seconds,
+            ): cache_key
+            for cache_key, scientific_name in pending.items()
+        }
+        for future in as_completed(futures):
+            cache_key = futures[future]
+            matching_records = records_by_name[cache_key]
+            try:
+                publications = future.result()
+                cache.write(
+                    provider_cache_name,
+                    cache_key,
+                    [_json_value(publication) for publication in publications],
+                )
+                for record in matching_records:
+                    results[record.key] = publications
+            except Exception as error:  # noqa: BLE001 - provider failures are audited
+                failures.extend(
+                    _failure(provider.provider_name, record.key, error)
+                    for record in matching_records
+                )
+    return results, failures
+
+
+def _fetch_publications(
+    provider: LiteratureProvider,
+    scientific_name: str,
+    results_per_provider: int,
+    delay_seconds: float,
+) -> tuple[ScientificPublication, ...]:
+    try:
+        return search_literature(
+            scientific_name,
+            (provider,),
+            limit_per_provider=results_per_provider,
+        )
+    finally:
+        time.sleep(delay_seconds)
+
+
+def _merge_publication_results(
+    *provider_results: Mapping[SpeciesKey, tuple[ScientificPublication, ...]],
+) -> dict[SpeciesKey, tuple[ScientificPublication, ...]]:
+    merged: dict[SpeciesKey, list[ScientificPublication]] = defaultdict(list)
+    seen: dict[SpeciesKey, set[str]] = defaultdict(set)
+    for provider_result in provider_results:
+        for key, publications in provider_result.items():
+            for publication in publications:
+                identity = (
+                    f"doi:{publication.doi.casefold()}"
+                    if publication.doi
+                    else f"url:{publication.source_url.casefold()}"
+                )
+                if identity not in seen[key]:
+                    seen[key].add(identity)
+                    merged[key].append(publication)
+    return {key: tuple(publications) for key, publications in merged.items()}
+
+
+def _shared_api_cache(cache_root: Path) -> _ApiCache:
+    shared_root = cache_root / "shared"
+    fallback_roots = tuple(
+        path
+        for path in sorted(cache_root.glob("*"), reverse=True)
+        if path.is_dir() and path != shared_root
+    )
+    return _ApiCache(shared_root, fallback_roots)
 
 
 def _write_build_reports(
@@ -396,6 +512,10 @@ def _validate_config(config: DatasetBuildConfig) -> None:
         raise ValueError("evaluation_example_limit must be positive or None.")
     if not 1 <= config.api_workers <= 16:
         raise ValueError("api_workers must be between 1 and 16.")
+    if not 1 <= config.crossref_workers <= 2:
+        raise ValueError("crossref_workers must be between 1 and 2.")
+    if config.crossref_delay_seconds < 0:
+        raise ValueError("crossref_delay_seconds must not be negative.")
 
 
 def _optional_string(value: object) -> str | None:

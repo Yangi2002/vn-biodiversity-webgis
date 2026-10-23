@@ -12,6 +12,12 @@ export const API_ENDPOINTS = {
   users: '/users',
   userStatus: (userId: string) => `/users/${encodeURIComponent(userId)}/status`,
   userRole: (userId: string) => `/users/${encodeURIComponent(userId)}/role`,
+  editorRequests: '/editor/requests',
+  editorValidate: '/editor/validate',
+  editorImport: '/editor/import',
+  editorSpecies: '/editor/species',
+  editorSpeciesItem: (sourceTable: string, speciesId: string) =>
+    `/editor/species/${encodeURIComponent(sourceTable)}/${encodeURIComponent(speciesId)}`,
   speciesSearch: '/species/search',
   taxonomySearch: '/taxonomy/search',
   taxonomyTree: '/taxonomy/tree',

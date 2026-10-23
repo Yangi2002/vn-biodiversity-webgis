@@ -6,11 +6,11 @@ import type {
   RoleDefinition,
 } from '../../../data-access/models/auth/auth.model';
 import { DataGovernanceService } from '../../../data-access/services/governance/data-governance.service';
-import { AdminNavbarComponent } from '../components/admin-navbar/admin-navbar.component';
+import { ManagementSidebarComponent } from '../../../shared/components/management-sidebar/management-sidebar.component';
 
 @Component({
   selector: 'app-role-management-page',
-  imports: [AdminNavbarComponent],
+  imports: [ManagementSidebarComponent],
   templateUrl: './role-management.page.html',
   styleUrl: './role-management.page.css',
 })

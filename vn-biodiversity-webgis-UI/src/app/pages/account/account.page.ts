@@ -6,11 +6,11 @@ import { finalize } from 'rxjs';
 import type { UpdateProfileRequest } from '../../data-access/models/auth/auth.model';
 import { AdminAuthService } from '../../data-access/services/auth/admin-auth.service';
 import { SiteHeaderComponent } from '../../shared/components/site-header/site-header.component';
-import { AdminNavbarComponent } from '../admin/components/admin-navbar/admin-navbar.component';
+import { ManagementSidebarComponent } from '../../shared/components/management-sidebar/management-sidebar.component';
 
 @Component({
   selector: 'app-account-page',
-  imports: [FormsModule, AdminNavbarComponent, SiteHeaderComponent],
+  imports: [FormsModule, ManagementSidebarComponent, SiteHeaderComponent],
   templateUrl: './account.page.html',
   styleUrl: './account.page.css',
 })
@@ -19,6 +19,7 @@ export class AccountPage {
   private readonly router = inject(Router);
   protected user = this.auth.currentUser();
   protected readonly isAdministrator = this.auth.hasRole(['administrator']);
+  protected readonly isEditor = this.auth.hasRole(['editor-staff']);
   protected form: UpdateProfileRequest = {
     displayName: this.user?.displayName ?? '',
     email: this.user?.email ?? '',

@@ -1,15 +1,14 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { AdminNavbarComponent } from '../components/admin-navbar/admin-navbar.component';
-import type { AdminTab } from '../components/admin-navbar/admin-navbar.component';
+import { ManagementSidebarComponent } from '../../../shared/components/management-sidebar/management-sidebar.component';
 import type { AdminMainDataTable } from '../services/admin-main-data.store';
 import { AdminMainDataStore } from '../services/admin-main-data.store';
 
 @Component({
   selector: 'app-data-governance-page',
-  imports: [AdminNavbarComponent, DecimalPipe, RouterLink],
+  imports: [ManagementSidebarComponent, DecimalPipe, RouterLink],
   templateUrl: './data-governance.page.html',
   styleUrl: './data-governance.page.css',
 })
@@ -18,7 +17,6 @@ export class DataGovernancePage {
 
   readonly mainTables = this.mainDataStore.mainTables;
   readonly summaries = this.mainDataStore.summaries;
-  readonly activeTab = signal<AdminTab>('data');
 
   constructor() {
     this.mainDataStore.ensureLoaded();
@@ -40,7 +38,4 @@ export class DataGovernancePage {
     this.mainDataStore.loadPage(table, page);
   }
 
-  setActiveTab(tab: AdminTab) {
-    this.activeTab.set(tab);
-  }
 }

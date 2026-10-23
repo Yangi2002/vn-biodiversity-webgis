@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import type { GovernanceRole } from '../../../data-access/models/auth/auth.model';
 import type { ManagedUser } from '../../../data-access/models/user-management.model';
 import { UserManagementService } from '../../../data-access/services/governance/user-management.service';
-import { AdminNavbarComponent } from '../components/admin-navbar/admin-navbar.component';
+import { ManagementSidebarComponent } from '../../../shared/components/management-sidebar/management-sidebar.component';
 
 const ASSIGNABLE_ROLES: { code: GovernanceRole; label: string }[] = [
   { code: 'editor-staff', label: 'Editor Staff' },
@@ -12,7 +12,7 @@ const ASSIGNABLE_ROLES: { code: GovernanceRole; label: string }[] = [
 
 @Component({
   selector: 'app-user-management-page',
-  imports: [AdminNavbarComponent, DatePipe],
+  imports: [ManagementSidebarComponent, DatePipe],
   templateUrl: './user-management.page.html',
   styleUrl: './user-management.page.css',
 })

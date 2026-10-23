@@ -5,8 +5,9 @@ from __future__ import annotations
 import html
 import re
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any, Protocol, Self
 from urllib.parse import urlencode
 
@@ -26,6 +27,7 @@ class LiteratureProvider(Protocol):
 
 class HttpResponse(Protocol):
     status_code: int
+    headers: Mapping[str, str]
 
     def raise_for_status(self) -> None: ...
 
@@ -56,7 +58,10 @@ class CrossrefLiteratureClient:
         self._mailto = mailto.strip() if mailto else None
         self._max_retries = max_retries
         self._owns_client = client is None
-        headers = {"User-Agent": "VN-Biodiversity-WebGIS-AI/0.1"}
+        user_agent = "VN-Biodiversity-WebGIS-AI/0.1"
+        if self._mailto:
+            user_agent = f"{user_agent} (mailto:{self._mailto})"
+        headers = {"User-Agent": user_agent}
         self._client = client or _create_httpx_client(timeout_seconds, headers=headers)
 
     def close(self) -> None:
@@ -275,8 +280,30 @@ def _get_json_with_retry(
             return payload
         if attempt == max_retries:
             response.raise_for_status()
-        time.sleep(0.5 * (2**attempt))
+        time.sleep(_retry_delay_seconds(response, attempt))
     raise RuntimeError("Literature request exhausted without a response.")
+
+
+def _retry_delay_seconds(response: HttpResponse, attempt: int) -> float:
+    """Prefer the provider's Retry-After value, otherwise use bounded backoff."""
+
+    headers = getattr(response, "headers", {})
+    retry_after = headers.get("Retry-After") or headers.get("retry-after")
+    if retry_after:
+        try:
+            return max(0.0, min(float(retry_after), 120.0))
+        except ValueError:
+            try:
+                retry_at = parsedate_to_datetime(retry_after)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=UTC)
+                return max(
+                    0.0,
+                    min((retry_at - datetime.now(UTC)).total_seconds(), 120.0),
+                )
+            except (TypeError, ValueError, OverflowError):
+                pass
+    return min(2.0**attempt, 60.0)
 
 
 def _crossref_year(item: dict[str, Any]) -> int | None:

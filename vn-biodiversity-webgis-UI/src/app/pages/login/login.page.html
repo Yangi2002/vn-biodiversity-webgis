@@ -25,12 +25,12 @@
         <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
       </label>
 
-      @if (errorMessage) {
-        <p class="login-error">{{ errorMessage }}</p>
+      @if (errorMessage()) {
+        <p class="login-error" role="alert" aria-live="assertive">{{ errorMessage() }}</p>
       }
 
-      <button type="submit" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Đang đăng nhập...' : 'Đăng nhập' }}
       </button>
     </form>
 

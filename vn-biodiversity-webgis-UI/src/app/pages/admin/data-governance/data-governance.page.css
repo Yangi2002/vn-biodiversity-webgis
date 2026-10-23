@@ -152,35 +152,6 @@
   border-radius: 18px;
 }
 
-.admin-placeholder {
-  padding: 32px;
-  border: 1px solid #c5ded0;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ffffff, #eef8f0);
-  box-shadow: 0 22px 54px rgba(24, 89, 58, 0.08);
-}
-
-.admin-placeholder p {
-  margin: 0 0 8px;
-  color: #00733e;
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.admin-placeholder h2 {
-  margin: 0 0 12px;
-  color: #10251d;
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 1;
-}
-
-.admin-placeholder span {
-  color: #38574c;
-  line-height: 1.6;
-}
-
 .sql-table-panel header {
   display: flex;
   gap: 18px;

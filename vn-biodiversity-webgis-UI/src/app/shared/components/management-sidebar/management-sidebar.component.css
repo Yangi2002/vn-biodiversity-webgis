@@ -1,0 +1,23 @@
+.management-sidebar { position: sticky; top: 0; display: flex; height: 100vh; flex-direction: column; gap: 16px; padding: 24px 18px; background: #103727; color: #edf8f1; overflow-y: auto; box-sizing: border-box; }
+.management-brand, .workspace-links a, .user-card { display: flex; align-items: center; gap: 12px; }
+.management-brand { padding: 4px 8px 18px; color: inherit; text-decoration: none; }
+.brand-mark, .user-avatar, .nav-icon { display: inline-grid; flex: 0 0 auto; place-items: center; font-weight: 900; }
+.brand-mark { width: 44px; height: 44px; border-radius: 8px; background: #43a66c; color: #fff; box-shadow: 0 10px 22px rgba(0, 0, 0, .18); }
+.management-brand strong, .user-card strong, .nav-copy strong { display: block; font-weight: 900; }
+.management-brand small, .user-card small, .nav-copy small { display: block; margin-top: 3px; color: #afd4bd; font-size: .76rem; font-weight: 700; }
+.section-label { margin: 8px 10px 2px; color: #87b49a; font-size: .7rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.public-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.public-links a { min-width: 0; padding: 9px 10px; border: 1px solid rgba(255,255,255,.1); border-radius: 6px; color: #cfe5d7; font-size: .78rem; font-weight: 800; text-decoration: none; }
+.public-links a:hover, .public-links a.is-active { border-color: rgba(126,214,156,.62); background: rgba(255,255,255,.08); color: #fff; }
+.workspace-links { display: grid; gap: 6px; }
+.workspace-links a { padding: 12px; border-radius: 8px; color: #dcefe3; text-decoration: none; transition: background 160ms ease, box-shadow 160ms ease; }
+.workspace-links a:hover, .workspace-links a.is-active { background: rgba(255,255,255,.1); color: #fff; box-shadow: inset 3px 0 #7ed69c; }
+.nav-icon { width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.16); border-radius: 7px; background: rgba(255,255,255,.08); color: #bce8ca; font-size: .74rem; }
+.user-card { margin-top: auto; padding: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(255,255,255,.07); color: inherit; text-decoration: none; }
+.user-card:hover, .user-card.is-active { border-color: rgba(126,214,156,.62); background: rgba(255,255,255,.14); box-shadow: inset 3px 0 #7ed69c; }
+.user-card > span:last-child { min-width: 0; flex: 1; }
+.user-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-avatar { width: 38px; height: 38px; border-radius: 50%; background: #e5f3ea; color: #1f6f46; font-size: 1.05rem; }
+.settings-gear { margin-left: 6px; color: #9fe1b5; }
+.logout { min-height: 44px; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; background: #2f8f5b; color: #fff; font-weight: 900; cursor: pointer; }
+@media (max-width: 980px) { .management-sidebar { position: relative; height: auto; } }

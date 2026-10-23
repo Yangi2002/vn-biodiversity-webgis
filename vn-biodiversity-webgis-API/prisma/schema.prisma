@@ -328,6 +328,24 @@ model governance_role_permissions {
   @@id([role_code, permission_code])
 }
 
+model species_change_requests {
+  request_id   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  submitted_by String   @db.Uuid
+  source_table String
+  species_id   String
+  action_type  String
+  payload      Json
+  status       String   @default("pending")
+  submitted_at DateTime @default(now()) @db.Timestamptz(6)
+  reviewed_by  String?  @db.Uuid
+  reviewed_at  DateTime? @db.Timestamptz(6)
+  review_note  String?
+
+  @@index([submitted_by, submitted_at(sort: Desc)], map: "idx_species_change_requests_submitter")
+  @@index([status, submitted_at(sort: Desc)], map: "idx_species_change_requests_status")
+  @@index([source_table, species_id], map: "idx_species_change_requests_species")
+}
+
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model animal_db_vn {
   source_loai                     String?

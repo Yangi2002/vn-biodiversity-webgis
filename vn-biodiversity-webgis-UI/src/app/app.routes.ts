@@ -15,6 +15,7 @@ import { NatureReservesPage } from './pages/nature-reserves/nature-reserves.page
 import { NatureReserveDetailPage } from './pages/nature-reserve-detail/nature-reserve-detail.page';
 import { RegisterPage } from './pages/register/register.page';
 import { AccountPage } from './pages/account/account.page';
+import { editorRoutes } from './pages/editor/editor.routes';
 
 export const routes: Routes = [
   {
@@ -101,5 +102,15 @@ export const routes: Routes = [
     },
     children: adminRoutes,
     title: 'Admin',
+  },
+  {
+    path: 'editor',
+    canActivate: [adminAuthGuard, adminPermissionGuard],
+    data: {
+      roles: ['editor-staff'],
+      permissions: ['species.view.full'],
+    },
+    children: editorRoutes,
+    title: 'Biên tập dữ liệu',
   },
 ];
