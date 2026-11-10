@@ -53,6 +53,8 @@ class RetrievalComparison:
     dense: RetrievalMetrics
     hybrid: RetrievalMetrics
     hybrid_reranked: RetrievalMetrics | None
+    keyword_weight: float = 1.0
+    diagnosis: dict[str, object] | None = None
 
 
 def embed_dataset(
@@ -159,6 +161,7 @@ def evaluate_retrieval_variants(
     batch_size: int = 16,
     device: str | None = None,
     reranker_model: str | None = None,
+    keyword_weight: float = 1.0,
 ) -> RetrievalComparison:
     """Compare dense-only, BM25+dense RRF, and optional reranking."""
 
@@ -168,6 +171,8 @@ def evaluate_retrieval_variants(
         raise ValueError("Candidate limit must be greater than or equal to retrieval limit.")
     if example_limit is not None and example_limit < 1:
         raise ValueError("Example limit must be positive when provided.")
+    if keyword_weight <= 0:
+        raise ValueError("Keyword weight must be positive.")
 
     dataset_manifest = _dataset_manifest(dataset_directory)
     embedding_manifest = json.loads(
@@ -196,6 +201,13 @@ def evaluate_retrieval_variants(
     dense_results: list[tuple[RetrievalHit, ...]] = []
     hybrid_results: list[tuple[RetrievalHit, ...]] = []
     hybrid_candidate_groups: list[tuple[RetrievalHit, ...]] = []
+    diagnosis: dict[str, object] = {
+        "dense_hit_hybrid_miss": 0,
+        "hybrid_hit_dense_miss": 0,
+        "both_miss": 0,
+        "keyword_hit_at_k": 0,
+        "sample_dense_hit_hybrid_miss": [],
+    }
     reranker = (
         CrossEncoderReranker(reranker_model, batch_size=batch_size, device=device)
         if reranker_model
@@ -209,7 +221,29 @@ def evaluate_retrieval_variants(
             keyword_candidates,
             dense_candidates,
             limit=candidate_limit,
+            keyword_weight=keyword_weight,
         )
+        relevant = set(example.relevant_document_ids)
+        dense_hit = any(hit.document.document_id in relevant for hit in dense_candidates[:limit])
+        hybrid_hit = any(hit.document.document_id in relevant for hit in hybrid_candidates[:limit])
+        keyword_hit = any(hit.document.document_id in relevant for hit in keyword_candidates[:limit])
+        diagnosis["keyword_hit_at_k"] += keyword_hit
+        if dense_hit and not hybrid_hit:
+            diagnosis["dense_hit_hybrid_miss"] += 1
+            samples = diagnosis["sample_dense_hit_hybrid_miss"]
+            if len(samples) < 20:
+                samples.append({
+                    "example_id": example.example_id,
+                    "question": example.question,
+                    "relevant_document_ids": sorted(relevant),
+                    "dense_top_ids": [hit.document.document_id for hit in dense_candidates[:limit]],
+                    "keyword_top_ids": [hit.document.document_id for hit in keyword_candidates[:limit]],
+                    "hybrid_top_ids": [hit.document.document_id for hit in hybrid_candidates[:limit]],
+                })
+        elif hybrid_hit and not dense_hit:
+            diagnosis["hybrid_hit_dense_miss"] += 1
+        elif not dense_hit and not hybrid_hit:
+            diagnosis["both_miss"] += 1
         dense_results.append(dense_candidates[:limit])
         hybrid_results.append(hybrid_candidates[:limit])
         hybrid_candidate_groups.append(hybrid_candidates)
@@ -238,6 +272,8 @@ def evaluate_retrieval_variants(
         hybrid_reranked=(
             _retrieval_metrics(examples, reranked_results) if reranker is not None else None
         ),
+        keyword_weight=keyword_weight,
+        diagnosis=diagnosis,
     )
     return comparison
 

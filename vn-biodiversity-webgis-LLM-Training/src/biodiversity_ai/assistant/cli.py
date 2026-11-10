@@ -10,6 +10,15 @@ from pathlib import Path
 
 from biodiversity_ai.assistant.contracts import DatasetPartition
 from biodiversity_ai.assistant.dataset_build import DatasetBuildConfig, build_real_dataset
+from biodiversity_ai.assistant.labeling.sft import (
+    build_sft_gap_examples,
+    combine_sft_reviews,
+    curate_sft_training,
+    export_sft_review_queue,
+    export_approved_sft,
+    prepare_sft_review,
+    review_source_snapshots,
+)
 from biodiversity_ai.assistant.rag_workflow import (
     answer_with_pgvector_rag,
     answer_with_local_rag,
@@ -23,6 +32,39 @@ from biodiversity_ai.assistant.rag_workflow import (
 def main(argv: Sequence[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
+    if args.command == "prepare-sft-review":
+        _print_json(prepare_sft_review(
+            args.dataset_directory, args.output,
+            partition=DatasetPartition(args.partition), limit=args.limit,
+            balanced=args.balanced,
+        ))
+        return 0
+    if args.command == "export-approved-sft":
+        _print_json(export_approved_sft(args.review_file, args.output))
+        return 0
+    if args.command == "review-sft-snapshots":
+        _print_json(review_source_snapshots(args.review_file, args.output))
+        return 0
+    if args.command == "build-sft-gaps":
+        _print_json(build_sft_gap_examples(
+            args.review_file, args.output,
+            conservation_limit=args.conservation_limit,
+            abstention_limit=args.abstention_limit,
+        ))
+        return 0
+    if args.command == "combine-sft-reviews":
+        _print_json(combine_sft_reviews(args.base_file, args.gaps_file, args.output))
+        return 0
+    if args.command == "curate-sft-training":
+        _print_json(curate_sft_training(
+            args.train_file, args.validation_file, args.output, args.report,
+            empty_evidence_limit=args.empty_evidence_limit,
+            wrong_facet_limit=args.wrong_facet_limit,
+        ))
+        return 0
+    if args.command == "export-sft-review-queue":
+        _print_json(export_sft_review_queue(args.review_file, args.output))
+        return 0
     if args.command == "build-dataset":
         summary = build_real_dataset(
             DatasetBuildConfig(
@@ -67,6 +109,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             batch_size=args.batch_size,
             device=args.device,
             reranker_model=args.reranker_model,
+            keyword_weight=args.keyword_weight,
         )
         write_comparison(args.output, comparison)
         _print_json(asdict(comparison))
@@ -117,6 +160,56 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="biodiversity-ai")
     commands = parser.add_subparsers(dest="command")
+    sft_review = commands.add_parser(
+        "prepare-sft-review", help="Prepare source-grounded SFT labels for human review."
+    )
+    sft_review.add_argument("--dataset-directory", type=Path, required=True)
+    sft_review.add_argument("--output", type=Path, required=True)
+    sft_review.add_argument(
+        "--partition", choices=("train", "validation"), default="train"
+    )
+    sft_review.add_argument("--limit", type=int)
+    sft_review.add_argument("--balanced", action="store_true")
+
+    sft_export = commands.add_parser(
+        "export-approved-sft", help="Export explicitly approved SFT chat messages."
+    )
+    sft_export.add_argument("--review-file", type=Path, required=True)
+    sft_export.add_argument("--output", type=Path, required=True)
+
+    sft_snapshot = commands.add_parser(
+        "review-sft-snapshots", help="Check extractive drafts against stored source snapshots."
+    )
+    sft_snapshot.add_argument("--review-file", type=Path, required=True)
+    sft_snapshot.add_argument("--output", type=Path, required=True)
+
+    sft_gaps = commands.add_parser(
+        "build-sft-gaps", help="Prepare source-backed conservation and abstention examples."
+    )
+    sft_gaps.add_argument("--review-file", type=Path, required=True)
+    sft_gaps.add_argument("--output", type=Path, required=True)
+    sft_gaps.add_argument("--conservation-limit", type=int, default=80)
+    sft_gaps.add_argument("--abstention-limit", type=int, default=50)
+    sft_combine = commands.add_parser(
+        "combine-sft-reviews", help="Combine one partition of reviewed and gap examples."
+    )
+    sft_combine.add_argument("--base-file", type=Path, required=True)
+    sft_combine.add_argument("--gaps-file", type=Path, required=True)
+    sft_combine.add_argument("--output", type=Path, required=True)
+    sft_curate = commands.add_parser(
+        "curate-sft-training", help="Screen v2 SFT train and add abstention review cases."
+    )
+    sft_curate.add_argument("--train-file", type=Path, required=True)
+    sft_curate.add_argument("--validation-file", type=Path, required=True)
+    sft_curate.add_argument("--output", type=Path, required=True)
+    sft_curate.add_argument("--report", type=Path, required=True)
+    sft_curate.add_argument("--empty-evidence-limit", type=int, default=25)
+    sft_curate.add_argument("--wrong-facet-limit", type=int, default=25)
+    sft_queue = commands.add_parser(
+        "export-sft-review-queue", help="Extract held SFT examples for manual review."
+    )
+    sft_queue.add_argument("--review-file", type=Path, required=True)
+    sft_queue.add_argument("--output", type=Path, required=True)
     build = commands.add_parser(
         "build-dataset",
         help="Build a versioned, read-only S3-AI02 dataset.",
@@ -169,6 +262,7 @@ def _parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--batch-size", type=int, default=16)
     evaluate.add_argument("--device")
     evaluate.add_argument("--reranker-model")
+    evaluate.add_argument("--keyword-weight", type=float, default=1.0)
     evaluate.add_argument(
         "--output",
         type=Path,
