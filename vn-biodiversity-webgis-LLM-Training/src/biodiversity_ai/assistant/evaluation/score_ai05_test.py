@@ -34,6 +34,11 @@ def score(input_path: Path, gold_path: Path, predictions_path: Path, output: Pat
         raise ValueError("Input, gold, and predictions must have the same nonzero row count.")
     if len({row["example_id"] for row in prompts}) != len(prompts):
         raise ValueError("Duplicate test example_id.")
+    run_config = predictions[0].get("run_config")
+    if any(row.get("run_config") != run_config for row in predictions):
+        raise ValueError("Predictions mix different experiment configurations.")
+    if run_config and run_config.get("input_sha256") != _hash(input_path):
+        raise ValueError("Recorded input hash does not match the scoring input.")
 
     totals = {"base": Counter(), "v2": Counter()}
     review = []
@@ -45,18 +50,26 @@ def score(input_path: Path, gold_path: Path, predictions_path: Path, output: Pat
             raise ValueError(f"Test row mismatch at {index}.")
         if prompt["evidence"] != prediction["evidence"]:
             raise ValueError(f"Evidence mismatch at test row {index}.")
-        allowed = {int(item["number"]) for item in prompt["evidence"]}
+        allowed = {int(item["number"]) for item in prediction.get("processed_evidence", prompt["evidence"])}
         flags = {}
         for model_name in ("base", "v2"):
             answer = prediction[model_name]
             citations = {int(value) for value in CITATION.findall(answer)}
             model_flags = {
-                "missing_citation": bool(answer.strip()) and not citations,
+                "missing_citation": bool(answer.strip()) and not citations and not prediction.get("policy_refusal"),
                 "invalid_citation": bool(citations - allowed),
+                "empty_answer": not bool(answer.strip()),
             }
             flags[model_name] = model_flags
             for flag, value in model_flags.items():
                 totals[model_name][flag] += value
+            generation = prediction.get("generation", {}).get(model_name)
+            totals[model_name]["generation_metadata_missing"] += generation is None
+            if generation is not None:
+                totals[model_name]["preprocessing_abstentions"] += generation.get("finish_reason") == "preprocessing_abstention"
+                totals[model_name]["preprocessing_partial_answers"] += generation.get("finish_reason") == "preprocessing_partial_answer"
+                totals[model_name]["token_limit_reached"] += generation.get("finish_reason") == "token_limit"
+                totals[model_name]["input_truncated"] += bool(generation.get("input_truncated"))
         review.append({
             "row": index,
             "example_id": prompt["example_id"],
@@ -68,11 +81,22 @@ def score(input_path: Path, gold_path: Path, predictions_path: Path, output: Pat
             "base": prediction["base"],
             "v2": prediction["v2"],
             "mechanical_flags": flags,
+            "generation": prediction.get("generation"),
+            "source_quality_flags": prediction.get("source_quality_flags"),
+            "processed_evidence": prediction.get("processed_evidence"),
+            "preprocessing": prediction.get("preprocessing"),
+            "policy_refusal": prediction.get("policy_refusal"),
+            "policy_answer": prediction.get("policy_answer"),
             "human_base_factuality": None,
             "human_v2_factuality": None,
             "human_base_groundedness": None,
             "human_v2_groundedness": None,
             "human_citation_accuracy": None,
+            "human_base_aspect_relevance": None,
+            "human_v2_aspect_relevance": None,
+            "human_base_completeness": None,
+            "human_v2_completeness": None,
+            "human_truncation_review": None,
             "human_notes": "",
         })
 
@@ -83,6 +107,8 @@ def score(input_path: Path, gold_path: Path, predictions_path: Path, output: Pat
     report = {
         "status": "awaiting_human_factuality_review",
         "partition": "test",
+        "evaluation_kind": (run_config or {}).get("evaluation_kind", "original_test"),
+        "run_config": run_config,
         "evidence_mode": "oracle_relevant_documents",
         "examples": len(review),
         "input_sha256": _hash(input_path),
@@ -93,6 +119,10 @@ def score(input_path: Path, gold_path: Path, predictions_path: Path, output: Pat
             "Oracle evidence measures generation, not end-to-end retrieval.",
             "Citation-number validity does not establish claim support.",
             "Factual accuracy and groundedness require human review.",
+            "Aspect relevance and completeness are manual verdicts, not exact-match scores.",
+            "Missing generation metadata means truncation is unknown, not absent.",
+            "Preprocessing abstentions are pipeline decisions, not learned model refusals.",
+            "Preprocessing partial answers are source extracts, not generated model answers.",
         ],
     }
     (output / "metrics.json").write_text(
