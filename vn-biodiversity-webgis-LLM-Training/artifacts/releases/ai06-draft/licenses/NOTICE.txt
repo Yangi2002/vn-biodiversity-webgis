@@ -1,0 +1,12 @@
+STAC_BOT-1.0
+Built with Qwen.
+
+Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT, Copyright (c) Alibaba Cloud. All Rights Reserved.
+
+Modification notice: this project adds a biodiversity-domain LoRA adapter
+(research version sft-v2), tokenizer artifacts and separately versioned RAG
+configuration. It does not claim to have pretrained Qwen from scratch.
+The branded archive retains the evaluated v2 adapter weights unchanged.
+See QWEN-RESEARCH-LICENSE.txt for upstream terms.
+
+This draft does not grant public redistribution or commercial clearance.

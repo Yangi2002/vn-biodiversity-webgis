@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "brand": "STAC_BOT",
+  "display_name": "STAC_BOT-1.0",
+  "model_id": "stac-bot",
+  "target_release_version": "1.0.0",
+  "release_version": "1.0.0",
+  "release_date": "2026-11-12",
+  "status": "released_internal_research_only",
+  "ai06_status": "complete_internal_artifact_release",
+  "accepted_limitations": ["Training revision was not recorded and could not be recovered; no retraining required for packaging.", "Runtime integration and execution verification belong to AI07.", "Not approved for public or commercial distribution."],
+  "branding_status": "confirmed_by_owner",
+  "updated_date": "2026-11-12",
+  "created_date": "2026-11-11",
+  "public_distribution_approved": false,
+  "commercial_use_approved": false,
+  "base_model": {
+    "upstream": "Qwen/Qwen2.5-3B-Instruct",
+    "training_checkpoint": "unsloth/Qwen2.5-3B-Instruct-unsloth-bnb-4bit",
+    "revision": null,
+    "license": "qwen-research"
+  },
+  "adapter": {
+    "research_version": "sft-v2",
+    "file": "STAC_BOT-1.0.zip",
+    "sha256": "b13739f416e6e96d57c451197181c798640543f57ca86c3f3e07aa0bc8fb96b5",
+    "weights_sha256": "08806b9171ab1786d622138f9b4e546bb82ad9ef41f975f9220056511693ccee",
+    "peft_type": "LORA",
+    "rank": 16,
+    "alpha": 16,
+    "dropout": 0,
+    "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+  },
+  "dataset": {
+    "version": "v0.1.0",
+    "corpus_hash": "2d672a3d1ac210135195e2adf302ce7dc133459b56f873b936f93cbec34603f6",
+    "included_in_bundle": false,
+    "rights_clearance": "pending_source_by_source_review"
+  },
+  "configuration": "runtime-profile.json",
+  "model_card": "MODEL_CARD.md",
+  "evaluation": "evaluation",
+  "environment": "environment/provenance.json",
+  "revision_provenance": "revisions.json",
+  "license_inventory": "licenses/INVENTORY.md",
+  "readiness": {
+    "adapter_archived": true,
+    "base_weights_bundled": false,
+    "endpoint_implemented": false,
+    "runtime_profile_verified": false,
+    "dependency_lock_verified": false,
+    "upstream_revisions_pinned": false,
+    "license_notice_bundle_complete": false
+  }
+}

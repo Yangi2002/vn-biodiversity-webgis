@@ -1,0 +1,14 @@
+{
+  "dataset_version": "v0.1.0",
+  "selected_retrieval": "dense",
+  "embedding_model": "BAAI/bge-m3",
+  "top_k": 5,
+  "validation_examples": 500,
+  "validation_metrics": {
+    "recall_at_k": 0.968,
+    "mean_reciprocal_rank": 0.8233333333333334
+  },
+  "generator_model": "Qwen/Qwen2.5-3B-Instruct",
+  "generator_status": "pending_baseline_run",
+  "selection_reason": "Dense retrieval outperformed hybrid and hybrid reranked on validation."
+}

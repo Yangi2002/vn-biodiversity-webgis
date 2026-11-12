@@ -1,0 +1,18 @@
+{
+  "recorded_date": "2026-11-12",
+  "source": "Owner-provided Kaggle environment-summary.txt and pip-freeze.txt",
+  "scope": "environment_at_export_time",
+  "python": "3.13.15",
+  "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+  "summary": "environment-summary.txt",
+  "full_snapshot": "pip-freeze.txt",
+  "training_environment_proven": false,
+  "installable_lock_verified": false,
+  "notes": [
+    "Core package versions agree between the two supplied files.",
+    "Full snapshot includes unrelated Kaggle packages and a /colabtools local dependency.",
+    "Do not install this snapshot wholesale on Windows.",
+    "torchao 0.10.0 is recorded as installed, not certified compatible or required.",
+    "No installation, model execution or compatibility test was performed."
+  ]
+}

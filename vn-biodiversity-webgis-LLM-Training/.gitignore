@@ -5,11 +5,32 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Training data and generated model artifacts stay local by default.
-datasets/*
-!datasets/.gitkeep
-artifacts/*
-!artifacts/.gitkeep
+# Credentials and machine-local state.
+.env
+.env.*
+!.env.example
+*token*.secret
+credentials.json
+kaggle.json
+*.pem
+*.key
+venv/
+*.tmp
+*.log
+
+# API caches, large embeddings and disposable bundles.
+artifacts/dataset-build-cache/
+artifacts/kaggle/
+artifacts/smoke-datasets/
+artifacts/**/*.npy
+artifacts/**/*.npz
+
+# Pending source rights review: includes evidence in evaluation outputs.
+datasets/**/*.jsonl
+artifacts/**/*.jsonl
+# Reports may include original source text or request details.
+datasets/**/quality-report.json
+datasets/**/build-report.json
 
 # Notebook checkpoints are generated locally.
 .ipynb_checkpoints/

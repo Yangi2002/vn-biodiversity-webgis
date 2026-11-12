@@ -1,0 +1,73 @@
+{
+  "status": "mechanical_review_only",
+  "dataset_partition": "validation",
+  "dataset_examples": 138,
+  "model_base": "unsloth/Qwen2.5-3B-Instruct-unsloth-bnb-4bit",
+  "adapter_peft_type": "LORA",
+  "adapter_rank": 16,
+  "inputs_sha256": {
+    "ai04-v2-138.jsonl": "ebd0f2911602b5a3af7fef0490f1e166736f78d440de33654076965c25a3868a",
+    "ai04-pilot-100.jsonl": "e9364e98864e9208203bcc83ac9b86300d69cbd75be9d56987838e505397ec5d",
+    "ai04-pilot-gaps-38.jsonl": "fec2214aa1369fd08599e27fab2b62cdfb54e73ed367a3b3757a21688c84ea70",
+    "validation-v2-review.jsonl": "7f547378df9b3665123ae0333372e8cb306eb5d66f375dedce91668759869cbe",
+    "retrieval-validation.json": "5c017bced6684952a03e230e8d9ebbd86bafa9d995413fe9b02f7bead837175d",
+    "biodiversity-sft-v2-adapter.zip": "1828a587f68ec6e830320ee257a16c1c6185eec8e4a246e2746d0adf945302d9"
+  },
+  "retrieval": {
+    "dense": {
+      "evaluated_examples": 500,
+      "recall_at_k": 0.968,
+      "mean_reciprocal_rank": 0.8233333333333334
+    },
+    "hybrid": {
+      "evaluated_examples": 500,
+      "recall_at_k": 0.88,
+      "mean_reciprocal_rank": 0.6213333333333334
+    },
+    "hybrid_reranked": {
+      "evaluated_examples": 500,
+      "recall_at_k": 0.954,
+      "mean_reciprocal_rank": 0.7786666666666666
+    }
+  },
+  "generation": {
+    "base": {
+      "examples": 138,
+      "expected_abstentions": 20,
+      "correct_abstentions": 4,
+      "false_abstentions": 3,
+      "missing_citations_on_answered": 68,
+      "invalid_citations": 1,
+      "exact_reference_matches": 0
+    },
+    "pilot": {
+      "examples": 138,
+      "expected_abstentions": 20,
+      "correct_abstentions": 0,
+      "false_abstentions": 0,
+      "missing_citations_on_answered": 1,
+      "invalid_citations": 0,
+      "exact_reference_matches": 49
+    },
+    "v2": {
+      "examples": 138,
+      "expected_abstentions": 20,
+      "correct_abstentions": 19,
+      "false_abstentions": 0,
+      "missing_citations_on_answered": 0,
+      "invalid_citations": 0,
+      "exact_reference_matches": 91
+    }
+  },
+  "review_reason_counts": {
+    "differs_from_reference_review_facts": 27,
+    "source_contains_web_noise": 5,
+    "failed_to_abstain": 1
+  },
+  "limitations": [
+    "Exact reference match is a wording proxy, not factual accuracy.",
+    "Citation-number validity does not prove the cited source supports the claim.",
+    "Factuality, groundedness, hallucination, and citation accuracy require human review.",
+    "These 138 examples are validation, not a sealed final test set."
+  ]
+}

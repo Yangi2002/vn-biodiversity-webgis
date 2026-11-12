@@ -1,0 +1,8 @@
+{
+  "dataset_version": "v0.1.0",
+  "dataset_corpus_hash": "2d672a3d1ac210135195e2adf302ce7dc133459b56f873b936f93cbec34603f6",
+  "embedding_model": "BAAI/bge-m3",
+  "dimension": 1024,
+  "query_prefix": "",
+  "document_prefix": ""
+}

@@ -1,0 +1,12 @@
+{
+  "observed_date": "2026-11-12",
+  "source": "D:/Duong/AI-Cache/huggingface/hub",
+  "status": "observations_only_not_training_pins",
+  "models": [
+    {"id": "unsloth/Qwen2.5-3B-Instruct-unsloth-bnb-4bit", "verified_training_revision": null, "cached_revisions": [], "note": "Adapter config revision is null; checkpoint not found in inspected local cache."},
+    {"id": "Qwen/Qwen2.5-3B-Instruct", "verified_training_revision": null, "cached_revisions": ["aa8e72537993ba99e69dfaafa59ed015b17504d1"]},
+    {"id": "BAAI/bge-m3", "verified_embedding_revision": null, "cached_revisions": ["5617a9f61b028005a4858fdac845db406aefb181", "9a0624b896d81da7492a910ffa53731274b6cf3d"]},
+    {"id": "BAAI/bge-reranker-v2-m3", "verified_evaluation_revision": null, "cached_revisions": ["953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"]}
+  ],
+  "next_evidence": "Recover exact snapshot paths or commit hashes from the original Kaggle training/evaluation session logs. Current Hub main is not proof of historical use."
+}

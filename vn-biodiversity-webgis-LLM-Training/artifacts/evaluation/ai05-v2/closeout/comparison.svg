@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="340" viewBox="0 0 900 340">
+ <rect width="900" height="340" fill="white"/>
+ <g font-family="Arial, sans-serif" fill="#202020">
+  <text x="24" y="32" font-size="22">AI05 regression comparison: 100 shared questions</text>
+  <text x="24" y="57" font-size="14">File v2 = prompt v1; file v3 = preprocessing v3. Lower counts are preferable.</text>
+  <rect x="24" y="76" width="16" height="16" fill="#557ca6"/><text x="48" y="89">File v2</text>
+  <rect x="150" y="76" width="16" height="16" fill="#26816b"/><text x="174" y="89">File v3</text>
+  <text x="24" y="125">Missing citation*</text>
+  <rect x="250" y="108" width="240" height="18" fill="#557ca6"/><text x="500" y="123">2</text>
+  <rect x="250" y="131" width="120" height="18" fill="#26816b"/><text x="380" y="146">1</text>
+  <text x="24" y="184">Token limit reached</text>
+  <rect x="250" y="167" width="360" height="18" fill="#557ca6"/><text x="620" y="182">3</text>
+  <rect x="250" y="190" width="360" height="18" fill="#26816b"/><text x="620" y="205">3</text>
+  <text x="24" y="243">XML in answer</text>
+  <rect x="250" y="226" width="360" height="18" fill="#557ca6"/><text x="620" y="241">3</text>
+  <text x="250" y="264">0</text>
+  <text x="24" y="301" font-size="13">*Excludes 3 policy abstentions in v3. V3 also has 19 rule-based partial answers (no model call).</text>
+  <text x="24" y="322" font-size="13">These are mechanical checks, not factual accuracy. V3 still has repetition and truncated answers.</text>
+ </g>
+</svg>

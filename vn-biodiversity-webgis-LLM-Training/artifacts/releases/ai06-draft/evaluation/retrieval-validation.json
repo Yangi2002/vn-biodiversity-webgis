@@ -1,0 +1,23 @@
+{
+  "dataset_version": "v0.1.0",
+  "partition": "validation",
+  "embedding_model": "BAAI/bge-m3",
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "top_k": 5,
+  "candidate_limit": 20,
+  "dense": {
+    "evaluated_examples": 500,
+    "recall_at_k": 0.968,
+    "mean_reciprocal_rank": 0.8233333333333334
+  },
+  "hybrid": {
+    "evaluated_examples": 500,
+    "recall_at_k": 0.88,
+    "mean_reciprocal_rank": 0.6213333333333334
+  },
+  "hybrid_reranked": {
+    "evaluated_examples": 500,
+    "recall_at_k": 0.954,
+    "mean_reciprocal_rank": 0.7786666666666666
+  }
+}

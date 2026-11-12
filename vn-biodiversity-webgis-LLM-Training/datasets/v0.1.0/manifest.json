@@ -1,0 +1,23 @@
+{
+  "version": "v0.1.0",
+  "created_at": "2026-10-23T02:07:45.980353+00:00",
+  "schema_version": "1.0",
+  "source_snapshot": "postgresql:vn-biodiversity-webgis-DB:public@2026-10-23T02:07:40Z",
+  "corpus_hash": "2d672a3d1ac210135195e2adf302ce7dc133459b56f873b936f93cbec34603f6",
+  "document_counts": {
+    "train": 10444,
+    "validation": 12271,
+    "test": 1812
+  },
+  "example_counts": {
+    "train": 8753,
+    "validation": 10615,
+    "test": 1507
+  },
+  "providers": [
+    "PostgreSQL",
+    "GBIF",
+    "Crossref",
+    "Europe PMC"
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "input_train": 1130,
+  "validation_unchanged": 138,
+  "train_validation_entity_overlap": 0,
+  "curated_train": 1180,
+  "automatically_approved": 1156,
+  "pending_human_review": 24,
+  "added_no_evidence": 25,
+  "added_same_species_wrong_facet": 25,
+  "existing_cross_species": 50,
+  "issue_counts": {
+    "answer_not_in_source_snapshot": 1,
+    "conflicting_status_codes": 2,
+    "historical_status_needs_review": 21
+  },
+  "pending_examples": [
+    {
+      "example_id": "qa-caba6a93ae61d05911a1",
+      "question": "Hãy mô tả tổng quan về Cá cóc sần thái.",
+      "issues": [
+        "answer_not_in_source_snapshot"
+      ]
+    },
+    {
+      "example_id": "qa-f8f67680b19af83344c8",
+      "question": "Tình trạng và biện pháp bảo tồn Lá dâng hoa nhật là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-c12d1181050f91f6f6c3",
+      "question": "Tình trạng và biện pháp bảo tồn Kháo lá to là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-a6ccdb53e3ad0330d277",
+      "question": "Tình trạng và biện pháp bảo tồn Nhọc trái khớp lá mác là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-2862dfb27e569752814d",
+      "question": "Tình trạng và biện pháp bảo tồn Cò kén là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-c977c29c5415b6567229",
+      "question": "Tình trạng và biện pháp bảo tồn Thông nước là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-df9964446033f4c5509c",
+      "question": "Tình trạng và biện pháp bảo tồn Sa mộc dầu là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-791f655670c94cd668c1",
+      "question": "Tình trạng và biện pháp bảo tồn Tuế balansa là gì?",
+      "issues": [
+        "conflicting_status_codes"
+      ]
+    },
+    {
+      "example_id": "qa-8a41d82a321c91450e5d",
+      "question": "Tình trạng và biện pháp bảo tồn Thông đỏ lá dài là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-d856798a4866aaf1b14f",
+      "question": "Tình trạng và biện pháp bảo tồn Hoàng đàn là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-9d300bd4db87b1dbb155",
+      "question": "Tình trạng và biện pháp bảo tồn Me lưỡi mác là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-d72904736948b7d0364e",
+      "question": "Tình trạng và biện pháp bảo tồn Hồi chè là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-7ac4d42a494760a5bccb",
+      "question": "Tình trạng và biện pháp bảo tồn Dây củ chi là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-482013b7c272fd6fff73",
+      "question": "Tình trạng và biện pháp bảo tồn Cúc hồng đào kampot là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-9f8445e02fd2b6d4eaa4",
+      "question": "Tình trạng và biện pháp bảo tồn Sơn đào là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-4d4ff4d8073949e65f4f",
+      "question": "Tình trạng và biện pháp bảo tồn Đỏ giam là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-35771283771a55c50a7d",
+      "question": "Tình trạng và biện pháp bảo tồn Cây ô rô bà là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-8ec953f4e56010ef8610",
+      "question": "Tình trạng và biện pháp bảo tồn Đơn mạng là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-e5bb1390b51986ff733d",
+      "question": "Tình trạng và biện pháp bảo tồn Tuế xẻ đôi là gì?",
+      "issues": [
+        "conflicting_status_codes"
+      ]
+    },
+    {
+      "example_id": "qa-4743229333c457122741",
+      "question": "Tình trạng và biện pháp bảo tồn Màu cau trắng là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-d708e66c26c8b65156cc",
+      "question": "Tình trạng và biện pháp bảo tồn Sơn tần là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-e18c7d1fdc70f4822d07",
+      "question": "Tình trạng và biện pháp bảo tồn Cách hoa petelot là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-bb0c4d475fab964b6e20",
+      "question": "Tình trạng và biện pháp bảo tồn Dẹ quả tròn là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    },
+    {
+      "example_id": "qa-136e8f9b30f7d4dc27f9",
+      "question": "Tình trạng và biện pháp bảo tồn Đảng sâm là gì?",
+      "issues": [
+        "historical_status_needs_review"
+      ]
+    }
+  ],
+  "warning": "Approval is automated source-snapshot screening, not scientific verification."
+}

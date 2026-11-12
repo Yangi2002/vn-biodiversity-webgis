@@ -1,0 +1,10 @@
+{
+  "dataset_version": "v0.1.0",
+  "corpus_hash": "2d672a3d1ac210135195e2adf302ce7dc133459b56f873b936f93cbec34603f6",
+  "partition": "test",
+  "evidence_mode": "oracle_relevant_documents",
+  "selection": "lowest SHA-256(example_id), first N eligible",
+  "examples": 100,
+  "input_sha256": "b36337ba90a92947380c8ea7f892cecb1623718365e2d815d9e22913c83ed334",
+  "warning": "Oracle-evidence generation isolates the generator. It is not an end-to-end retrieval-plus-generation score."
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "model_id": "stac-bot",
+  "model_version": "1.0.0",
+  "profile_id": "research-dense-sft-v2",
+  "status": "declarative_draft_not_connected_to_runtime",
+  "generator": {
+    "base_model": "unsloth/Qwen2.5-3B-Instruct-unsloth-bnb-4bit",
+    "adapter_archive": "STAC_BOT-1.0.zip",
+    "load_in_4bit": true,
+    "max_sequence_length": 2048,
+    "input_token_budget": 1800,
+    "max_new_tokens": 180,
+    "do_sample": false,
+    "tokenizer": "from_adapter_archive",
+    "prompt_integration_status": "must_match_original_evaluated_prompt_in_AI07",
+    "preprocessing_v3_enabled": false
+  },
+  "retrieval": {
+    "default_mode": "dense",
+    "store": "pgvector",
+    "embedding_model": "BAAI/bge-m3",
+    "embedding_revision": null,
+    "dimensions": 1024,
+    "top_k": 5,
+    "keyword": {"enabled": false, "research_implementation": "BM25"},
+    "reranker": {"enabled": false, "research_model": "BAAI/bge-reranker-v2-m3"},
+    "serving_collection": null,
+    "visibility_policy": "derived_from_authenticated_server_context"
+  },
+  "experimental_profiles": [
+    {"id": "ai05-preprocess-regression-v3", "promoted": false,
+     "reason": "Local improvements with repetition and truncation regressions"}
+  ],
+  "serving": {
+    "endpoint": null,
+    "implementation_task": "S3-AI07",
+    "authorization_owner": "NestJS",
+    "allow_client_visibility_override": false,
+    "response_fields_planned": ["answer", "citations", "status", "model_id", "model_version", "retrieval_profile", "request_id"]
+  }
+}

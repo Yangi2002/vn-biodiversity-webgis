@@ -1,0 +1,24 @@
+{
+  "status": "awaiting_human_factuality_review",
+  "partition": "test",
+  "evidence_mode": "oracle_relevant_documents",
+  "examples": 100,
+  "input_sha256": "b36337ba90a92947380c8ea7f892cecb1623718365e2d815d9e22913c83ed334",
+  "gold_sha256": "bc617569da4d85be3bab86b127d3d50d246c7466883541180c50e5a2abcce07e",
+  "predictions_sha256": "5a234805356d8d72e78f14dce7df98a3c2f33ded4385eb41faa1a300430d97f2",
+  "mechanical": {
+    "base": {
+      "missing_citation": 43,
+      "invalid_citation": 1
+    },
+    "v2": {
+      "missing_citation": 2,
+      "invalid_citation": 0
+    }
+  },
+  "limitations": [
+    "Oracle evidence measures generation, not end-to-end retrieval.",
+    "Citation-number validity does not establish claim support.",
+    "Factual accuracy and groundedness require human review."
+  ]
+}

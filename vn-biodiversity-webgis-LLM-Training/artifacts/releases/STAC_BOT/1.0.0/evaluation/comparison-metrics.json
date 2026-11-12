@@ -1,0 +1,32 @@
+{
+  "scope": "regression_on_previously_seen_oracle_evidence_test",
+  "examples": 100,
+  "aligned_ids_and_original_evidence": true,
+  "changed_v2_answers": 37,
+  "file_v2": {
+    "prompt_version": "ai05-facet-regression-v1",
+    "without_citation": 2,
+    "invalid_citation_number": 0,
+    "token_limit": 3,
+    "token_limit_rows": [31, 61, 81],
+    "xml_leakage": 3,
+    "policy_abstentions": 0,
+    "policy_partial_answers": 0,
+    "model_called": 100
+  },
+  "file_v3": {
+    "prompt_version": "ai05-preprocess-regression-v3",
+    "without_citation": 4,
+    "without_citation_excluding_policy_abstention": 1,
+    "invalid_citation_number": 0,
+    "token_limit": 3,
+    "token_limit_rows": [31, 61, 91],
+    "xml_leakage": 0,
+    "policy_abstentions": 3,
+    "policy_partial_answers": 19,
+    "model_called": 78
+  },
+  "factual_accuracy": null,
+  "hallucination_rate": null,
+  "note": "Mechanical counts and targeted source-based review; no independent scientific verification rate."
+}

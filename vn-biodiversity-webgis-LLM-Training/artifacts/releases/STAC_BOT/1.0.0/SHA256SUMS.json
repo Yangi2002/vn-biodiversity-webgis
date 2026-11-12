@@ -1,0 +1,97 @@
+[
+  {
+    "path": "MODEL_CARD.md",
+    "sha256": "a04d74e748f28f5af079eda13ea17064ab7d3608a966838ae2af8d4cef94b823",
+    "bytes": 5594
+  },
+  {
+    "path": "RELEASE_NOTES.md",
+    "sha256": "ff8c5e918275e53a553d37d2b6e72582eeea77900a45840afc2bb5bbbdf0a002",
+    "bytes": 995
+  },
+  {
+    "path": "RELEASE_PLAN.md",
+    "sha256": "3198b14eca811078c212ce93e1f025c5e8be9b04bff522dd38733e12cab9d6d9",
+    "bytes": 2080
+  },
+  {
+    "path": "release.json",
+    "sha256": "05f451ac980a17c553572b6a24b423c7a950ba7bd8baa45c432d35db2efb2873",
+    "bytes": 2132
+  },
+  {
+    "path": "revisions.json",
+    "sha256": "1ad054f4fccdd8d127536bf36b2e62ff52cac746c8985a495859e20d190097ed",
+    "bytes": 1000
+  },
+  {
+    "path": "runtime-profile.json",
+    "sha256": "38ad882189c046284d5ead01c15a3d3dbd27b1caf877a5eabaedb61aef17109f",
+    "bytes": 1524
+  },
+  {
+    "path": "STAC_BOT-1.0.zip",
+    "sha256": "b13739f416e6e96d57c451197181c798640543f57ca86c3f3e07aa0bc8fb96b5",
+    "bytes": 113093494
+  },
+  {
+    "path": "environment/environment-summary.txt",
+    "sha256": "5bb072e3c937ebfa8a02e8a8393c30e699338beb65f97b6ab6f93d7e266913db",
+    "bytes": 282
+  },
+  {
+    "path": "environment/pip-freeze.txt",
+    "sha256": "dbe5308473cd0cd4b2d8122519bc0d45ec66f2667d162ed6696eebebaeb96a79",
+    "bytes": 18109
+  },
+  {
+    "path": "environment/provenance.json",
+    "sha256": "9faecbba35e6468f81ef6c50fae453861f5aafd73a3cd9833f0545188c216d57",
+    "bytes": 786
+  },
+  {
+    "path": "evaluation/AI05-conclusion.md",
+    "sha256": "9b41ac4540ec272461c07487e3eb4440876d518ac6bca6b89e755fe0fda6125f",
+    "bytes": 5550
+  },
+  {
+    "path": "evaluation/comparison-metrics.json",
+    "sha256": "e7a225d2cd9737747f98498cdbd9a0371280ebbc685980fd5eaaf375f415946c",
+    "bytes": 986
+  },
+  {
+    "path": "evaluation/comparison.svg",
+    "sha256": "6dd79602a2e559f7ec52a0e20b0a0a9d83e060ab74a437f7b2583a03c424c95a",
+    "bytes": 1544
+  },
+  {
+    "path": "evaluation/generator-test-metrics.json",
+    "sha256": "132ff1026456ec1a032423af9d8eeee2b6b60590657069c11c20d9cbd5ed36ca",
+    "bytes": 827
+  },
+  {
+    "path": "evaluation/generator-validation-metrics.json",
+    "sha256": "de795e6cf44ccc833ecd155aabd04412b469d62e7d34a8bbfa03abbfa7f7a95b",
+    "bytes": 2596
+  },
+  {
+    "path": "evaluation/retrieval-validation.json",
+    "sha256": "5c017bced6684952a03e230e8d9ebbd86bafa9d995413fe9b02f7bead837175d",
+    "bytes": 560
+  },
+  {
+    "path": "licenses/INVENTORY.md",
+    "sha256": "38d41f27e120447e1d7b8dba882b5b8bc988fcfcf63c4621922a55c8a11dd96d",
+    "bytes": 1970
+  },
+  {
+    "path": "licenses/NOTICE.txt",
+    "sha256": "7fc2ad9639c06b7a1b5d19aaf1b6902d671815660b6e554a9fc6854f595ee1d2",
+    "bytes": 559
+  },
+  {
+    "path": "licenses/QWEN-RESEARCH-LICENSE.txt",
+    "sha256": "ef52482bb785733093dc9a2e8edd8e764c77d12d8e9d8f10a80c9b547d32d0f9",
+    "bytes": 7388
+  }
+]
