@@ -139,8 +139,9 @@ class PgVectorStore:
         query_vector: object,
         *,
         limit: int = 5,
-        partition: str = "train",
+        partition: str | None = "train",
         allowed_visibilities: Iterable[str] = ("authenticated",),
+        question: str = "",
     ) -> tuple[RetrievalHit, ...]:
         psycopg, sql, register_vector, Vector = _dependencies()
         table = sql.Identifier(self._settings.schema, "assistant_corpus_embeddings")
@@ -152,9 +153,15 @@ class PgVectorStore:
             FROM {table}
             WHERE dataset_version = %s
               AND embedding_model = %s
-              AND partition = %s
+              AND (%s::text IS NULL OR partition = %s)
               AND visibility = ANY(%s)
-            ORDER BY embedding <=> %s
+            ORDER BY CASE WHEN
+                (length(metadata->>'vietnamese_name') >= 3 AND
+                 strpos(lower(%s), lower(metadata->>'vietnamese_name')) > 0)
+                OR (length(metadata->>'scientific_name') >= 3 AND
+                 strpos(lower(%s), lower(metadata->>'scientific_name')) > 0)
+                THEN 0 ELSE 1 END,
+                embedding <=> %s
             LIMIT %s
             """
         ).format(table=table)
@@ -164,7 +171,10 @@ class PgVectorStore:
             self._collection.dataset_version,
             self._collection.embedding_model,
             partition,
+            partition,
             list(allowed_visibilities),
+            question,
+            question,
             vector,
             limit,
         )
@@ -204,12 +214,13 @@ class PgVectorRetriever:
         store: PgVectorStore,
         embedder: TextEmbedder,
         *,
-        partition: str = "train",
+        partition: str | None = "train",
         allowed_visibilities: Iterable[str] = ("authenticated",),
     ) -> None:
         self._store = store
         self._embedder = embedder
         self._partition = partition
+        self.prioritize_entity = False
         self._allowed_visibilities = tuple(allowed_visibilities)
 
     def search(self, query: str, *, limit: int = 5) -> tuple[RetrievalHit, ...]:
@@ -223,6 +234,7 @@ class PgVectorRetriever:
             limit=limit,
             partition=self._partition,
             allowed_visibilities=self._allowed_visibilities,
+            question=query if self.prioritize_entity else "",
         )
 
 

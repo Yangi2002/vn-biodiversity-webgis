@@ -10,11 +10,12 @@
 
 .site-header-content {
   width: min(1640px, calc(100% - 56px));
-  min-height: 112px;
+  min-height: 88px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
+  gap: 16px;
+  flex-wrap: wrap;
   margin: 0 auto;
   padding: 14px 0;
 }
@@ -71,11 +72,11 @@ nav {
 }
 
 nav a {
-  padding: 12px 17px;
+  padding: 10px 12px;
   border: 1px solid transparent;
   border-radius: 999px;
   color: #2f473c;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
@@ -104,6 +105,12 @@ nav .admin-link {
   color: #0d693d;
 }
 
+nav { flex-wrap: wrap; gap: 4px; }
+nav .ai-link { background: #177a4d; color: white; border-radius: 6px; }
+nav .ai-link:hover, nav .ai-link.is-active { background: #105c3a; color: white; }
+@media (max-width: 1450px) {
+  nav { width: 100%; justify-content: flex-start; }
+}
 @media (max-width: 760px) {
   .site-header-content {
     width: min(100% - 28px, 1180px);

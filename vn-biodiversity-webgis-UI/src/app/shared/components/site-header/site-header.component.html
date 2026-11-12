@@ -19,6 +19,7 @@
       <a routerLink="/endangered-species" routerLinkActive="is-active">Danh sách đỏ</a>
       <a routerLink="/nature-reserves" routerLinkActive="is-active">Khu bảo tồn</a>
       <span class="auth-divider" aria-hidden="true"></span>
+      <a class="ai-link" routerLink="/assistantbot" routerLinkActive="is-active">Chế độ AI</a>
       @if (auth.isAuthenticated()) {
         @if (auth.hasRole(['administrator'])) {
           <a class="admin-link" routerLink="/admin" routerLinkActive="is-active">Quản trị</a>

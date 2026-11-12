@@ -1,0 +1,4 @@
+# Model and release archives are versioned with Git LFS, not ordinary Git blobs.
+vn-biodiversity-webgis-LLM-Training/artifacts/**/*.zip filter=lfs diff=lfs merge=lfs -text
+vn-biodiversity-webgis-LLM-Training/artifacts/**/*.safetensors filter=lfs diff=lfs merge=lfs -text
+vn-biodiversity-webgis-LLM-Training/artifacts/**/*.bin filter=lfs diff=lfs merge=lfs -text

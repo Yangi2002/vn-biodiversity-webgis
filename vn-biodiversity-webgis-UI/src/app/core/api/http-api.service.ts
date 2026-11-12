@@ -3,7 +3,6 @@ import type { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_ENDPOINTS } from './api-endpoints';
 
-declare const NG_APP_API_URL: string;
 
 export interface ApiInfoResponse {
   name: string;
@@ -29,7 +28,7 @@ export class HttpApiService {
    *
    * Loại bỏ toàn bộ dấu "/" thừa ở cuối.
    */
-  private readonly apiUrl = NG_APP_API_URL.trim().replace(/\/+$/, '');
+  private readonly apiUrl = '/api';
 
   getApiInfo() {
     return this.http.get<ApiInfoResponse>(

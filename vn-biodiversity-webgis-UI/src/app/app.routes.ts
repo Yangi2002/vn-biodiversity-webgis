@@ -16,8 +16,19 @@ import { NatureReserveDetailPage } from './pages/nature-reserve-detail/nature-re
 import { RegisterPage } from './pages/register/register.page';
 import { AccountPage } from './pages/account/account.page';
 import { editorRoutes } from './pages/editor/editor.routes';
+import { AssistantBotPage } from './pages/assistantbot/assistantbot.page';
 
 export const routes: Routes = [
+  {
+    path: 'assistantbot',
+    component: AssistantBotPage,
+    title: 'Chế độ AI | STACBOT-1.0',
+  },
+  {
+    path: 'ai',
+    redirectTo: 'assistantbot',
+    pathMatch: 'full',
+  },
   {
     path: '',
     component: HomePage,

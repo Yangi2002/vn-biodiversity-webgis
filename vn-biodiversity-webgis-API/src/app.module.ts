@@ -13,6 +13,7 @@ import { NationalParksModule } from './national-parks/national-parks.module';
 import { NatureReservesModule } from './nature-reserves/nature-reserves.module';
 import { UserManagementModule } from './user-management/user-management.module';
 import { EditorModule } from './editor/editor.module';
+import { AssistantBotModule } from './assistant-bot/assistantbot.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { EditorModule } from './editor/editor.module';
     DataGovernanceModule,
     UserManagementModule,
     EditorModule,
+    AssistantBotModule,
   ],
   controllers: [AppController],
   providers: [AppService],
